@@ -3,7 +3,7 @@ class AppTranslations {
     "English": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Ready to learn and play?",
-      "If you listen to all available duas you unlock all duas": "If you listen to all available duas you unlock all duas",
+      "Listen to available duas to UNLOCK remaining duas": "Listen to available duas to UNLOCK remaining duas",
       "Little Kids": "Little Kids",
       "Older Kids": "Older Kids",
       "Grown ups": "Grown ups",
@@ -43,7 +43,7 @@ class AppTranslations {
     "Arabic": {
       "Assalam o Alaikum": "السلام عليكم",
       "Ready to learn and play?": "مستعد للتعلم واللعب؟",
-      "If you listen to all available duas you unlock all duas": "إذا استمعت إلى جميع الأدعية المتاحة، فستفتح جميع الأدعية",
+      "Listen to available duas to UNLOCK remaining duas": "إذا استمعت إلى جميع الأدعية المتاحة، فستفتح جميع الأدعية",
       "Little Kids": "الأطفال الصغار",
       "Older Kids": "الأطفال الأكبر سناً",
       "Grown ups": "الكبار",
@@ -83,7 +83,7 @@ class AppTranslations {
     "Bengali": {
       "Assalam o Alaikum": "আসসালামু আলাইকুম",
       "Ready to learn and play?": "শিখতে এবং খেলতে প্রস্তুত?",
-      "If you listen to all available duas you unlock all duas": "আপনি যদি সমস্ত উপলব্ধ দোয়া শোনেন তবে আপনি সমস্ত দোয়া আনলক করেন",
+      "Listen to available duas to UNLOCK remaining duas": "আপনি যদি সমস্ত উপলব্ধ দোয়া শোনেন তবে আপনি সমস্ত দোয়া আনলক করেন",
       "Little Kids": "ছোট বাচ্চারা",
       "Older Kids": "বড় বাচ্চারা",
       "Grown ups": "বড়রা",
@@ -123,7 +123,7 @@ class AppTranslations {
     "French": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Prêt à apprendre et jouer?",
-      "If you listen to all available duas you unlock all duas": "Si vous écoutez toutes les duas disponibles, vous débloquez toutes les duas",
+      "Listen to available duas to UNLOCK remaining duas": "Si vous écoutez toutes les duas disponibles, vous débloquez toutes les duas",
       "Little Kids": "Petits enfants",
       "Older Kids": "Enfants plus âgés",
       "Grown ups": "Adultes",
@@ -163,7 +163,7 @@ class AppTranslations {
     "German": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Bereit zu lernen und zu spielen?",
-      "If you listen to all available duas you unlock all duas": "Wenn Sie alle verfügbaren Duas anhören, entsperren Sie alle Duas",
+      "Listen to available duas to UNLOCK remaining duas": "Wenn Sie alle verfügbaren Duas anhören, entsperren Sie alle Duas",
       "Little Kids": "Kleine Kinder",
       "Older Kids": "Ältere Kinder",
       "Grown ups": "Erwachsene",
@@ -203,7 +203,7 @@ class AppTranslations {
     "Gujarati": {
       "Assalam o Alaikum": "અસ્સલામ ઓ અલૈકમ",
       "Ready to learn and play?": "શીખવા અને રમવા માટે તૈયાર છો?",
-      "If you listen to all available duas you unlock all duas": "જો તમે બધી ઉપલબ્ધ દુઆઓ સાંભળો છો, તો તમે બધી દુઆઓ અનલૉક કરો છો",
+      "Listen to available duas to UNLOCK remaining duas": "જો તમે બધી ઉપલબ્ધ દુઆઓ સાંભળો છો, તો તમે બધી દુઆઓ અનલૉક કરો છો",
       "Little Kids": "નાના બાળકો",
       "Older Kids": "મોટા બાળકો",
       "Grown ups": "વયસ્કો",
@@ -243,7 +243,7 @@ class AppTranslations {
     "Hindi": {
       "Assalam o Alaikum": "अस्सलाम ओ आलेकुम",
       "Ready to learn and play?": "सीखने और खेलने के लिए तैयार हैं?",
-      "If you listen to all available duas you unlock all duas": "यदि आप सभी उपलब्ध दुआएं सुनते हैं तो आप सभी दुआएं अनलॉक कर देंगे",
+      "Listen to available duas to UNLOCK remaining duas": "यदि आप सभी उपलब्ध दुआएं सुनते हैं तो आप सभी दुआएं अनलॉक कर देंगे",
       "Little Kids": "छोटे बच्चे",
       "Older Kids": "बड़े बच्चे",
       "Grown ups": "वयस्क",
@@ -283,7 +283,7 @@ class AppTranslations {
     "Indonesian": {
       "Assalam o Alaikum": "Assalamualaikum",
       "Ready to learn and play?": "Siap belajar dan bermain?",
-      "If you listen to all available duas you unlock all duas": "Jika Anda mendengarkan semua doa yang tersedia, Anda membuka kunci semua doa",
+      "Listen to available duas to UNLOCK remaining duas": "Jika Anda mendengarkan semua doa yang tersedia, Anda membuka kunci semua doa",
       "Little Kids": "Anak-anak Kecil",
       "Older Kids": "Anak-anak yang Lebih Besar",
       "Grown ups": "Dewasa",
@@ -323,7 +323,7 @@ class AppTranslations {
     "Japanese": {
       "Assalam o Alaikum": "アッサラームアレイクム",
       "Ready to learn and play?": "学んで遊ぶ準備はできていますか？",
-      "If you listen to all available duas you unlock all duas": "利用可能なすべてのドゥアーを聞くと、すべてのドゥアーがロック解除されます",
+      "Listen to available duas to UNLOCK remaining duas": "利用可能なすべてのドゥアーを聞くと、すべてのドゥアーがロック解除されます",
       "Little Kids": "小さな子供たち",
       "Older Kids": "年上の子供たち",
       "Grown ups": "大人",
@@ -363,7 +363,7 @@ class AppTranslations {
     "Malay": {
       "Assalam o Alaikum": "Assalamualaikum",
       "Ready to learn and play?": "Bersedia untuk belajar dan bermain?",
-      "If you listen to all available duas you unlock all duas": "Jika anda mendengar semua doa yang tersedia, anda membuka kunci semua doa",
+      "Listen to available duas to UNLOCK remaining duas": "Jika anda mendengar semua doa yang tersedia, anda membuka kunci semua doa",
       "Little Kids": "Kanak-kanak Kecil",
       "Older Kids": "Kanak-kanak Lebih Besar",
       "Grown ups": "Dewasa",
@@ -403,7 +403,7 @@ class AppTranslations {
     "Mandarin": {
       "Assalam o Alaikum": "安塞俩目阿来库姆",
       "Ready to learn and play?": "准备好学习和玩耍了吗？",
-      "If you listen to all available duas you unlock all duas": "如果您收听所有可用的祈祷词，您将解锁所有祈祷词",
+      "Listen to available duas to UNLOCK remaining duas": "如果您收听所有可用的祈祷词，您将解锁所有祈祷词",
       "Little Kids": "小孩子",
       "Older Kids": "大孩子",
       "Grown ups": "成年人",
@@ -443,7 +443,7 @@ class AppTranslations {
     "Marathi": {
       "Assalam o Alaikum": "अस्सलाम ओ अलैकुम",
       "Ready to learn and play?": "शिकण्यासाठी आणि खेळण्यासाठी तयार आहात?",
-      "If you listen to all available duas you unlock all duas": "जर तुम्ही सर्व उपलब्ध दुआ ऐकल्या तर तुम्ही सर्व दुआ अनलॉक करता",
+      "Listen to available duas to UNLOCK remaining duas": "जर तुम्ही सर्व उपलब्ध दुआ ऐकल्या तर तुम्ही सर्व दुआ अनलॉक करता",
       "Little Kids": "लहान मुले",
       "Older Kids": "मोठी मुले",
       "Grown ups": "मोठे",
@@ -483,7 +483,7 @@ class AppTranslations {
     "Portuguese": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Pronto para aprender e brincar?",
-      "If you listen to all available duas you unlock all duas": "Se você ouvir todas as duas disponíveis, você desbloqueia todas as duas",
+      "Listen to available duas to UNLOCK remaining duas": "Se você ouvir todas as duas disponíveis, você desbloqueia todas as duas",
       "Little Kids": "Crianças Pequenas",
       "Older Kids": "Crianças Mais Velhas",
       "Grown ups": "Adultos",
@@ -523,7 +523,7 @@ class AppTranslations {
     "Punjabi": {
       "Assalam o Alaikum": "ਅਸਲਾਮ ਓ ਅਲੈਕਮ",
       "Ready to learn and play?": "ਸਿੱਖਣ ਅਤੇ ਖੇਡਣ ਲਈ ਤਿਆਰ ਹੋ?",
-      "If you listen to all available duas you unlock all duas": "ਜੇ ਤੁਸੀਂ ਸਾਰੀਆਂ ਉਪਲਬਧ ਦੁਆਵਾਂ ਸੁਣਦੇ ਹੋ ਤਾਂ ਤੁਸੀਂ ਸਾਰੀਆਂ ਦੁਆਵਾਂ ਅਨਲੌਕ ਕਰਦੇ ਹੋ",
+      "Listen to available duas to UNLOCK remaining duas": "ਜੇ ਤੁਸੀਂ ਸਾਰੀਆਂ ਉਪਲਬਧ ਦੁਆਵਾਂ ਸੁਣਦੇ ਹੋ ਤਾਂ ਤੁਸੀਂ ਸਾਰੀਆਂ ਦੁਆਵਾਂ ਅਨਲੌਕ ਕਰਦੇ ਹੋ",
       "Little Kids": "ਛੋਟੇ ਬੱਚੇ",
       "Older Kids": "ਵੱਡੇ ਬੱਚੇ",
       "Grown ups": "ਵੱਡੇ",
@@ -563,7 +563,7 @@ class AppTranslations {
     "Russian": {
       "Assalam o Alaikum": "Ассаляму алейкум",
       "Ready to learn and play?": "Готовы учиться и играть?",
-      "If you listen to all available duas you unlock all duas": "Если вы прослушаете все доступные дуа, вы разблокируете все дуа",
+      "Listen to available duas to UNLOCK remaining duas": "Если вы прослушаете все доступные дуа, вы разблокируете все дуа",
       "Little Kids": "Маленькие дети",
       "Older Kids": "Дети постарше",
       "Grown ups": "Взрослые",
@@ -603,7 +603,7 @@ class AppTranslations {
     "Sindhi": {
       "Assalam o Alaikum": "السلام عليكم",
       "Ready to learn and play?": "سيکڻ ۽ راندڙ لاءِ تيار آهيو؟",
-      "If you listen to all available duas you unlock all duas": "جيڪڏهن توهان سڀني دستياب دعائن کي ٻڌو ٿا ته توهان سڀني دعائن کي انلاڪ ڪريو ٿا",
+      "Listen to available duas to UNLOCK remaining duas": "جيڪڏهن توهان سڀني دستياب دعائن کي ٻڌو ٿا ته توهان سڀني دعائن کي انلاڪ ڪريو ٿا",
       "Little Kids": "ننڍا ٻار",
       "Older Kids": "وڏا ٻار",
       "Grown ups": "وڏا",
@@ -643,7 +643,7 @@ class AppTranslations {
     "Spanish": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "¿Listo para aprender y jugar?",
-      "If you listen to all available duas you unlock all duas": "Si escuchas todas las duas disponibles, desbloqueas todas las duas",
+      "Listen to available duas to UNLOCK remaining duas": "Si escuchas todas las duas disponibles, desbloqueas todas las duas",
       "Little Kids": "Niños Pequeños",
       "Older Kids": "Niños Mayores",
       "Grown ups": "Adultos",
@@ -683,7 +683,7 @@ class AppTranslations {
     "Tamil": {
       "Assalam o Alaikum": "அஸ்ஸலாம் ஓ அலைகும்",
       "Ready to learn and play?": "கற்றல் மற்றும் விளையாட தயாரா?",
-      "If you listen to all available duas you unlock all duas": "கிடைக்கக்கூடிய அனைத்து துஆக்களையும் நீங்கள் கேட்டால், அனைத்து துஆக்களையும் திறக்கிறீர்கள்",
+      "Listen to available duas to UNLOCK remaining duas": "கிடைக்கக்கூடிய அனைத்து துஆக்களையும் நீங்கள் கேட்டால், அனைத்து துஆக்களையும் திறக்கிறீர்கள்",
       "Little Kids": "சிறிய குழந்தைகள்",
       "Older Kids": "பெரிய குழந்தைகள்",
       "Grown ups": "வயது வந்தோர்",
@@ -723,7 +723,7 @@ class AppTranslations {
     "Telugu": {
       "Assalam o Alaikum": "అస్సలాం ఓ అలైకుం",
       "Ready to learn and play?": "నేర్చుకోవడానికి మరియు ఆడుకోవడానికి సిద్ధంగా ఉన్నారా?",
-      "If you listen to all available duas you unlock all duas": "మీరు అన్ని అందుబాటులో ఉన్న దుఆలు విన్నట్లయితే, మీరు అన్ని దుఆలు అన్లాక్ చేస్తారు",
+      "Listen to available duas to UNLOCK remaining duas": "మీరు అన్ని అందుబాటులో ఉన్న దుఆలు విన్నట్లయితే, మీరు అన్ని దుఆలు అన్లాక్ చేస్తారు",
       "Little Kids": "చిన్న పిల్లలు",
       "Older Kids": "పెద్ద పిల్లలు",
       "Grown ups": "పెద్దలు",
@@ -763,7 +763,7 @@ class AppTranslations {
     "Turkish": {
       "Assalam o Alaikum": "Esselamü Aleyküm",
       "Ready to learn and play?": "Öğrenmeye ve oynamaya hazır mısınız?",
-      "If you listen to all available duas you unlock all duas": "Mevcut tüm duaları dinlerseniz tüm duaların kilidini açarsınız",
+      "Listen to available duas to UNLOCK remaining duas": "Mevcut tüm duaları dinlerseniz tüm duaların kilidini açarsınız",
       "Little Kids": "Küçük Çocuklar",
       "Older Kids": "Büyük Çocuklar",
       "Grown ups": "Yetişkinler",
@@ -803,7 +803,7 @@ class AppTranslations {
     "Urdu": {
       "Assalam o Alaikum": "السلام علیکم",
       "Ready to learn and play?": "سیکھنے اور کھیلنے کے لیے تیار ہیں؟",
-      "If you listen to all available duas you unlock all duas": "اگر آپ تمام دستیاب دعائیں سنیں گے تو آپ تمام دعائیں انلاک کر دیں گے",
+      "Listen to available duas to UNLOCK remaining duas": "اگر آپ تمام دستیاب دعائیں سنیں گے تو آپ تمام دعائیں انلاک کر دیں گے",
       "Little Kids": "چھوٹے بچے",
       "Older Kids": "بڑے بچے",
       "Grown ups": "بڑے",

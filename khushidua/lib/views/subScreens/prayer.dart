@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +30,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
   Position? currentPosition;
 
   bool locationAllowed = false;
+  bool isLoadingPrayerTimes = true;
+  String locationName = "Loading...";
+  String timezoneName = "UTC"; // Default timezone
 
   List<NamazModel> _namazList = [];
 
@@ -41,6 +45,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   @override
   void initState() {
+    super.initState();
     setPosition();
   }
 
@@ -50,6 +55,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      setState(() {
+        locationAllowed = false;
+        locationName = "Location services disabled";
+      });
       return Future.error('Location services are disabled.');
     }
 
@@ -59,6 +68,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
       if (permission == LocationPermission.denied) {
         setState(() {
           locationAllowed = false;
+          locationName = "Permission denied";
         });
         return Future.error('Location permissions are denied');
       } else {
@@ -67,6 +77,11 @@ class _PrayerScreenState extends State<PrayerScreen> {
         });
       }
     } else if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        locationAllowed = false;
+        locationName = "Permission denied";
+      });
+      return Future.error('Location permissions are permanently denied.');
     } else {
       setState(() {
         locationAllowed = true;
@@ -74,52 +89,232 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
 
     if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        locationAllowed = false;
+        locationName = "Permission denied";
+      });
       return Future.error('Location permissions are permanently denied.');
     }
 
-    currentPosition = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
     // Get current position
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+    currentPosition = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
     );
+    return currentPosition!;
+  }
+
+  Future<void> _getLocationName(Position position) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        String city = place.locality ?? place.subAdministrativeArea ?? "";
+        String country = place.country ?? "";
+        String isoCountryCode = place.isoCountryCode ?? "";
+        
+        // Determine timezone based on coordinates (simplified approach)
+        // You can use a timezone package for more accurate timezone detection
+        if (isoCountryCode.isNotEmpty) {
+          // Common timezone mappings (simplified)
+          if (isoCountryCode == "PK") {
+            timezoneName = "Asia/Karachi";
+          } else if (isoCountryCode == "IN") {
+            timezoneName = "Asia/Kolkata";
+          } else if (isoCountryCode == "SA") {
+            timezoneName = "Asia/Riyadh";
+          } else if (isoCountryCode == "AE") {
+            timezoneName = "Asia/Dubai";
+          } else {
+            // Default to UTC offset based on longitude (rough estimation)
+            // 1 hour = 15 degrees of longitude
+            int offsetHours = (position.longitude / 15).round();
+            timezoneName = "UTC${offsetHours >= 0 ? '+' : ''}$offsetHours";
+          }
+        }
+        
+        setState(() {
+          if (city.isNotEmpty && country.isNotEmpty) {
+            locationName = "$city, $country";
+          } else if (city.isNotEmpty) {
+            locationName = city;
+          } else if (country.isNotEmpty) {
+            locationName = country;
+          } else {
+            locationName = "Unknown location";
+          }
+        });
+      } else {
+        setState(() {
+          locationName = "Unknown location";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        locationName = "Unknown location";
+      });
+    }
+  }
+
+  Future<void> _calculatePrayerTimes(DateTime date) async {
+    if (!locationAllowed) {
+      print('Cannot calculate prayer times: locationAllowed=$locationAllowed');
+      return;
+    }
+
+    try {
+      params.madhab = PrayerMadhab.shafi;
+
+      // Use current position if available, else use default coordinates
+      Coordinates coords;
+      if (currentPosition != null) {
+        coords = Coordinates(currentPosition!.latitude, currentPosition!.longitude);
+      } else {
+        coords = coordinates;
+      }
+
+      // Create a new PrayerTimes instance for the specific date
+      // Note: Some versions may not support dateTime parameter, so we'll try both approaches
+      PrayerTimes prayerTimes;
+      try {
+        prayerTimes = PrayerTimes(
+          coordinates: coords,
+          calculationParameters: params,
+          precision: true,
+          locationName: timezoneName.isNotEmpty ? timezoneName : 'Asia/Karachi',
+          dateTime: date,
+        );
+      } catch (e) {
+        // If dateTime parameter doesn't work, try without it (will use current date)
+        print('Trying without dateTime parameter: $e');
+        prayerTimes = PrayerTimes(
+          coordinates: coords,
+          calculationParameters: params,
+          precision: true,
+          locationName: timezoneName.isNotEmpty ? timezoneName : 'Asia/Karachi',
+        );
+      }
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      
+      // Clear existing list before adding new times
+      List<NamazModel> newNamazList = [];
+      
+      if (prayerTimes.fajrStartTime != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.fajrStartTime!),
+          name: "Fajr",
+          speakerEnabled: prefs.getString("fajrSpeaker") ?? "on"
+        ));
+      }
+      
+      if (prayerTimes.sunrise != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.sunrise!),
+          name: "Sunrise",
+          speakerEnabled: prefs.getString("sunriseSpeaker") ?? "on"
+        ));
+      }
+      
+      if (prayerTimes.dhuhrStartTime != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.dhuhrStartTime!),
+          name: "Dhuhr",
+          speakerEnabled: prefs.getString("dhuhrSpeaker") ?? "on"
+        ));
+      }
+      
+      if (prayerTimes.asrStartTime != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.asrStartTime!),
+          name: "Asr",
+          speakerEnabled: prefs.getString("asrSpeaker") ?? "on"
+        ));
+      }
+      
+      if (prayerTimes.maghribStartTime != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.maghribStartTime!),
+          name: "Maghrib",
+          speakerEnabled: prefs.getString("maghribSpeaker") ?? "on"
+        ));
+      }
+      
+      if (prayerTimes.ishaStartTime != null) {
+        newNamazList.add(NamazModel(
+          time: DateFormat('hh:mm a').format(prayerTimes.ishaStartTime!),
+          name: "Ishaa",
+          speakerEnabled: prefs.getString("ishaSpeaker") ?? "on"
+        ));
+      }
+
+      setState(() {
+        _namazList = newNamazList;
+        isLoadingPrayerTimes = false;
+      });
+      
+      print('Prayer times calculated successfully. List length: ${_namazList.length}');
+    } catch (e, stackTrace) {
+      print('Error calculating prayer times: $e');
+      print('Stack trace: $stackTrace');
+      setState(() {
+        _namazList = [];
+        isLoadingPrayerTimes = false;
+      });
+    }
   }
 
   setPosition() async {
-    currentPosition = await _determinePosition();
-    setState(() {
-      currentPosition;
-    });
-    params.madhab = PrayerMadhab.shafi;
-
-    PrayerTimes prayerTimes = PrayerTimes(
-      coordinates: Coordinates(currentPosition?.latitude ?? 0, currentPosition?.longitude ?? 0),
-      calculationParameters: params,
-      precision: true,
-      locationName: 'Asia/Karachi',
-    );
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    NamazModel fajr = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.fajrStartTime!)}", name: "Fajr", speakerEnabled: "on");
-    NamazModel sunrise = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.sunrise!)}", name: "Sunrise", speakerEnabled: "on");
-    NamazModel dhuhr = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.dhuhrStartTime!)}", name: "Dhuhr", speakerEnabled: "on");
-    NamazModel asr = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.asrStartTime!)}", name: "Asr", speakerEnabled: "on");
-    NamazModel maghrib = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.maghribStartTime!)}", name: "Maghrib", speakerEnabled: "on");
-    NamazModel isha = NamazModel(time: "${DateFormat('hh:mm a').format(prayerTimes.ishaStartTime!)}", name: "Ishaa", speakerEnabled: "on");
-    fajr.speakerEnabled = prefs.getString("fajrSpeaker") ?? "on";
-    sunrise.speakerEnabled = prefs.getString("sunriseSpeaker") ?? "on";
-    dhuhr.speakerEnabled = prefs.getString("dhuhrSpeaker") ?? "on";
-    asr.speakerEnabled = prefs.getString("aasrSpeaker") ?? "on";
-    maghrib.speakerEnabled = prefs.getString("maghribSpeaker") ?? "on";
-    isha.speakerEnabled = prefs.getString("ishaSpeaker") ?? "on";
-
-    _namazList.add(fajr);
-    _namazList.add(sunrise);
-    _namazList.add(dhuhr);
-    _namazList.add(asr);
-    _namazList.add(maghrib);
-    _namazList.add(isha);
+    try {
+      Position? position;
+      try {
+        position = await _determinePosition();
+        currentPosition = position;
+      } catch (e) {
+        print('Error getting position: $e');
+        // If permission denied or error, use default coordinates (Lahore, Pakistan)
+        // Create a mock position using coordinates directly
+        locationAllowed = true;
+        locationName = "Lahore, Pakistan";
+        timezoneName = "Asia/Karachi";
+        
+        // We'll handle this in _calculatePrayerTimes by using coordinates directly
+        coordinates = Coordinates(31.5497, 74.3436);
+        setState(() {});
+      }
+      
+      // Always calculate prayer times - use current position if available, else default coordinates
+      if (locationAllowed) {
+        // Get location name from coordinates (non-blocking if it fails)
+        if (currentPosition != null) {
+          try {
+            await _getLocationName(currentPosition!);
+          } catch (e) {
+            print('Error getting location name: $e');
+            // Continue anyway with default location name
+          }
+        }
+        
+        // Calculate prayer times for the selected date
+        await _calculatePrayerTimes(selectedEnglishDate);
+      }
+    } catch (e, stackTrace) {
+      print('Error in setPosition: $e');
+      print('Stack trace: $stackTrace');
+      // Fallback to default location
+      locationAllowed = true;
+      locationName = "Lahore, Pakistan";
+      timezoneName = "Asia/Karachi";
+      coordinates = Coordinates(31.5497, 74.3436);
+      setState(() {});
+      // Try to calculate with default coordinates
+      await _calculatePrayerTimes(selectedEnglishDate);
+    }
   }
 
   void _incrementDate() {
@@ -139,12 +334,14 @@ class _PrayerScreenState extends State<PrayerScreen> {
       }
     }
 
-    setState(() {
-      selectedHijriDate;
-    });
     selectedHijriDate.hijriToGregorian(selectedHijriDate.hYear, selectedHijriDate.hMonth, selectedHijriDate.hDay);
-    // Print the next Hijri date
-    print('Next Hijri Date: ${selectedHijriDate.toFormat("dd MM yyyy")}');
+    
+    // Recalculate prayer times for the new date
+    _calculatePrayerTimes(selectedEnglishDate);
+    
+    setState(() {
+      // Update UI
+    });
   }
 
   void _decrementDate() {
@@ -166,16 +363,18 @@ class _PrayerScreenState extends State<PrayerScreen> {
       selectedHijriDate.hDay = 30;
     }
 
-    setState(() {
-      selectedHijriDate;
-    });
     selectedHijriDate.hijriToGregorian(
       selectedHijriDate.hYear,
       selectedHijriDate.hMonth,
       selectedHijriDate.hDay,
     );
-    // Print the previous Hijri date
-    print('Previous Hijri Date: ${selectedHijriDate.toFormat("dd MM yyyy")}');
+    
+    // Recalculate prayer times for the new date
+    _calculatePrayerTimes(selectedEnglishDate);
+    
+    setState(() {
+      // Update UI
+    });
   }
 
   @override
@@ -220,7 +419,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                       width: 12,
                     ),
                     Text(
-                      "Lahore",
+                      locationName,
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: rwhite),
                     )
                   ],
@@ -289,28 +488,45 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 //namaz time
                 locationAllowed
-                    ? FadeInAnimationTTB(
-                        delay: 1,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width,
-                          decoration: BoxDecoration(
-                            color: rwhite.withOpacity(0.2),
-                            border: Border.all(color: rwhite),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: ListView.builder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              itemCount: _namazList.length,
-                              itemBuilder: (context, index) {
-                                if (index == _namazList.length - 1) {
-                                  return NamazTile(_namazList[index], false);
-                                } else {
-                                  return NamazTile(_namazList[index], true);
-                                }
-                              }),
-                        ),
-                      )
+                    ? isLoadingPrayerTimes
+                        ? Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: CircularProgressIndicator(color: rwhite),
+                            ),
+                          )
+                        : _namazList.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: Text(
+                                    "Unable to load prayer times",
+                                    style: TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              )
+                            : FadeInAnimationTTB(
+                                delay: 1,
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  decoration: BoxDecoration(
+                                    color: rwhite.withOpacity(0.2),
+                                    border: Border.all(color: rwhite),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      itemCount: _namazList.length,
+                                      itemBuilder: (context, index) {
+                                        if (index == _namazList.length - 1) {
+                                          return NamazTile(_namazList[index], false);
+                                        } else {
+                                          return NamazTile(_namazList[index], true);
+                                        }
+                                      }),
+                                ),
+                              )
                     : Center(
                         child: Text(
                         "Location is not enabled",

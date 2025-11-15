@@ -1,0 +1,43 @@
+{
+    "dart.flutterSdkPath": null,
+    "dart.debugSdkLibraries": false,
+    "dart.debugExternalPackageLibraries": false,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true,
+    "dart.showTodos": true,
+    "dart.enableSdkFormatter": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "[dart]": {
+        "editor.formatOnSave": true,
+        "editor.selectionHighlight": false,
+        "editor.suggest.snippetsPreventQuickSuggestions": false,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off"
+    },
+    "files.exclude": {
+        "**/.dart_tool": true,
+        "**/.flutter-plugins": true,
+        "**/.flutter-plugins-dependencies": true,
+        "**/.packages": true,
+        "**/.pub-cache": true,
+        "**/.pub": true,
+        "**/build": false
+    },
+    "files.watcherExclude": {
+        "**/.dart_tool/**": true,
+        "**/.flutter-plugins/**": true,
+        "**/.flutter-plugins-dependencies/**": true,
+        "**/.packages/**": true,
+        "**/.pub-cache/**": true,
+        "**/.pub/**": true,
+        "**/build/**": true
+    }
+}
+
+
+
+

@@ -566,7 +566,9 @@ class _DuaTileState extends State<DuaTile> {
   @override
   Widget build(BuildContext context) {
     String audioPath = widget.dua.littleKidsAudio;
-    bool isPlaying = widget.currentlyPlayingPath == audioPath;
+    // Separate isPlaying check for the first button (littleKidsAudio)
+    bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
+    
     return GetBuilder<UserController>(
       builder: (userController) {
         var userModel = userController.userModel;
@@ -591,7 +593,7 @@ class _DuaTileState extends State<DuaTile> {
                               onTap: () =>
                                   widget.onToggle(audioPath, widget.dua.id),
                               child: Icon(
-                                isPlaying
+                                isPlayingAudio
                                     ? Icons.stop_circle
                                     : Icons.play_circle,
                                 color:
@@ -635,53 +637,69 @@ class _DuaTileState extends State<DuaTile> {
                       ).marginAll(15),
                     Divider(height: 2, color: rwhite),
                     if (themeController.showTranslation)
-                      Row(
-                        children: [
-                          if (Get.find<UserController>().selectedLanguage ==
-                                  "English" ||
-                              Get.find<UserController>().selectedLanguage ==
-                                  "Urdu")
-                            InkWell(
-                              onTap: () {
-                                if(Get.find<UserController>().selectedLanguage == "Urdu"){
-                                  if (widget.dua.urduTranslation != null ||
-                                      widget.dua.urduTranslation != "") {
-                                    return widget.onToggle(
-                                      widget.dua.urduTranslation!,
-                                      widget.dua.id,
-                                    );
-                                  }
-                                }else{
-                                  if (widget.dua.englishTranslation != null ||
-                                      widget.dua.englishTranslation != "") {
-                                    return widget.onToggle(
-                                      widget.dua.englishTranslation!,
-                                      widget.dua.id,
-                                    );
-                                  }
-                                }
-
-                              },
-                              child: Icon(
-                                isPlaying
-                                    ? Icons.stop_circle
-                                    : Icons.play_circle,
-                                color: Get.find<UserController>().selectedLanguage=="Urdu"?widget.dua.urduTranslation!=null?Color(0xff2A158F):rpink:widget.dua.englishTranslation!=null?Color(0xff2A158F):rpink,
+                      Builder(
+                        builder: (context) {
+                          // Calculate translation audio path and playing state
+                          String? translationAudioPath;
+                          if(Get.find<UserController>().selectedLanguage == "Urdu"){
+                            translationAudioPath = widget.dua.urduTranslation;
+                          }else{
+                            translationAudioPath = widget.dua.englishTranslation;
+                          }
+                          
+                          // Separate isPlaying check for translation audio
+                          bool isPlayingTranslation = translationAudioPath != null && 
+                              translationAudioPath.isNotEmpty &&
+                              widget.currentlyPlayingPath == translationAudioPath;
+                          
+                          return Row(
+                            children: [
+                              if (Get.find<UserController>().selectedLanguage ==
+                                      "English" ||
+                                  Get.find<UserController>().selectedLanguage ==
+                                      "Urdu")
+                                InkWell(
+                                  onTap: () {
+                                    if(Get.find<UserController>().selectedLanguage == "Urdu"){
+                                      if (widget.dua.urduTranslation != null &&
+                                          widget.dua.urduTranslation != "") {
+                                        return widget.onToggle(
+                                          widget.dua.urduTranslation!,
+                                          widget.dua.id,
+                                        );
+                                      }
+                                    }else{
+                                      if (widget.dua.englishTranslation != null &&
+                                          widget.dua.englishTranslation != "") {
+                                        return widget.onToggle(
+                                          widget.dua.englishTranslation!,
+                                          widget.dua.id,
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Icon(
+                                    isPlayingTranslation
+                                        ? Icons.stop_circle
+                                        : Icons.play_circle,
+                                    color: Get.find<UserController>().selectedLanguage=="Urdu"?widget.dua.urduTranslation!=null?Color(0xff2A158F):rpink:widget.dua.englishTranslation!=null?Color(0xff2A158F):rpink,
+                                  ),
+                                ),
+                              SizedBox(width: 20),
+                              Expanded(
+                                child: Text(
+                                  "${widget.dua.getName(Get.find<UserController>().selectedLanguage)}",
+                                  textAlign: TextAlign.start,
+                                  style: TextStyle(
+                                    color: rblack,
+                                    fontSize: themeController.textSize,
+                                  ),
+                                ),
                               ),
-                            ),
-                          SizedBox(width: 20),
-                          Expanded(
-                            child: Text(
-                              "${widget.dua.getName(Get.find<UserController>().selectedLanguage)}",
-                              textAlign: TextAlign.start,
-                              style: TextStyle(
-                                color: rblack,
-                                fontSize: themeController.textSize,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ).marginAll(15),
+                            ],
+                          ).marginAll(15);
+                        },
+                      ),
                     if (widget.dua.arabic.length < 200)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

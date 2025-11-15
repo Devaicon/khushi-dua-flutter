@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(color: rhint, fontSize: 12),
                                   ),
                                   Text(
-                                    "If you listen to all available duas you unlock all duas".tr,
+                                    "Listen to available duas to UNLOCK remaining duas".tr,
                                     style: TextStyle(color: rtext, fontWeight: FontWeight.bold, fontSize: 18),
                                   ),
                                   ClipRRect(
@@ -266,6 +266,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           }).toList();
 
                           filteredCategories.removeWhere((element) => element.isEnabled==false);
+                          
+                          // Hide "Family And Wedding" category when "Little Kids" is selected
+                          if (themeController.selectedAgeGroup == 0) {
+                            filteredCategories.removeWhere((category) {
+                              final categoryName = category.english.toLowerCase();
+                              return categoryName.contains('family') && categoryName.contains('wedding');
+                            });
+                          }
 
                           return GridView.builder(
                             shrinkWrap: true,
