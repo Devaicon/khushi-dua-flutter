@@ -41,6 +41,7 @@ class OpenDuasScreen extends StatefulWidget {
 class _OpenDuasScreenState extends State<OpenDuasScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String? _currentlyPlayingPath;
+  String? _expandedBenefitsDuaId; // Track which dua has benefits expanded
 
   @override
   void initState() {
@@ -231,6 +232,13 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                 dua: duaController.filteredDuas[index],
                 currentlyPlayingPath: _currentlyPlayingPath,
                 onToggle: _toggleAudio,
+                expandedBenefitsDuaId: _expandedBenefitsDuaId,
+                onToggleBenefits: (duaId) {
+                  setState(() {
+                    // If clicking the same dua, collapse it; otherwise expand the new one
+                    _expandedBenefitsDuaId = _expandedBenefitsDuaId == duaId ? null : duaId;
+                  });
+                },
               );
             },
           );
@@ -244,11 +252,15 @@ class DuaTile extends StatefulWidget {
   final DuaModel dua;
   final String? currentlyPlayingPath;
   final Function(String, String) onToggle;
+  final String? expandedBenefitsDuaId;
+  final Function(String?) onToggleBenefits;
 
   const DuaTile({
     required this.dua,
     required this.currentlyPlayingPath,
     required this.onToggle,
+    required this.expandedBenefitsDuaId,
+    required this.onToggleBenefits,
     super.key,
   });
 
@@ -563,6 +575,61 @@ class _DuaTileState extends State<DuaTile> {
     }
   }
 
+  Widget _buildBenefitsList() {
+    if (!widget.dua.hasBenefits()) {
+      return SizedBox.shrink();
+    }
+
+    final userLanguage = Get.find<UserController>().selectedLanguage;
+    final themeController = Get.find<ThemeController>();
+    final isRtl = userLanguage == 'Urdu' || userLanguage == 'Arabic';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Divider(height: 2, color: rwhite),
+        ...widget.dua.benefits!.asMap().entries.map((entry) {
+          final index = entry.key;
+          final benefitText = widget.dua.getBenefitText(index, userLanguage);
+
+          if (benefitText == null || benefitText.isEmpty) {
+            return SizedBox.shrink();
+          }
+
+          return Container(
+            margin: EdgeInsets.only(top: 12, left: 15, right: 15, bottom: 8),
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Text(
+              benefitText,
+              textAlign: isRtl ? TextAlign.right : TextAlign.left,
+              style: TextStyle(
+                color: Color(0xff2A158F),
+                fontSize: userLanguage == 'Urdu' 
+                    ? themeController.textSize - 4 
+                    : themeController.textSize,
+                fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
+                height: userLanguage == 'Urdu' 
+                    ? ((themeController.textSize * 2) - 10) / themeController.textSize 
+                    : null,
+              ),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     String audioPath = widget.dua.littleKidsAudio;
@@ -700,19 +767,45 @@ class _DuaTileState extends State<DuaTile> {
                           ).marginAll(15);
                         },
                       ),
-                    if (widget.dua.arabic.length < 200)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SizedBox(),
+                    // Benefits Toggle and Share Button Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Benefits Toggle Button (only show if benefits exist)
+                        if (widget.dua.hasBenefits())
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                final isExpanded = widget.expandedBenefitsDuaId == widget.dua.id;
+                                widget.onToggleBenefits(isExpanded ? null : widget.dua.id);
+                              },
+                              child: Text(
+                                widget.expandedBenefitsDuaId == widget.dua.id
+                                    ? "Hide Benefits"
+                                    : "Show Benefits",
+                                style: TextStyle(
+                                  color: Color(0xff2A158F),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (!widget.dua.hasBenefits()) SizedBox(),
+                        // Share Button (only show for short duas)
+                        if (widget.dua.arabic.length < 200)
                           InkWell(
                             onTap: () {
                               showShareDialog();
                             },
                             child: Icon(Icons.share, color: Color(0xff2A158F)),
                           ),
-                        ],
-                      ).marginSymmetric(horizontal: 20, vertical: 10),
+                      ],
+                    ).marginSymmetric(horizontal: 20, vertical: 10),
+                    
+                    // Expanded Benefits List
+                    if (widget.expandedBenefitsDuaId == widget.dua.id && widget.dua.hasBenefits())
+                      _buildBenefitsList(),
                   ],
                 ),
               ),

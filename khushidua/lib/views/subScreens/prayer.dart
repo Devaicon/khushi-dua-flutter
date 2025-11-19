@@ -36,6 +36,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   List<NamazModel> _namazList = [];
 
+  // Calculation and Juristic Method state
+  String selectedCalculationMethod = "karachi";
+  String selectedJuristicMethod = "shafi";
+
   var fajrVolume = "on";
   var sunriseVolume = "on";
   var dhuhrVolume = "on";
@@ -46,7 +50,57 @@ class _PrayerScreenState extends State<PrayerScreen> {
   @override
   void initState() {
     super.initState();
+    _loadPrayerSettings();
+  }
+
+  Future<void> _loadPrayerSettings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedCalculationMethod = prefs.getString("calculationMethod") ?? "karachi";
+      selectedJuristicMethod = prefs.getString("juristicMethod") ?? "shafi";
+    });
+    _updateCalculationParams();
     setPosition();
+  }
+
+  void _updateCalculationParams() {
+    try {
+      // Get calculation parameters based on selected method
+      switch (selectedCalculationMethod) {
+        case "karachi":
+          params = PrayerCalculationMethod.karachi();
+          break;
+        case "muslimWorldLeague":
+          params = PrayerCalculationMethod.muslimWorldLeague();
+          break;
+        case "northAmerica":
+          params = PrayerCalculationMethod.northAmerica();
+          break;
+        case "egyptian":
+          params = PrayerCalculationMethod.egyptian();
+          break;
+        case "singapore":
+          params = PrayerCalculationMethod.singapore();
+          break;
+        case "ummAlQura":
+          params = PrayerCalculationMethod.ummAlQura();
+          break;
+        default:
+          params = PrayerCalculationMethod.karachi();
+      }
+
+      // Set madhab (juristic method)
+      if (selectedJuristicMethod == "hanafi") {
+        params.madhab = PrayerMadhab.hanafi;
+      } else {
+        params.madhab = PrayerMadhab.shafi;
+      }
+    } catch (e) {
+      print('Error updating calculation params: $e');
+      // Fallback to default
+      params = PrayerCalculationMethod.karachi();
+      params.madhab = PrayerMadhab.shafi;
+    }
   }
 
   Future<Position> _determinePosition() async {
@@ -168,7 +222,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
 
     try {
-      params.madhab = PrayerMadhab.shafi;
+      // Update calculation parameters based on selected methods
+      _updateCalculationParams();
 
       // Use current position if available, else use default coordinates
       Coordinates coords;
@@ -386,6 +441,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
           height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(image: DecorationImage(fit: BoxFit.fill, image: AssetImage("assets/images/prayerBg.png"))),
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -537,13 +593,56 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   height: 20,
                 ),
 
+                // Calculation Method and Juristic Method Dropdowns
+                if (locationAllowed)
+                  FadeInAnimationBTT(
+                    delay: 1,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _CalculationMethodDropdown(
+                            selectedValue: selectedCalculationMethod,
+                            onChanged: (String value) async {
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              await prefs.setString("calculationMethod", value);
+                              setState(() {
+                                selectedCalculationMethod = value;
+                              });
+                              _updateCalculationParams();
+                              await _calculatePrayerTimes(selectedEnglishDate);
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: _JuristicMethodDropdown(
+                            selectedValue: selectedJuristicMethod,
+                            onChanged: (String value) async {
+                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              await prefs.setString("juristicMethod", value);
+                              setState(() {
+                                selectedJuristicMethod = value;
+                              });
+                              _updateCalculationParams();
+                              await _calculatePrayerTimes(selectedEnglishDate);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                SizedBox(
+                  height: 15,
+                ),
+
                 FadeInAnimationBTT(
                   delay: 1,
                   child: Align(
                     alignment: Alignment.center,
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.7,
-                      height: 80,
+                      height: 50,
                       decoration:
                           BoxDecoration(color: rwhite.withOpacity(0.2), borderRadius: BorderRadius.circular(19), border: Border.all(color: rwhite)),
                       child: Divider(
@@ -680,6 +779,305 @@ class _NamazTileState extends State<NamazTile> {
             color: rwhite,
           )
       ],
+    );
+  }
+}
+
+// Calculation Method Dropdown Widget
+class _CalculationMethodDropdown extends StatelessWidget {
+  final String selectedValue;
+  final Function(String) onChanged;
+
+  const _CalculationMethodDropdown({
+    required this.selectedValue,
+    required this.onChanged,
+  });
+
+  final List<Map<String, String>> _items = const [
+    {'value': 'ummAlQura', 'label': 'Umm Al-Qura'},
+    {'value': 'muslimWorldLeague', 'label': 'Muslim World League'},
+    {'value': 'northAmerica', 'label': 'North America'},
+    {'value': 'egyptian', 'label': 'Egyptian'},
+    {'value': 'singapore', 'label': 'Singapore'},
+    {'value': 'karachi', 'label': 'Karachi'},
+  ];
+
+  String _getLabel(String value) {
+    final item = _items.firstWhere(
+      (item) => item['value'] == value,
+      orElse: () => _items[0],
+    );
+    return item['label']!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showPicker(context),
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: rwhite.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: rwhite),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Calculation Method",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: rwhite.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _getLabel(selectedValue),
+              style: TextStyle(
+                fontSize: 14,
+                color: rwhite,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Calculation Method",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: rblack,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          "Done",
+                          style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Options
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      final isSelected = item['value'] == selectedValue;
+
+                      return ListTile(
+                        title: Text(
+                          item['label']!,
+                          style: TextStyle(
+                            color: isSelected ? rbluedark : rblack,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check, color: rbluedark)
+                            : null,
+                        selected: isSelected,
+                        onTap: () {
+                          onChanged(item['value']!);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Juristic Method Dropdown Widget
+class _JuristicMethodDropdown extends StatelessWidget {
+  final String selectedValue;
+  final Function(String) onChanged;
+
+  const _JuristicMethodDropdown({
+    required this.selectedValue,
+    required this.onChanged,
+  });
+
+  final List<Map<String, String>> _items = const [
+    {'value': 'shafi', 'label': 'Shafi/Maliki/Hanbali'},
+    {'value': 'hanafi', 'label': 'Hanafi'},
+  ];
+
+  String _getLabel(String value) {
+    if (value == 'shafi') {
+      return 'Shafi/Maliki/Hanbali';
+    }
+    return 'Hanafi';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showPicker(context),
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: rwhite.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: rwhite),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Juristic Method",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: rwhite.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _getLabel(selectedValue),
+              style: TextStyle(
+                fontSize: 14,
+                color: rwhite,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Juristic Method",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: rblack,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          "Done",
+                          style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Options
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      final isSelected = item['value'] == selectedValue;
+
+                      return ListTile(
+                        title: Text(
+                          item['label']!,
+                          style: TextStyle(
+                            color: isSelected ? rbluedark : rblack,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check, color: rbluedark)
+                            : null,
+                        selected: isSelected,
+                        onTap: () {
+                          onChanged(item['value']!);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
