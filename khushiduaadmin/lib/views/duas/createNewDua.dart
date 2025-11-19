@@ -1,4 +1,5 @@
 import 'dart:html' as html;
+import 'dart:convert';
 
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +47,8 @@ class _CreateNewDuaState extends State<CreateNewDua> {
   TextEditingController telguTextEditingController = TextEditingController();
   TextEditingController turkishTextEditingController = TextEditingController();
   TextEditingController urduTextEditingController = TextEditingController();
+  TextEditingController descriptionTextEditingController = TextEditingController();
+  TextEditingController benefitsTextAreaController = TextEditingController();
   bool isLittleKids = true;
   bool isOlderKids = true;
   bool isGrownUps = true;
@@ -55,6 +58,52 @@ class _CreateNewDuaState extends State<CreateNewDua> {
   html.File? grownUpmp3File;
 
   List<SubCategoryModel> selectedSubCategories = [];
+  List<Map<String, dynamic>> benefits = [];
+
+  void parseBenefitsFromTextArea() {
+    try {
+      final text = benefitsTextAreaController.text.trim();
+      if (text.isEmpty) {
+        benefits = [];
+        return;
+      }
+
+      // Try to parse as JSON array
+      String jsonText = text;
+      
+      // If it doesn't start with [, try to parse as array
+      if (!text.trim().startsWith('[')) {
+        // Check if it's a single object
+        if (text.trim().startsWith('{')) {
+          jsonText = '[$text]';
+        } else {
+          // Try to split by }, and wrap in array
+          jsonText = '[$text]';
+        }
+      }
+
+      final parsed = json.decode(jsonText) as List;
+      final parsedBenefits = parsed.map((item) {
+        final map = item as Map;
+        return {
+          'english': map['english']?.toString() ?? '',
+          'urdu': map['urdu']?.toString() ?? '',
+          'arabicText': map['arabicText']?.toString() ?? '',
+          'punjabi': map['punjabi']?.toString() ?? '',
+          'bengali': map['bengali']?.toString() ?? '',
+          'gujarati': map['gujarati']?.toString() ?? '',
+          'telugu': map['telugu']?.toString() ?? '',
+          'russian': map['russian']?.toString() ?? '',
+          'mandarin': map['mandarin']?.toString() ?? '',
+        };
+      }).toList();
+      
+      benefits = parsedBenefits;
+    } catch (e) {
+      // If parsing fails, set benefits to empty
+      benefits = [];
+    }
+  }
 
   void pickMp3File(String type) {
     final html.FileUploadInputElement input = html.FileUploadInputElement();
@@ -137,51 +186,46 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          // Row(
-                                          //   children: [
-                                          //     SizedBox(
-                                          //       width: MediaQuery.of(context).size.width * 0.05,
-                                          //     ),
-                                          //     Column(
-                                          //       children: [
-                                          //         Text(
-                                          //           "Image",
-                                          //           style: TextStyle(color: rHint),
-                                          //         ),
-                                          //         InkWell(
-                                          //           onTap: () {
-                                          //             pickImage();
-                                          //           },
-                                          //           child: duaImage != null
-                                          //               ? Container(
-                                          //             width: 60,
-                                          //             height: 60,
-                                          //             child: ClipRRect(
-                                          //               borderRadius: BorderRadius.circular(10),
-                                          //               child: Image.network(duaImageUrl!, fit: BoxFit.fill),
-                                          //             ),
-                                          //           ).marginOnly(top: 20)
-                                          //               : DottedBorder(
-                                          //               color: rHint,
-                                          //               radius: Radius.circular(8),
-                                          //               borderType: BorderType.Rect,
-                                          //               dashPattern: [8, 4],
-                                          //               child: Container(
-                                          //                 width: 60,
-                                          //                 height: 60,
-                                          //                 alignment: Alignment.center,
-                                          //                 child: Column(
-                                          //                   mainAxisSize: MainAxisSize.min,
-                                          //                   children: [
-                                          //                     SvgPicture.asset("assets/svgs/upload.svg"),
-                                          //                   ],
-                                          //                 ),
-                                          //               )).marginOnly(top: 20),
-                                          //         ),
-                                          //       ],
-                                          //     )
-                                          //   ],
-                                          // ),
+                                          Text(
+                                            "Benefits",
+                                            style: TextStyle(color: rHint),
+                                          ).marginOnly(top: 20),
+                                          TextFormField(
+                                            cursorColor: rGreen,
+                                            controller: benefitsTextAreaController,
+                                            maxLines: 4,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Colors.transparent,
+                                              hintText: 'Enter benefits (optional)',
+                                              hintStyle: TextStyle(
+                                                color: rHint.withOpacity(0.5),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              contentPadding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 16.0,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+
                                           Text(
                                             "Dua (English)",
                                             style: TextStyle(color: rHint),
@@ -246,6 +290,46 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                               filled: true,
                                               fillColor: Colors.transparent,
                                               hintText: 'Transliteration in English',
+                                              hintStyle: TextStyle(
+                                                color: rHint.withOpacity(0.5),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              contentPadding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 16.0,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+
+                                          Text(
+                                            "Description",
+                                            style: TextStyle(color: rHint),
+                                          ).marginOnly(top: 20),
+                                          TextFormField(
+                                            cursorColor: rGreen,
+                                            controller: descriptionTextEditingController,
+                                            maxLines: 4,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Colors.transparent,
+                                              hintText: 'Enter description (optional)',
                                               hintStyle: TextStyle(
                                                 color: rHint.withOpacity(0.5),
                                               ),
@@ -1455,6 +1539,9 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                       }else if(selectedSubCategories.isEmpty){
                                         CustomSnackbar.show("Error", "Select atleast one sub category", isSuccess: false);
                                       } else {
+                                        // Parse benefits from text area
+                                        parseBenefitsFromTextArea();
+                                        
                                         List<String> subIds=[];
                                         for(var item in selectedSubCategories){
                                           subIds.add(item.id);
@@ -1494,7 +1581,9 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                             subCategoryIds: subIds,
                                             grownUpsAudio: '',
                                             littleKidsAudio: '',
-                                            olderKidsAudio: '');
+                                            olderKidsAudio: '',
+                                            benefits: benefits.isEmpty ? null : benefits,
+                                            description: descriptionTextEditingController.text.isEmpty ? null : descriptionTextEditingController.text);
 
                                         duaController.createDua(duaModel,
                                             // duaImage!,

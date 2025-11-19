@@ -59,7 +59,8 @@ class DuaService{
        duaModel.urduTranslation=(await uploadFileToFirebase(urduTrans, "${duaModel.id}/urduTransAudio"))!;
      }
 
-     await duaRef.doc(duaModel.id).update(duaModel.toMap());
+     // Use set with merge to ensure all fields including benefits are saved
+     await duaRef.doc(duaModel.id).set(duaModel.toMap(), SetOptions(merge: true));
      _duaController.setLoading(false);
      Get.back();
      CustomSnackbar.show("Success", "Dua updated successfully");

@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'dart:html' as html;
+import 'dart:convert';
 
 import '../../constants/colors.dart';
 import '../../controllers/categoryController.dart';
@@ -48,6 +49,7 @@ class _EditDuaState extends State<EditDua> {
   TextEditingController telguTextEditingController = TextEditingController();
   TextEditingController turkishTextEditingController = TextEditingController();
   TextEditingController urduTextEditingController = TextEditingController();
+  TextEditingController descriptionTextEditingController = TextEditingController();
   bool isLittleKids = true;
   bool isOlderKids = true;
   bool isGrownUps = true;
@@ -66,7 +68,20 @@ class _EditDuaState extends State<EditDua> {
 
 
   List<SubCategoryModel> selectedSubCategories = [];
+  List<Map<String, dynamic>> benefits = [];
 
+  // Controllers for benefit editing
+  TextEditingController? englishBenefitController;
+  TextEditingController? urduBenefitController;
+  TextEditingController? arabicBenefitController;
+  TextEditingController? punjabiBenefitController;
+  TextEditingController? bengaliBenefitController;
+  TextEditingController? gujaratiBenefitController;
+  TextEditingController? teluguBenefitController;
+  TextEditingController? russianBenefitController;
+  TextEditingController? mandarinBenefitController;
+  int? editingBenefitIndex;
+  TextEditingController benefitsTextAreaController = TextEditingController();
 
   @override
   void initState() {
@@ -92,6 +107,7 @@ class _EditDuaState extends State<EditDua> {
     telguTextEditingController.text=widget.duaModel.telgu;
     turkishTextEditingController.text=widget.duaModel.turkish;
     urduTextEditingController.text=widget.duaModel.urdu;
+    descriptionTextEditingController.text=widget.duaModel.description ?? '';
     littleKidsAudio=widget.duaModel.littleKidsAudio;
     olderKidsAudio=widget.duaModel.olderKidsAudio;
     grownUpsKidsAudio=widget.duaModel.grownUpsAudio;
@@ -101,8 +117,171 @@ class _EditDuaState extends State<EditDua> {
     isGrownUps=widget.duaModel.grownUps;
 
     selectedSubCategories=Get.find<CategoryController>().allSubCategories.where((subCat) => widget.duaModel.subCategoryIds.contains(subCat.id)).toList();
+    
+    // Initialize benefits from the model
+    if (widget.duaModel.benefits != null && widget.duaModel.benefits!.isNotEmpty) {
+      benefits = List<Map<String, dynamic>>.from(widget.duaModel.benefits!);
+    } else {
+      benefits = [];
+    }
+    
+    // Initialize benefits text area with saved data
+    updateBenefitsTextArea();
+    
     setState(() {
 
+    });
+  }
+
+  void updateBenefitsTextArea() {
+    if (benefits.isEmpty) {
+      benefitsTextAreaController.text = '';
+    } else {
+      try {
+        // Use json.encode to properly format and escape the JSON
+        // Use JsonEncoder with indent for better readability
+        final encoder = JsonEncoder.withIndent('  ');
+        benefitsTextAreaController.text = encoder.convert(benefits);
+      } catch (e) {
+        // Fallback to empty if encoding fails
+        benefitsTextAreaController.text = '';
+      }
+    }
+  }
+
+  void parseBenefitsFromTextArea() {
+    try {
+      final text = benefitsTextAreaController.text.trim();
+      if (text.isEmpty) {
+        benefits = [];
+        return;
+      }
+
+      // Try to parse as JSON array
+      String jsonText = text;
+      
+      // If it doesn't start with [, try to parse as array
+      if (!text.trim().startsWith('[')) {
+        // Check if it's a single object
+        if (text.trim().startsWith('{')) {
+          jsonText = '[$text]';
+        } else {
+          // Try to split by }, and wrap in array
+          jsonText = '[$text]';
+        }
+      }
+
+      final parsed = json.decode(jsonText) as List;
+      final parsedBenefits = parsed.map((item) {
+        final map = item as Map;
+        return {
+          'english': map['english']?.toString() ?? '',
+          'urdu': map['urdu']?.toString() ?? '',
+          'arabicText': map['arabicText']?.toString() ?? '',
+          'punjabi': map['punjabi']?.toString() ?? '',
+          'bengali': map['bengali']?.toString() ?? '',
+          'gujarati': map['gujarati']?.toString() ?? '',
+          'telugu': map['telugu']?.toString() ?? '',
+          'russian': map['russian']?.toString() ?? '',
+          'mandarin': map['mandarin']?.toString() ?? '',
+        };
+      }).toList();
+      
+      benefits = parsedBenefits;
+    } catch (e) {
+      // If parsing fails, set benefits to empty
+      benefits = [];
+    }
+  }
+
+  void addBenefit() {
+    setState(() {
+      editingBenefitIndex = benefits.length;
+      englishBenefitController = TextEditingController();
+      urduBenefitController = TextEditingController();
+      arabicBenefitController = TextEditingController();
+      punjabiBenefitController = TextEditingController();
+      bengaliBenefitController = TextEditingController();
+      gujaratiBenefitController = TextEditingController();
+      teluguBenefitController = TextEditingController();
+      russianBenefitController = TextEditingController();
+      mandarinBenefitController = TextEditingController();
+    });
+  }
+
+  void editBenefit(int index) {
+    setState(() {
+      editingBenefitIndex = index;
+      final benefit = benefits[index];
+      englishBenefitController = TextEditingController(text: benefit['english'] ?? '');
+      urduBenefitController = TextEditingController(text: benefit['urdu'] ?? '');
+      arabicBenefitController = TextEditingController(text: benefit['arabicText'] ?? '');
+      punjabiBenefitController = TextEditingController(text: benefit['punjabi'] ?? '');
+      bengaliBenefitController = TextEditingController(text: benefit['bengali'] ?? '');
+      gujaratiBenefitController = TextEditingController(text: benefit['gujarati'] ?? '');
+      teluguBenefitController = TextEditingController(text: benefit['telugu'] ?? '');
+      russianBenefitController = TextEditingController(text: benefit['russian'] ?? '');
+      mandarinBenefitController = TextEditingController(text: benefit['mandarin'] ?? '');
+    });
+  }
+
+  void saveBenefit() {
+    if (englishBenefitController == null || englishBenefitController!.text.isEmpty) {
+      CustomSnackbar.show("Error", "English benefit text is required", isSuccess: false);
+      return;
+    }
+
+    final benefit = {
+      'english': englishBenefitController!.text,
+      'urdu': urduBenefitController?.text ?? '',
+      'arabicText': arabicBenefitController?.text ?? '',
+      'punjabi': punjabiBenefitController?.text ?? '',
+      'bengali': bengaliBenefitController?.text ?? '',
+      'gujarati': gujaratiBenefitController?.text ?? '',
+      'telugu': teluguBenefitController?.text ?? '',
+      'russian': russianBenefitController?.text ?? '',
+      'mandarin': mandarinBenefitController?.text ?? '',
+    };
+
+    setState(() {
+      if (editingBenefitIndex != null && editingBenefitIndex! < benefits.length) {
+        benefits[editingBenefitIndex!] = benefit;
+      } else {
+        benefits.add(benefit);
+      }
+      editingBenefitIndex = null;
+      englishBenefitController = null;
+      urduBenefitController = null;
+      arabicBenefitController = null;
+      punjabiBenefitController = null;
+      bengaliBenefitController = null;
+      gujaratiBenefitController = null;
+      teluguBenefitController = null;
+      russianBenefitController = null;
+      mandarinBenefitController = null;
+      updateBenefitsTextArea();
+    });
+  }
+
+  void cancelEditBenefit() {
+    setState(() {
+      editingBenefitIndex = null;
+      englishBenefitController = null;
+      urduBenefitController = null;
+      arabicBenefitController = null;
+      punjabiBenefitController = null;
+      bengaliBenefitController = null;
+      gujaratiBenefitController = null;
+      teluguBenefitController = null;
+      russianBenefitController = null;
+      mandarinBenefitController = null;
+    });
+  }
+
+  void deleteBenefit(int index) {
+    setState(() {
+      benefits.removeAt(index);
+      updateBenefitsTextArea();
     });
   }
 
@@ -199,6 +378,46 @@ class _EditDuaState extends State<EditDua> {
                                         children: [
 
                                           Text(
+                                            "Benefits",
+                                            style: TextStyle(color: rHint),
+                                          ).marginOnly(top: 20),
+                                          TextFormField(
+                                            cursorColor: rGreen,
+                                            controller: benefitsTextAreaController,
+                                            maxLines: 4,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Colors.transparent,
+                                              hintText: 'Enter benefits (optional)',
+                                              hintStyle: TextStyle(
+                                                color: rHint.withOpacity(0.5),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              contentPadding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 16.0,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+
+                                          Text(
                                             "Dua (English)",
                                             style: TextStyle(color: rHint),
                                           ).marginOnly(top: 20),
@@ -262,6 +481,46 @@ class _EditDuaState extends State<EditDua> {
                                               filled: true,
                                               fillColor: Colors.transparent,
                                               hintText: 'Transliteration in English',
+                                              hintStyle: TextStyle(
+                                                color: rHint.withOpacity(0.5),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              contentPadding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 16.0,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+
+                                          Text(
+                                            "Description",
+                                            style: TextStyle(color: rHint),
+                                          ).marginOnly(top: 20),
+                                          TextFormField(
+                                            cursorColor: rGreen,
+                                            controller: descriptionTextEditingController,
+                                            maxLines: 4,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Colors.transparent,
+                                              hintText: 'Enter description (optional)',
                                               hintStyle: TextStyle(
                                                 color: rHint.withOpacity(0.5),
                                               ),
@@ -1480,6 +1739,9 @@ class _EditDuaState extends State<EditDua> {
                                        if(selectedSubCategories.isEmpty){
                                         CustomSnackbar.show("Error", "Select atleast one sub category", isSuccess: false);
                                       } else {
+                                        // Parse benefits from text area
+                                        parseBenefitsFromTextArea();
+                                        
                                         List<String> subIds=[];
                                         for(var item in selectedSubCategories){
                                           subIds.add(item.id);
@@ -1520,7 +1782,9 @@ class _EditDuaState extends State<EditDua> {
                                             littleKidsAudio: widget.duaModel.littleKidsAudio,
                                             olderKidsAudio: widget.duaModel.olderKidsAudio,
                                         englishTranslation: widget.duaModel.englishTranslation,
-                                          urduTranslation: widget.duaModel.urduTranslation
+                                          urduTranslation: widget.duaModel.urduTranslation,
+                                          benefits: benefits.isEmpty ? null : benefits,
+                                          description: descriptionTextEditingController.text.isEmpty ? null : descriptionTextEditingController.text
                                         );
 
                                         duaController.updateDua(duaModel,

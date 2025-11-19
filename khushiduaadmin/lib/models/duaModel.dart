@@ -36,6 +36,8 @@ class DuaModel{
   String grownUpsAudio="";
   String? englishTranslation="";
   String? urduTranslation='';
+  List<Map<String, dynamic>>? benefits; // Benefits data
+  String? description; // Description field
 
 
   DuaModel({
@@ -74,7 +76,9 @@ class DuaModel{
     required this.littleKidsAudio,
     required this.olderKidsAudio,
     this.englishTranslation,
-    this.urduTranslation
+    this.urduTranslation,
+    this.benefits,
+    this.description
   });
 
   factory DuaModel.fromMap(Map<String, dynamic> map) {
@@ -110,9 +114,15 @@ class DuaModel{
         littleKids: map["littleKids"],
         olderKids: map["olderKids"],
         grownUps:map["grownUps"],
-      littleKidsAudio: map["littleKidsAudio"],
-      olderKidsAudio: map["olderKidsAudio"],
-      grownUpsAudio: map["grownUpsAudio"],
+      littleKidsAudio: map["littleKidsAudio"] ?? "",
+      olderKidsAudio: map["olderKidsAudio"] ?? "",
+      grownUpsAudio: map["grownUpsAudio"] ?? "",
+      englishTranslation: map["englishTranslation"],
+      urduTranslation: map["urduTranslation"],
+      benefits: map["benefits"] != null 
+          ? List<Map<String, dynamic>>.from(map["benefits"] ?? [])
+          : null,
+      description: map["description"],
     );
   }
 
@@ -153,8 +163,44 @@ class DuaModel{
       "littleKidsAudio":littleKidsAudio,
       "olderKidsAudio":olderKidsAudio,
       "englishTranslation":englishTranslation,
-      "urduTranslation":urduTranslation
+      "urduTranslation":urduTranslation,
+      "benefits": benefits,
+      "description": description,
     };
+  }
+
+  // Get benefit text based on language
+  String? getBenefitText(int index, String languageCode) {
+    if (benefits == null || index >= benefits!.length) return null;
+    
+    final benefit = benefits![index];
+    switch (languageCode) {
+      case 'English':
+        return benefit['english'] as String?;
+      case 'Urdu':
+        return benefit['urdu'] as String?;
+      case 'Arabic':
+        return benefit['arabicText'] as String?;
+      case 'Punjabi':
+        return benefit['punjabi'] as String?;
+      case 'Bengali':
+        return benefit['bengali'] as String?;
+      case 'Gujarati':
+        return benefit['gujarati'] as String?;
+      case 'Telugu':
+        return benefit['telugu'] as String?;
+      case 'Russian':
+        return benefit['russian'] as String?;
+      case 'Mandarin':
+        return benefit['mandarin'] as String?;
+      default:
+        return benefit['english'] as String?;
+    }
+  }
+
+  // Check if benefits exist
+  bool hasBenefits() {
+    return benefits != null && benefits!.isNotEmpty;
   }
 
 }
