@@ -185,11 +185,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
           } else if (isoCountryCode == "AE") {
             timezoneName = "Asia/Dubai";
           } else {
-            // Default to UTC offset based on longitude (rough estimation)
+            // Use a mapping of UTC offsets to valid IANA timezone names
             // 1 hour = 15 degrees of longitude
             int offsetHours = (position.longitude / 15).round();
-            timezoneName = "UTC${offsetHours >= 0 ? '+' : ''}$offsetHours";
+            timezoneName = _getTimezoneFromOffset(offsetHours);
           }
+        } else {
+          // If no country code, use default timezone based on coordinates
+          int offsetHours = (position.longitude / 15).round();
+          timezoneName = _getTimezoneFromOffset(offsetHours);
         }
         
         setState(() {
@@ -213,6 +217,57 @@ class _PrayerScreenState extends State<PrayerScreen> {
         locationName = "Unknown location";
       });
     }
+  }
+
+  /// Maps UTC offset hours to a valid IANA timezone name
+  /// Falls back to Asia/Karachi if offset cannot be mapped
+  String _getTimezoneFromOffset(int offsetHours) {
+    // Common UTC offset to timezone mappings
+    // This is a simplified mapping - for production, consider using a proper timezone library
+    final timezoneMap = {
+      -12: "Pacific/Kwajalein",
+      -11: "Pacific/Midway",
+      -10: "Pacific/Honolulu",
+      -9: "America/Anchorage",
+      -8: "America/Los_Angeles",
+      -7: "America/Denver",
+      -6: "America/Chicago",
+      -5: "America/New_York",
+      -4: "America/Halifax",
+      -3: "America/Sao_Paulo",
+      -2: "Atlantic/South_Georgia",
+      -1: "Atlantic/Azores",
+      0: "Europe/London",
+      1: "Europe/Paris",
+      2: "Europe/Cairo",
+      3: "Asia/Baghdad",
+      4: "Asia/Dubai",
+      5: "Asia/Karachi",
+      5.5: "Asia/Kolkata",
+      6: "Asia/Dhaka",
+      7: "Asia/Bangkok",
+      8: "Asia/Shanghai",
+      9: "Asia/Tokyo",
+      10: "Australia/Sydney",
+      11: "Pacific/Norfolk",
+      12: "Pacific/Auckland",
+    };
+    
+    // Try exact match first
+    if (timezoneMap.containsKey(offsetHours)) {
+      return timezoneMap[offsetHours]!;
+    }
+    
+    // Try with half-hour offset (for India, etc.)
+    double halfHourOffset = offsetHours + 0.5;
+    if (timezoneMap.containsKey(halfHourOffset)) {
+      return timezoneMap[halfHourOffset]!;
+    }
+    
+    // For offsets outside the map, use closest match or default
+    // Clamp offset to reasonable range
+    int clampedOffset = offsetHours.clamp(-12, 12);
+    return timezoneMap[clampedOffset] ?? "Asia/Karachi";
   }
 
   Future<void> _calculatePrayerTimes(DateTime date) async {
@@ -816,7 +871,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
       onTap: () => _showPicker(context),
       child: Container(
         height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
@@ -824,26 +879,31 @@ class _CalculationMethodDropdown extends StatelessWidget {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               "Calculation Method",
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: rwhite.withOpacity(0.8),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getLabel(selectedValue),
-              style: TextStyle(
-                fontSize: 14,
-                color: rwhite,
-                fontWeight: FontWeight.w500,
-              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Flexible(
+              child: Text(
+                _getLabel(selectedValue),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: rwhite,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -963,7 +1023,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
       onTap: () => _showPicker(context),
       child: Container(
         height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
@@ -971,26 +1031,31 @@ class _JuristicMethodDropdown extends StatelessWidget {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               "Juristic Method",
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: rwhite.withOpacity(0.8),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getLabel(selectedValue),
-              style: TextStyle(
-                fontSize: 14,
-                color: rwhite,
-                fontWeight: FontWeight.w500,
-              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Flexible(
+              child: Text(
+                _getLabel(selectedValue),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: rwhite,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

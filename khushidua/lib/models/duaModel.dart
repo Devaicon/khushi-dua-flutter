@@ -36,7 +36,8 @@ class DuaModel{
   String grownUpsAudio="";
   String? englishTranslation="";
   String? urduTranslation='';
-  List<Map<String, dynamic>>? benefits; // Benefits data
+  List<Map<String, dynamic>>? benefits; // Benefits data (List format)
+  String? benefitsString; // Benefits data (String format)
 
 
   DuaModel({
@@ -76,11 +77,97 @@ class DuaModel{
       required this.olderKidsAudio,
       this.englishTranslation,
       this.urduTranslation,
-      this.benefits
+      this.benefits,
+      this.benefitsString
   });
 
+  /// Safely parses benefits field which might be a List, String, or null
+  static List<Map<String, dynamic>>? _parseBenefitsList(dynamic benefits) {
+    print('_parseBenefitsList called with: $benefits');
+    print('  Type: ${benefits?.runtimeType}');
+    
+    if (benefits == null) {
+      print('  Result: null (benefits is null)');
+      return null;
+    }
+    
+    // If it's already a List
+    if (benefits is List) {
+      try {
+        var result = benefits
+            .map((item) => item is Map<String, dynamic> 
+                ? item 
+                : item is Map 
+                    ? Map<String, dynamic>.from(item) 
+                    : {})
+            .toList()
+            .cast<Map<String, dynamic>>();
+        print('  Result: List with ${result.length} items');
+        return result;
+      } catch (e) {
+        print('  Result: null (conversion failed: $e)');
+        return null;
+      }
+    }
+    
+    // If it's a String, return null (we'll handle it separately)
+    if (benefits is String) {
+      print('  Result: null (benefits is String, handled separately)');
+      return null;
+    }
+    
+    // For any other type, return null
+    print('  Result: null (unknown type)');
+    return null;
+  }
+
+  /// Safely parses benefits field as String
+  static String? _parseBenefitsString(dynamic benefits) {
+    print('_parseBenefitsString called with: $benefits');
+    print('  Type: ${benefits?.runtimeType}');
+    
+    if (benefits == null) {
+      print('  Result: null (benefits is null)');
+      return null;
+    }
+    
+    // If it's a String, return it
+    if (benefits is String) {
+      var trimmed = benefits.trim();
+      var result = trimmed.isEmpty ? null : benefits;
+      print('  Result: ${result ?? "null (empty string)"}');
+      return result;
+    }
+    
+    // For any other type, return null
+    print('  Result: null (not a String)');
+    return null;
+  }
+
+  // Debug method to print benefits data
+  DuaModel _debugPrintBenefits() {
+    print('=== PARSING BENEFITS FOR DUA: $id ===');
+    print('Raw benefits type: ${benefits.runtimeType}');
+    print('benefitsString: $benefitsString');
+    print('benefits: $benefits');
+    print('hasBenefits(): ${hasBenefits()}');
+    print('=====================================');
+    return this;
+  }
+
   factory DuaModel.fromMap(Map<String, dynamic> map) {
-    return DuaModel(
+    print('\n\n=== FROM MAP BENEFITS DEBUG FOR DUA: ${map["id"]} ===');
+    print('ALL MAP KEYS: ${map.keys.toList()}');
+    print('Raw map["benefits"]: ${map["benefits"]}');
+    print('Raw map["benefits"] type: ${map["benefits"]?.runtimeType}');
+    print('Raw map["benefits"] == null: ${map["benefits"] == null}');
+    print('Checking all keys containing "benefit":');
+    map.keys.where((k) => k.toLowerCase().contains('benefit')).forEach((key) {
+      print('  - $key: ${map[key]} (type: ${map[key]?.runtimeType})');
+    });
+    print('==================================================\n\n');
+    
+    final dua = DuaModel(
       id: map["id"],
       createdAt: map["createdAt"].toDate(),
       arabic: map["arabic"],
@@ -117,10 +204,12 @@ class DuaModel{
       grownUpsAudio: map["grownUpsAudio"],
       englishTranslation: map["englishTranslation"],
       urduTranslation: map["urduTranslation"],
-      benefits: map["benefits"] != null 
-          ? List<Map<String, dynamic>>.from(map["benefits"] ?? [])
-          : null,
+      benefits: _parseBenefitsList(map["benefits"]),
+      benefitsString: _parseBenefitsString(map["benefits"]),
     );
+    
+    dua._debugPrintBenefits();
+    return dua;
   }
 
   String getName(String languageCode) {
@@ -210,12 +299,20 @@ class DuaModel{
       "olderKidsAudio":olderKidsAudio,
       "englishTranslation":englishTranslation,
       "urduTranslation":urduTranslation,
-      "benefits": benefits,
+      "benefits": benefits ?? benefitsString,
     };
   }
 
   // Get benefit text based on language
+  // For List format: returns specific language from the map at index
+  // For String format: returns the string directly (ignoring index and language)
   String? getBenefitText(int index, String languageCode) {
+    // If benefits is a String, return it directly
+    if (benefitsString != null && benefitsString!.isNotEmpty) {
+      return benefitsString;
+    }
+    
+    // Otherwise, handle List format
     if (benefits == null || index >= benefits!.length) return null;
     
     final benefit = benefits![index];
@@ -243,9 +340,31 @@ class DuaModel{
     }
   }
 
-  // Check if benefits exist
+  // Check if benefits exist (either as String or List)
   bool hasBenefits() {
-    return benefits != null && benefits!.isNotEmpty;
+    bool hasString = benefitsString != null && benefitsString!.isNotEmpty;
+    bool hasList = benefits != null && benefits!.isNotEmpty;
+    bool result = hasString || hasList;
+    
+    print('hasBenefits() check:');
+    print('  benefitsString: $benefitsString');
+    print('  hasString: $hasString');
+    print('  benefits: $benefits');
+    print('  hasList: $hasList');
+    print('  result: $result');
+    
+    return result;
+  }
+
+  // Get benefits count (1 for string, length for list)
+  int getBenefitsCount() {
+    if (benefitsString != null && benefitsString!.isNotEmpty) {
+      return 1;
+    }
+    if (benefits != null && benefits!.isNotEmpty) {
+      return benefits!.length;
+    }
+    return 0;
   }
 
 }

@@ -20,7 +20,7 @@ You need to download and add the `GoogleService-Info.plist` file:
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Select your project: `khushidua`
 3. Click on the iOS app (or add a new iOS app if not created)
-4. Bundle ID: `com.khushidua.app.khushidua`
+4. Bundle ID: `com.khushidua.app`
 5. Download the `GoogleService-Info.plist` file
 6. Place it in: `ios/Runner/GoogleService-Info.plist`
 
@@ -74,7 +74,7 @@ flutter build ios --release
 ## Current Configuration
 
 - **Minimum iOS Version:** 13.0
-- **Bundle Identifier:** `com.khushidua.app.khushidua`
+- **Bundle Identifier:** `com.khushidua.app`
 - **Permissions Configured:**
   - Location (When In Use)
   - Location (Always - when app is in use)

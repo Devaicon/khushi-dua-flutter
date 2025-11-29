@@ -175,7 +175,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                           value: themeController.showTransliteration,
                           onChanged: (val) =>
                               themeController.setShowTransliteration(val),
-                          activeColor: Colors.green,
+                          activeThumbColor: Colors.green,
                         ),
 
                         // English 2 Toggle
@@ -187,7 +187,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                           value: themeController.showTranslation,
                           onChanged: (val) =>
                               themeController.setShowTranslation(val),
-                          activeColor: Colors.green,
+                          activeThumbColor: Colors.green,
                         ),
                       ],
                     ),
@@ -236,7 +236,9 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                 onToggleBenefits: (duaId) {
                   setState(() {
                     // If clicking the same dua, collapse it; otherwise expand the new one
-                    _expandedBenefitsDuaId = _expandedBenefitsDuaId == duaId ? null : duaId;
+                    _expandedBenefitsDuaId = _expandedBenefitsDuaId == duaId
+                        ? null
+                        : duaId;
                   });
                 },
               );
@@ -303,7 +305,7 @@ class _DuaTileState extends State<DuaTile> {
       context: context,
       builder: (context) {
         String? apiResponse;
-        bool _isLoading = false;
+        bool isLoading = false;
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -315,7 +317,7 @@ class _DuaTileState extends State<DuaTile> {
                 return;
               }
 
-              setState(() => _isLoading = true);
+              setState(() => isLoading = true);
 
               try {
                 var uri = Uri.parse('$baseUrl${widget.dua.arabic}');
@@ -348,7 +350,7 @@ class _DuaTileState extends State<DuaTile> {
                   apiResponse = "Error: $e";
                 });
               } finally {
-                setState(() => _isLoading = false);
+                setState(() => isLoading = false);
               }
             }
 
@@ -392,14 +394,14 @@ class _DuaTileState extends State<DuaTile> {
                   Directionality(
                     textDirection: TextDirection.rtl,
                     child: Text(
-                      "${widget.dua.arabic}",
+                      widget.dua.arabic,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
                     ),
                   ),
-                  if (_isLoading) CircularProgressIndicator(),
+                  if (isLoading) CircularProgressIndicator(),
                   if (apiResponse != null) ...[
                     const SizedBox(height: 16),
                     Text(
@@ -408,7 +410,7 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                     Directionality(
                       textDirection: TextDirection.rtl,
-                      child: Html(data: "${apiResponse}"),
+                      child: Html(data: "$apiResponse"),
                     ),
                     // Text(apiResponse!, textAlign: TextAlign.start),
                   ],
@@ -576,18 +578,50 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Widget _buildBenefitsList() {
-    if (!widget.dua.hasBenefits()) {
-      return SizedBox.shrink();
-    }
-
     final userLanguage = Get.find<UserController>().selectedLanguage;
     final themeController = Get.find<ThemeController>();
     final isRtl = userLanguage == 'Urdu' || userLanguage == 'Arabic';
 
+    // Handle String benefits format
+    // Check both benefitsString and also check if we should show even if not parsed yet
+    bool hasStringBenefits =
+        widget.dua.benefitsString != null &&
+        widget.dua.benefitsString!.isNotEmpty;
+
+    // For debugging: if this is the specific dua ID and no benefitsString yet, show placeholder
+    if (!widget.dua.hasBenefits() &&
+        widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay" &&
+        !hasStringBenefits) {
+      return _buildBenefitContainer(
+        "this is the best dua",
+        isRtl,
+        themeController,
+        userLanguage,
+      );
+    }
+
+    if (!widget.dua.hasBenefits() && !hasStringBenefits) {
+      return SizedBox.shrink();
+    }
+
+    if (hasStringBenefits) {
+      return _buildBenefitContainer(
+        widget.dua.benefitsString!,
+        isRtl,
+        themeController,
+        userLanguage,
+      );
+    }
+
+    // Handle List benefits format
+    if (widget.dua.benefits == null || widget.dua.benefits!.isEmpty) {
+      return SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(height: 2, color: rwhite),
+        SizedBox(height: 8),
         ...widget.dua.benefits!.asMap().entries.map((entry) {
           final index = entry.key;
           final benefitText = widget.dua.getBenefitText(index, userLanguage);
@@ -596,37 +630,122 @@ class _DuaTileState extends State<DuaTile> {
             return SizedBox.shrink();
           }
 
-          return Container(
-            margin: EdgeInsets.only(top: 12, left: 15, right: 15, bottom: 8),
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                ),
-              ],
+          return _buildBenefitContainer(
+            benefitText,
+            isRtl,
+            themeController,
+            userLanguage,
+            index: index,
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildBenefitContainer(
+    String text,
+    bool isRtl,
+    ThemeController themeController,
+    String userLanguage, {
+    int? index,
+  }) {
+    final isLastItem =
+        index != null &&
+        widget.dua.benefits != null &&
+        index == widget.dua.benefits!.length - 1;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      margin: EdgeInsets.only(
+        top: index == null || index == 0 ? 12 : 10,
+        left: 15,
+        right: 15,
+        bottom: isLastItem ? 12 : 8,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Color(0xffF8F6FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Color(0xff2A158F).withOpacity(0.15),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xff2A158F).withOpacity(0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+              spreadRadius: 0,
             ),
-            child: Text(
-              benefitText,
-              textAlign: isRtl ? TextAlign.right : TextAlign.left,
-              style: TextStyle(
-                color: Color(0xff2A158F),
-                fontSize: userLanguage == 'Urdu' 
-                    ? themeController.textSize - 4 
-                    : themeController.textSize,
-                fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
-                height: userLanguage == 'Urdu' 
-                    ? ((themeController.textSize * 2) - 10) / themeController.textSize 
-                    : null,
+            BoxShadow(
+              color: Colors.white,
+              blurRadius: 1,
+              offset: Offset(0, -1),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative icon in top-right
+            Positioned(
+              top: 12,
+              right: isRtl ? null : 16,
+              left: isRtl ? 16 : null,
+              child: Icon(
+                Icons.auto_awesome,
+                color: Color(0xff2A158F).withOpacity(0.2),
+                size: 20,
               ),
             ),
-          );
-        }).toList(),
-      ],
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Benefits icon
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Color(0xff2A158F).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.favorite,
+                      color: Color(0xff2A158F),
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      text,
+                      textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                      style: TextStyle(
+                        color: Color(0xff1A0E5C),
+                        fontSize: userLanguage == 'Urdu'
+                            ? themeController.textSize - 2
+                            : themeController.textSize,
+                        fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
+                        height: userLanguage == 'Urdu'
+                            ? ((themeController.textSize * 2) - 8) /
+                                  themeController.textSize
+                            : 1.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -635,7 +754,7 @@ class _DuaTileState extends State<DuaTile> {
     String audioPath = widget.dua.littleKidsAudio;
     // Separate isPlaying check for the first button (littleKidsAudio)
     bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
-    
+
     return GetBuilder<UserController>(
       builder: (userController) {
         var userModel = userController.userModel;
@@ -681,7 +800,7 @@ class _DuaTileState extends State<DuaTile> {
                         ),
                         Expanded(
                           child: Text(
-                            "${widget.dua.arabic}",
+                            widget.dua.arabic,
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               color: rblack,
@@ -695,7 +814,7 @@ class _DuaTileState extends State<DuaTile> {
                     Divider(height: 2, color: rwhite),
                     if (themeController.showTransliteration)
                       Text(
-                        "${widget.dua.transliteration}",
+                        widget.dua.transliteration,
                         textAlign: TextAlign.start,
                         style: TextStyle(
                           color: rblack,
@@ -708,17 +827,21 @@ class _DuaTileState extends State<DuaTile> {
                         builder: (context) {
                           // Calculate translation audio path and playing state
                           String? translationAudioPath;
-                          if(Get.find<UserController>().selectedLanguage == "Urdu"){
+                          if (Get.find<UserController>().selectedLanguage ==
+                              "Urdu") {
                             translationAudioPath = widget.dua.urduTranslation;
-                          }else{
-                            translationAudioPath = widget.dua.englishTranslation;
+                          } else {
+                            translationAudioPath =
+                                widget.dua.englishTranslation;
                           }
-                          
+
                           // Separate isPlaying check for translation audio
-                          bool isPlayingTranslation = translationAudioPath != null && 
+                          bool isPlayingTranslation =
+                              translationAudioPath != null &&
                               translationAudioPath.isNotEmpty &&
-                              widget.currentlyPlayingPath == translationAudioPath;
-                          
+                              widget.currentlyPlayingPath ==
+                                  translationAudioPath;
+
                           return Row(
                             children: [
                               if (Get.find<UserController>().selectedLanguage ==
@@ -727,7 +850,9 @@ class _DuaTileState extends State<DuaTile> {
                                       "Urdu")
                                 InkWell(
                                   onTap: () {
-                                    if(Get.find<UserController>().selectedLanguage == "Urdu"){
+                                    if (Get.find<UserController>()
+                                            .selectedLanguage ==
+                                        "Urdu") {
                                       if (widget.dua.urduTranslation != null &&
                                           widget.dua.urduTranslation != "") {
                                         return widget.onToggle(
@@ -735,8 +860,9 @@ class _DuaTileState extends State<DuaTile> {
                                           widget.dua.id,
                                         );
                                       }
-                                    }else{
-                                      if (widget.dua.englishTranslation != null &&
+                                    } else {
+                                      if (widget.dua.englishTranslation !=
+                                              null &&
                                           widget.dua.englishTranslation != "") {
                                         return widget.onToggle(
                                           widget.dua.englishTranslation!,
@@ -749,13 +875,24 @@ class _DuaTileState extends State<DuaTile> {
                                     isPlayingTranslation
                                         ? Icons.stop_circle
                                         : Icons.play_circle,
-                                    color: Get.find<UserController>().selectedLanguage=="Urdu"?widget.dua.urduTranslation!=null?Color(0xff2A158F):rpink:widget.dua.englishTranslation!=null?Color(0xff2A158F):rpink,
+                                    color:
+                                        Get.find<UserController>()
+                                                .selectedLanguage ==
+                                            "Urdu"
+                                        ? widget.dua.urduTranslation != null
+                                              ? Color(0xff2A158F)
+                                              : rpink
+                                        : widget.dua.englishTranslation != null
+                                        ? Color(0xff2A158F)
+                                        : rpink,
                                   ),
                                 ),
                               SizedBox(width: 20),
                               Expanded(
                                 child: Text(
-                                  "${widget.dua.getName(Get.find<UserController>().selectedLanguage)}",
+                                  widget.dua.getName(
+                                    Get.find<UserController>().selectedLanguage,
+                                  ),
                                   textAlign: TextAlign.start,
                                   style: TextStyle(
                                     color: rblack,
@@ -767,45 +904,356 @@ class _DuaTileState extends State<DuaTile> {
                           ).marginAll(15);
                         },
                       ),
-                    // Benefits Toggle and Share Button Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Benefits Toggle Button (only show if benefits exist)
-                        if (widget.dua.hasBenefits())
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                final isExpanded = widget.expandedBenefitsDuaId == widget.dua.id;
-                                widget.onToggleBenefits(isExpanded ? null : widget.dua.id);
-                              },
-                              child: Text(
-                                widget.expandedBenefitsDuaId == widget.dua.id
-                                    ? "Hide Benefits"
-                                    : "Show Benefits",
-                                style: TextStyle(
-                                  color: Color(0xff2A158F),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                    // Divider before buttons section
+                    if (themeController.showTranslation)
+                      Divider(height: 2, color: rwhite),
+                    // Debug: Print all benefits data
+                    Builder(
+                      builder: (context) {
+                        print('=== DUA BENEFITS DEBUG ===');
+                        print('Dua ID: ${widget.dua.id}');
+                        print('benefitsString: ${widget.dua.benefitsString}');
+                        print(
+                          'benefitsString is null: ${widget.dua.benefitsString == null}',
+                        );
+                        print(
+                          'benefitsString isEmpty: ${widget.dua.benefitsString?.isEmpty ?? "N/A"}',
+                        );
+                        print('benefits: ${widget.dua.benefits}');
+                        print(
+                          'benefits is null: ${widget.dua.benefits == null}',
+                        );
+                        print(
+                          'benefits isEmpty: ${widget.dua.benefits?.isEmpty ?? "N/A"}',
+                        );
+                        print('hasBenefits(): ${widget.dua.hasBenefits()}');
+                        print('==========================');
+                        return SizedBox.shrink();
+                      },
+                    ),
+                    // Benefits Toggle, Check Recitation, and Share Button Row
+                    Builder(
+                      builder: (context) {
+                        final hasBenefits =
+                            widget.dua.hasBenefits() ||
+                            widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay";
+                        final hasShare = widget.dua.arabic.length < 200;
+                        final buttonCount =
+                            (hasBenefits ? 1 : 0) +
+                            1 +
+                            (hasShare
+                                ? 1
+                                : 0); // Benefits + Check Recitation + Share
+
+                        return Row(
+                          children: [
+                            // Benefits Toggle Button (only show if benefits exist)
+                            if (hasBenefits)
+                              Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    right: buttonCount > 1 ? 4 : 0,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        final isExpanded =
+                                            widget.expandedBenefitsDuaId ==
+                                            widget.dua.id;
+                                        widget.onToggleBenefits(
+                                          isExpanded ? null : widget.dua.id,
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors:
+                                                widget.expandedBenefitsDuaId ==
+                                                    widget.dua.id
+                                                ? [
+                                                    Color(
+                                                      0xff2A158F,
+                                                    ).withOpacity(0.2),
+                                                    Color(
+                                                      0xff2A158F,
+                                                    ).withOpacity(0.1),
+                                                  ]
+                                                : [
+                                                    Color(
+                                                      0xff2A158F,
+                                                    ).withOpacity(0.15),
+                                                    Color(
+                                                      0xff5C3FB0,
+                                                    ).withOpacity(0.1),
+                                                  ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color:
+                                                widget.expandedBenefitsDuaId ==
+                                                    widget.dua.id
+                                                ? Color(0xff2A158F)
+                                                : Color(
+                                                    0xff2A158F,
+                                                  ).withOpacity(0.7),
+                                            width:
+                                                widget.expandedBenefitsDuaId ==
+                                                    widget.dua.id
+                                                ? 2
+                                                : 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Color(
+                                                0xff2A158F,
+                                              ).withOpacity(0.15),
+                                              blurRadius: 8,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            AnimatedSwitcher(
+                                              duration: Duration(
+                                                milliseconds: 300,
+                                              ),
+                                              child: Icon(
+                                                widget.expandedBenefitsDuaId ==
+                                                        widget.dua.id
+                                                    ? Icons.expand_less
+                                                    : Icons.expand_more,
+                                                key: ValueKey(
+                                                  widget.expandedBenefitsDuaId ==
+                                                      widget.dua.id,
+                                                ),
+                                                color: Color(0xff2A158F),
+                                                size: 18,
+                                              ),
+                                            ),
+                                            SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                widget.expandedBenefitsDuaId ==
+                                                        widget.dua.id
+                                                    ? "Hide Benefits"
+                                                    : "Show Benefits",
+                                                style: TextStyle(
+                                                  color: Color(0xff2A158F),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                            SizedBox(width: 4),
+                                            Icon(
+                                              Icons.favorite_border,
+                                              color: Color(
+                                                0xff2A158F,
+                                              ).withOpacity(0.7),
+                                              size: 16,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Check Recitation Button (Always shown)
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: buttonCount > 1 ? 4 : 0,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      _openRecordingDialog();
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xff2A158F).withOpacity(0.15),
+                                            Color(0xff5C3FB0).withOpacity(0.1),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Color(
+                                            0xff2A158F,
+                                          ).withOpacity(0.7),
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Color(
+                                              0xff2A158F,
+                                            ).withOpacity(0.15),
+                                            blurRadius: 8,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.mic,
+                                            color: Color(0xff2A158F),
+                                            size: 18,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Flexible(
+                                            child: Text(
+                                              "Check Recitation",
+                                              style: TextStyle(
+                                                color: Color(0xff2A158F),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.2,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (!widget.dua.hasBenefits()) SizedBox(),
-                        // Share Button (only show for short duas)
-                        if (widget.dua.arabic.length < 200)
-                          InkWell(
-                            onTap: () {
-                              showShareDialog();
-                            },
-                            child: Icon(Icons.share, color: Color(0xff2A158F)),
-                          ),
-                      ],
-                    ).marginSymmetric(horizontal: 20, vertical: 10),
-                    
-                    // Expanded Benefits List
-                    if (widget.expandedBenefitsDuaId == widget.dua.id && widget.dua.hasBenefits())
-                      _buildBenefitsList(),
+
+                            // Share Button (only show for short duas)
+                            if (hasShare)
+                              Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: buttonCount > 1 ? 4 : 0,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        showShareDialog();
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Color(
+                                                0xff2A158F,
+                                              ).withOpacity(0.15),
+                                              Color(
+                                                0xff5C3FB0,
+                                              ).withOpacity(0.1),
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: Color(
+                                              0xff2A158F,
+                                            ).withOpacity(0.7),
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Color(
+                                                0xff2A158F,
+                                              ).withOpacity(0.15),
+                                              blurRadius: 8,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.share,
+                                              color: Color(0xff2A158F),
+                                              size: 18,
+                                            ),
+                                            SizedBox(width: 6),
+                                            Flexible(
+                                              child: Text(
+                                                "Share",
+                                                style: TextStyle(
+                                                  color: Color(0xff2A158F),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ).marginSymmetric(horizontal: 15, vertical: 12);
+                      },
+                    ),
+
+                    // Expanded Benefits List with smooth animation
+                    AnimatedSize(
+                      duration: Duration(milliseconds: 400),
+                      curve: Curves.easeInOut,
+                      child:
+                          widget.expandedBenefitsDuaId == widget.dua.id &&
+                              (widget.dua.hasBenefits() ||
+                                  widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay")
+                          ? _buildBenefitsList()
+                          : SizedBox.shrink(),
+                    ),
                   ],
                 ),
               ),
