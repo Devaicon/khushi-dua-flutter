@@ -1,5 +1,4 @@
 import 'dart:html' as html;
-import 'dart:convert';
 
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -58,50 +57,17 @@ class _CreateNewDuaState extends State<CreateNewDua> {
   html.File? grownUpmp3File;
 
   List<SubCategoryModel> selectedSubCategories = [];
-  List<Map<String, dynamic>> benefits = [];
 
-  void parseBenefitsFromTextArea() {
+  // Helper function to get category name from categoryId
+  String getCategoryName(String categoryId, CategoryController categoryController) {
     try {
-      final text = benefitsTextAreaController.text.trim();
-      if (text.isEmpty) {
-        benefits = [];
-        return;
-      }
-
-      // Try to parse as JSON array
-      String jsonText = text;
-      
-      // If it doesn't start with [, try to parse as array
-      if (!text.trim().startsWith('[')) {
-        // Check if it's a single object
-        if (text.trim().startsWith('{')) {
-          jsonText = '[$text]';
-        } else {
-          // Try to split by }, and wrap in array
-          jsonText = '[$text]';
-        }
-      }
-
-      final parsed = json.decode(jsonText) as List;
-      final parsedBenefits = parsed.map((item) {
-        final map = item as Map;
-        return {
-          'english': map['english']?.toString() ?? '',
-          'urdu': map['urdu']?.toString() ?? '',
-          'arabicText': map['arabicText']?.toString() ?? '',
-          'punjabi': map['punjabi']?.toString() ?? '',
-          'bengali': map['bengali']?.toString() ?? '',
-          'gujarati': map['gujarati']?.toString() ?? '',
-          'telugu': map['telugu']?.toString() ?? '',
-          'russian': map['russian']?.toString() ?? '',
-          'mandarin': map['mandarin']?.toString() ?? '',
-        };
-      }).toList();
-      
-      benefits = parsedBenefits;
+      final category = categoryController.allCategories.firstWhere(
+        (cat) => cat.id == categoryId,
+        orElse: () => categoryController.allCategories.first,
+      );
+      return category.english.isNotEmpty ? category.english : category.arabic;
     } catch (e) {
-      // If parsing fails, set benefits to empty
-      benefits = [];
+      return "Unknown Category";
     }
   }
 
@@ -186,46 +152,6 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(
-                                            "Benefits",
-                                            style: TextStyle(color: rHint),
-                                          ).marginOnly(top: 20),
-                                          TextFormField(
-                                            cursorColor: rGreen,
-                                            controller: benefitsTextAreaController,
-                                            maxLines: 4,
-                                            decoration: InputDecoration(
-                                              filled: true,
-                                              fillColor: Colors.transparent,
-                                              hintText: 'Enter benefits (optional)',
-                                              hintStyle: TextStyle(
-                                                color: rHint.withOpacity(0.5),
-                                              ),
-                                              border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8.0),
-                                              ),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderSide: BorderSide(
-                                                  color: rHint,
-                                                ),
-                                                borderRadius: BorderRadius.circular(8.0),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderSide: BorderSide(
-                                                  color: rHint,
-                                                ),
-                                                borderRadius: BorderRadius.circular(8.0),
-                                              ),
-                                              contentPadding: EdgeInsets.symmetric(
-                                                vertical: 12.0,
-                                                horizontal: 16.0,
-                                              ),
-                                            ),
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                          ),
-
                                           Text(
                                             "Dua (English)",
                                             style: TextStyle(color: rHint),
@@ -330,6 +256,46 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                               filled: true,
                                               fillColor: Colors.transparent,
                                               hintText: 'Enter description (optional)',
+                                              hintStyle: TextStyle(
+                                                color: rHint.withOpacity(0.5),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderSide: BorderSide(
+                                                  color: rHint,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8.0),
+                                              ),
+                                              contentPadding: EdgeInsets.symmetric(
+                                                vertical: 12.0,
+                                                horizontal: 16.0,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+
+                                          Text(
+                                            "Benefits",
+                                            style: TextStyle(color: rHint),
+                                          ).marginOnly(top: 20),
+                                          TextFormField(
+                                            cursorColor: rGreen,
+                                            controller: benefitsTextAreaController,
+                                            maxLines: 4,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Colors.transparent,
+                                              hintText: 'Enter benefits (optional)',
                                               hintStyle: TextStyle(
                                                 color: rHint.withOpacity(0.5),
                                               ),
@@ -678,70 +644,78 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                             "Sub Categories",
                                             style: TextStyle(color: rHint),
                                           ).marginOnly(top: 20),
-                                          // SizedBox(
-                                          //   child: Theme(
-                                          //     data: Theme.of(context).copyWith(
-                                          //       canvasColor: rBlack,
-                                          //     ),
-                                          //     child: DropdownButtonFormField<SubCategoryModel>(
-                                          //       decoration: InputDecoration(
-                                          //         filled: true,
-                                          //         fillColor: Colors.transparent,
-                                          //         hintText: selectedSubCategories.isEmpty ? 'Select sub categories' : selectedSubCategories.map((item) => item.english).join(', '),
-                                          //         suffixIcon: Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                                          //         hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
-                                          //         border: OutlineInputBorder(
-                                          //           borderRadius: BorderRadius.circular(8.0),
-                                          //         ),
-                                          //         enabledBorder: OutlineInputBorder(
-                                          //           borderSide: BorderSide(color: Colors.grey),
-                                          //           borderRadius: BorderRadius.circular(8.0),
-                                          //         ),
-                                          //         focusedBorder: OutlineInputBorder(
-                                          //           borderSide: BorderSide(color: Colors.grey),
-                                          //           borderRadius: BorderRadius.circular(8.0),
-                                          //         ),
-                                          //         contentPadding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                                          //       ),
-                                          //       icon: SizedBox.shrink(),
-                                          //       items: categoryController.allSubCategories.map((SubCategoryModel item) {
-                                          //         return DropdownMenuItem<SubCategoryModel>(
-                                          //           value: item,
-                                          //           child: StatefulBuilder(
-                                          //             builder: (context, menuSetState) {
-                                          //               final isSelected = selectedSubCategories.contains(item);
-                                          //               return InkWell(
-                                          //                 onTap: () {
-                                          //                   setState(() {
-                                          //                     isSelected ? selectedSubCategories.remove(item) : selectedSubCategories.add(item);
-                                          //                   });
-                                          //                   menuSetState(() {});
-                                          //                 },
-                                          //                 child: SizedBox(
-                                          //                   height: 40,
-                                          //                   child: Row(
-                                          //                     children: [
-                                          //                       Icon(
-                                          //                         isSelected ? Icons.check_box : Icons.check_box_outline_blank,
-                                          //                         color: isSelected ? Colors.green : Colors.grey,
-                                          //                       ),
-                                          //                       const SizedBox(width: 16),
-                                          //                       Text(
-                                          //                         item.english,
-                                          //                         style: TextStyle(fontSize: 14, color: rWhite),
-                                          //                       ),
-                                          //                     ],
-                                          //                   ),
-                                          //                 ),
-                                          //               );
-                                          //             },
-                                          //           ),
-                                          //         );
-                                          //       }).toList(),
-                                          //       onChanged: (_) {},
-                                          //     ),
-                                          //   ),
-                                          // ),
+                                          
+                                          // Display selected subcategories with their main categories
+                                          if (selectedSubCategories.isNotEmpty)
+                                            Container(
+                                              padding: EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: rBg,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: rGreen.withOpacity(0.3)),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Selected Subcategories:",
+                                                    style: TextStyle(
+                                                      color: rGreen,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  ...selectedSubCategories.map((subCat) {
+                                                    final categoryName = getCategoryName(subCat.categoryId, categoryController);
+                                                    return Container(
+                                                      margin: EdgeInsets.only(bottom: 8),
+                                                      padding: EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: rBlack,
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: rHint.withOpacity(0.3)),
+                                                      ),
+                                                      child: Row(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.category,
+                                                            color: rGreen,
+                                                            size: 16,
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                Text(
+                                                                  "Main Category: $categoryName",
+                                                                  style: TextStyle(
+                                                                    color: rGreen,
+                                                                    fontSize: 12,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(height: 4),
+                                                                Text(
+                                                                  "Subcategory: ${subCat.english.isNotEmpty ? subCat.english : subCat.arabic}",
+                                                                  style: TextStyle(
+                                                                    color: rWhite,
+                                                                    fontSize: 13,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ],
+                                              ),
+                                            ).marginOnly(bottom: 12),
+                                          
                                       SearchableMultiSelectDropdown(
                                            items: categoryController.allSubCategories,
                                            initiallySelected: selectedSubCategories,
@@ -1539,9 +1513,6 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                       }else if(selectedSubCategories.isEmpty){
                                         CustomSnackbar.show("Error", "Select atleast one sub category", isSuccess: false);
                                       } else {
-                                        // Parse benefits from text area
-                                        parseBenefitsFromTextArea();
-                                        
                                         List<String> subIds=[];
                                         for(var item in selectedSubCategories){
                                           subIds.add(item.id);
@@ -1582,7 +1553,7 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                             grownUpsAudio: '',
                                             littleKidsAudio: '',
                                             olderKidsAudio: '',
-                                            benefits: benefits.isEmpty ? null : benefits,
+                                            benefits: benefitsTextAreaController.text.trim().isEmpty ? null : benefitsTextAreaController.text.trim(),
                                             description: descriptionTextEditingController.text.isEmpty ? null : descriptionTextEditingController.text);
 
                                         duaController.createDua(duaModel,

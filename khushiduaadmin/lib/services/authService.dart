@@ -7,23 +7,28 @@ import '../constants/firebaseRef.dart';
 import '../models/managementModel.dart';
 import '../views/dashboard.dart';
 
-class AuthService{
-
+class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  AuthController _authController=Get.find<AuthController>();
+  AuthController _authController = Get.find<AuthController>();
 
   createAdmin() async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: "admin@gmail.com",
         password: "123456",
       );
-      ManagementModel _managementModel = ManagementModel(id: userCredential.user!.uid,
+      ManagementModel _managementModel = ManagementModel(
+          id: userCredential.user!.uid,
           email: userCredential.user!.email!,
           role: "Super_Admin",
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now(), firstName: 'Admin', lastName: 'John');
-      await managementRef.doc(_managementModel.id).set(_managementModel.toMap());
+          updatedAt: DateTime.now(),
+          firstName: 'Admin',
+          lastName: 'John');
+      await managementRef
+          .doc(_managementModel.id)
+          .set(_managementModel.toMap());
     } on FirebaseAuthException catch (e) {
       print('Error creating admin: ${e.message}');
     }
@@ -38,23 +43,95 @@ class AuthService{
       );
       html.window.localStorage['adminId'] = userCredential.user!.uid;
       await managementRef.doc(userCredential.user!.uid).get().then((value) {
-        _authController.setManagementUserModel(ManagementModel.fromMap(value.data()!));
+        _authController
+            .setManagementUserModel(ManagementModel.fromMap(value.data()!));
         _authController.setLoading(false);
-        Get.offAll(DashboardScreen(),transition: Transition.downToUp);
+        Get.offAll(DashboardScreen(), transition: Transition.downToUp);
       });
-
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       print("Error logging in");
       _authController.setLoading(false);
     }
   }
 
-  getAdminDetails() async{
+  getAdminDetails() async {
     // SharedPreferences sharedPreferences=await SharedPreferences.getInstance();
-    String? adminId=html.window.localStorage['adminId'];;
+    String? adminId = html.window.localStorage['adminId'];
+    ;
 
     await managementRef.doc(adminId).get().then((value) {
-      _authController.setManagementUserModel(ManagementModel.fromMap(value.data()!));
+      _authController
+          .setManagementUserModel(ManagementModel.fromMap(value.data()!));
     });
+  }
+
+  Future<String?> changePassword(
+      String currentPassword, String newPassword) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) {
+        return "No user logged in";
+      }
+
+      // Re-authenticate user with current password
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+
+      // Update password
+      await user.updatePassword(newPassword);
+
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        return "Current password is incorrect";
+      } else if (e.code == 'weak-password') {
+        return "New password is too weak";
+      } else {
+        return "Error changing password: ${e.message}";
+      }
+    } catch (e) {
+      return "Error: ${e.toString()}";
+    }
+  }
+
+  Future<String?> createNewAdmin(String email, String password,
+      String firstName, String lastName, String role) async {
+    try {
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      ManagementModel _managementModel = ManagementModel(
+          id: userCredential.user!.uid,
+          email: userCredential.user!.email!,
+          role: role.isEmpty ? "Admin" : role,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          firstName: firstName,
+          lastName: lastName);
+
+      await managementRef
+          .doc(_managementModel.id)
+          .set(_managementModel.toMap());
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        return "Password is too weak";
+      } else if (e.code == 'email-already-in-use') {
+        return "Email is already in use";
+      } else if (e.code == 'invalid-email') {
+        return "Invalid email address";
+      } else {
+        return "Error creating admin: ${e.message}";
+      }
+    } catch (e) {
+      return "Error: ${e.toString()}";
+    }
   }
 }
