@@ -12,6 +12,7 @@ import 'package:khushiduaadmin/views/tabs/home.dart';
 import 'package:khushiduaadmin/views/tabs/notifications.dart';
 import 'package:khushiduaadmin/views/tabs/profile.dart';
 import 'package:khushiduaadmin/views/tabs/users.dart';
+import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
 import 'dart:html' as html;
 import '../constants/colors.dart';
 import '../controllers/authController.dart';
@@ -261,6 +262,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         setState(() {
                           _selectedTab = 5;
                           selectedView = ProfileTab();
+                        });
+                      },
+                    ),
+                    ListTile(
+                      tileColor: _selectedTab == 6 ? rGreen : rBg,
+                      leading: Icon(
+                        Icons.settings_applications,
+                        color: _selectedTab == 6 ? rWhite : rHint,
+                      ),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'ML Settings',
+                            style: TextStyle(
+                              color: _selectedTab == 6 ? rWhite : rHint,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: _selectedTab == 6 ? rWhite : rHint,
+                            size: 15,
+                          )
+                        ],
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedTab = 6;
+                          selectedView = MLSettingsTab();
                         });
                       },
                     ),
