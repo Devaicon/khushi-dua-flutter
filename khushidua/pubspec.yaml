@@ -50,13 +50,18 @@ dependencies:
   firebase_storage:
   firebase_messaging:
   share_plus:
-#  flutter_sound_record:
+  record: ^5.2.1
   # ffmpeg_kit_flutter_full:
+  http:
   http_parser:
+  path:
   flutter_html:
   permission_handler:
   path_provider:
   google_mobile_ads:
+
+dependency_overrides:
+  record_linux: ^1.2.1
 
 dev_dependencies:
   flutter_test:

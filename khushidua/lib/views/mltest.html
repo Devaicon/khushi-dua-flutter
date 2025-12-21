@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Transcription Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            direction: rtl;
+            text-align: right;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .result-content {
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            direction: rtl;
+            text-align: right;
+            font-size: 20px;
+            line-height: 2;
+            min-height: 80px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error {
+            color: #e74c3c;
+            padding: 15px;
+            background: #fadbd8;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .api-url-section {
+            margin-bottom: 25px;
+        }
+
+        .file-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Quran Transcription Test</h1>
+        <p class="subtitle">Test your audio transcription API</p>
+
+        <form id="transcriptionForm">
+            <div class="form-group api-url-section">
+                <label for="apiUrl">API URL</label>
+                <input type="text" id="apiUrl" value="http://34.238.195.141:3400/transcribe/"
+                    placeholder="Enter API endpoint URL" required>
+            </div>
+
+            <div class="form-group">
+                <label for="arabicText">Arabic Ayah (Ground Truth)</label>
+                <textarea id="arabicText" placeholder="أدخل النص العربي هنا" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="audioFile">Audio File</label>
+                <input type="file" id="audioFile" accept="audio/wav,audio/mp3,audio/mpeg" required>
+                <div class="file-info">Supported formats: WAV, MP3</div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">Transcribe Audio</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your audio...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="result-title">Transcription Result:</div>
+            <div class="result-content" id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('transcriptionForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultContent = document.getElementById('resultContent');
+        const errorDiv = document.getElementById('error');
+        const apiUrlInput = document.getElementById('apiUrl');
+        const arabicTextInput = document.getElementById('arabicText');
+        const audioFileInput = document.getElementById('audioFile');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Reset UI
+            loading.classList.add('show');
+            resultContainer.classList.remove('show');
+            errorDiv.classList.remove('show');
+            submitBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('audio_file', audioFileInput.files[0]);
+
+                // Add ARABIC_AYAH as query parameter
+                const apiUrl = apiUrlInput.value + '?ARABIC_AYAH=' + encodeURIComponent(arabicTextInput.value);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.text();
+
+                // Display result
+                resultContent.innerHTML = result;
+                resultContainer.classList.add('show');
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        // File input validation
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                const fileInfo = document.querySelector('.file-info');
+                fileInfo.textContent = `Selected: ${file.name} (${fileSize} MB)`;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -7,12 +8,10 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_html/flutter_html.dart';
 
-// import 'package:flutter_sound_record/flutter_sound_record.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -22,6 +21,7 @@ import 'package:khushidua/controllers/themeController.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../constants/colors.dart';
@@ -45,6 +45,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
   @override
   void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<DuaController>().getFilteredDuas(widget._subCategoryModel);
     });
@@ -271,10 +272,7 @@ class DuaTile extends StatefulWidget {
 }
 
 class _DuaTileState extends State<DuaTile> {
-  // final FlutterSoundRecord _recorder = FlutterSoundRecord();
-  bool _isRecording = false;
-  String? _recordedPath;
-
+  final AudioRecorder _audioRecorder = AudioRecorder();
   String baseUrl = "";
 
   final List<String> imagePaths = [
@@ -289,175 +287,917 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   void initState() {
+    super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
   }
 
+  @override
+  void dispose() {
+    _audioRecorder.dispose();
+    super.dispose();
+  }
+
   getBaseUrl() async {
-    await sysConfigRef.doc("MemoizationURL").get().then((value) {
-      baseUrl = value.data()!["URL"];
-    });
-    print(baseUrl);
+    await sysConfigRef
+        .doc("MemoizationURL")
+        .get()
+        .then((value) {
+          baseUrl = value.data()!["URL"];
+          print('\n🔗 BASE URL FETCHED FROM FIREBASE:');
+          print('   URL: $baseUrl');
+          print('   Expected: http://34.238.195.141:3400/transcribe/');
+          if (baseUrl != 'http://34.238.195.141:3400/transcribe/') {
+            print('   ⚠️  WARNING: URL does not match expected value!');
+            print('   Please update Firebase config with the new URL.');
+          } else {
+            print('   ✅ URL matches expected value');
+          }
+          print('');
+        })
+        .catchError((error) {
+          print('❌ ERROR fetching base URL from Firebase: $error');
+          baseUrl = 'http://34.238.195.141:3400/transcribe/'; // Fallback
+          print('   Using fallback URL: $baseUrl');
+        });
   }
 
   void _openRecordingDialog() {
+    bool dialogIsRecording = false;
+    String? dialogApiResponse;
+    bool dialogIsLoading = false;
+    Duration dialogRecordingDuration = Duration.zero;
+    AudioRecorder? dialogRecorder;
+
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
-        String? apiResponse;
-        bool isLoading = false;
-
         return StatefulBuilder(
-          builder: (context, setState) {
-            Future<void> sendToApi() async {
-              if (_recordedPath == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Please record audio first")),
+          builder: (context, setDialogState) {
+            // Initialize recorder for this dialog
+            dialogRecorder ??= AudioRecorder();
+
+            void updateRecordingDuration() {
+              Future.delayed(const Duration(seconds: 1), () {
+                if (dialogIsRecording) {
+                  setDialogState(() {
+                    dialogRecordingDuration = Duration(
+                      seconds: dialogRecordingDuration.inSeconds + 1,
+                    );
+                  });
+                  updateRecordingDuration();
+                }
+              });
+            }
+
+            Future<void> sendToApi(String audioPath) async {
+              if (baseUrl.isEmpty) {
+                await getBaseUrl();
+              }
+
+              setDialogState(() => dialogIsLoading = true);
+              setDialogState(() => dialogApiResponse = null);
+
+              // Declare apiUrl outside try block so it's accessible in catch block
+              String apiUrl = '';
+
+              try {
+                // Get audio file details first
+                final audioFile = File(audioPath);
+                if (!await audioFile.exists()) {
+                  throw Exception('Audio file does not exist: $audioPath');
+                }
+
+                final fileSize = await audioFile.length();
+                final fileName = p.basename(audioPath);
+
+                // Read the full file as bytes to ensure we send the complete file
+                final fileBytes = await audioFile.readAsBytes();
+
+                print('\n📂 FILE VERIFICATION:');
+                print('   - File exists: ${await audioFile.exists()}');
+                print(
+                  '   - File size on disk: ${(fileSize / 1024).toStringAsFixed(2)} KB',
                 );
+                print(
+                  '   - Bytes read: ${(fileBytes.length / 1024).toStringAsFixed(2)} KB',
+                );
+                print(
+                  '   - Match: ${fileSize == fileBytes.length ? "✅" : "❌"}',
+                );
+
+                // Properly encode Arabic text as query parameter (same as HTML: encodeURIComponent)
+                final encodedArabic = Uri.encodeComponent(widget.dua.arabic);
+
+                // Build API URL exactly like HTML version:
+                // apiUrl = baseUrl + '?ARABIC_AYAH=' + encodeURIComponent(arabicText)
+                // Ensure baseUrl ends with /transcribe/ (like HTML: http://localhost:3400/transcribe/)
+                String cleanBaseUrl = baseUrl.trim();
+
+                // Remove trailing query parameters if present (like ?ARABIC_AYAH=)
+                if (cleanBaseUrl.contains('?')) {
+                  cleanBaseUrl = cleanBaseUrl.substring(
+                    0,
+                    cleanBaseUrl.indexOf('?'),
+                  );
+                }
+
+                // Ensure it ends with /transcribe/ (add if missing)
+                if (!cleanBaseUrl.endsWith('/transcribe/')) {
+                  if (cleanBaseUrl.endsWith('/transcribe')) {
+                    cleanBaseUrl = '$cleanBaseUrl/';
+                  } else if (cleanBaseUrl.endsWith('/')) {
+                    cleanBaseUrl = '${cleanBaseUrl}transcribe/';
+                  } else {
+                    cleanBaseUrl = '$cleanBaseUrl/transcribe/';
+                  }
+                }
+
+                // Build final URL exactly like HTML: baseUrl + '?ARABIC_AYAH=' + encodedText
+                apiUrl = '$cleanBaseUrl?ARABIC_AYAH=$encodedArabic';
+
+                // Validate URL
+                try {
+                  final testUri = Uri.parse(apiUrl);
+                  if (testUri.host.isEmpty) {
+                    throw Exception('Invalid API URL: host is empty');
+                  }
+                } catch (e) {
+                  throw Exception('Invalid API URL format: $apiUrl - $e');
+                }
+
+                // Determine content type based on file extension
+                // Backend supports: WAV, MP3, MPEG, X-WAV, WEBM
+                String contentType = 'audio/mpeg';
+                String fileExtension = p.extension(audioPath).toLowerCase();
+                if (fileExtension == '.wav') {
+                  contentType = 'audio/wav';
+                } else if (fileExtension == '.mpeg' ||
+                    fileExtension == '.mp3') {
+                  contentType = 'audio/mpeg';
+                } else if (fileExtension == '.m4a' || fileExtension == '.aac') {
+                  // M4A/AAC not in spec but try audio/mp4 or audio/mpeg
+                  contentType = 'audio/mpeg'; // Try mpeg as fallback
+                } else if (fileExtension == '.webm') {
+                  contentType = 'audio/webm';
+                }
+
+                // ========== API CALL LOGGING ==========
+                print('\n========== API CALL START ==========');
+                print('📡 BASE URL (from Firebase): $baseUrl');
+                print('🔗 FULL API URL: $apiUrl');
+                print('📝 METHOD: POST');
+                print('📋 ARABIC TEXT (Original): ${widget.dua.arabic}');
+                print('📋 ARABIC TEXT (Encoded): $encodedArabic');
+                print('🎵 AUDIO FILE PATH: $audioPath');
+                print('📁 AUDIO FILE NAME: $fileName');
+                print(
+                  '📦 AUDIO FILE SIZE: ${(fileSize / 1024).toStringAsFixed(2)} KB',
+                );
+                print('🎚️ CONTENT TYPE: $contentType');
+                print('📤 PAYLOAD: multipart/form-data');
+                print('   - Field: audio_file');
+                print('   - File: $fileName');
+                print('   - Size: ${(fileSize / 1024).toStringAsFixed(2)} KB');
+                print('   - Bytes: ${fileBytes.length} bytes');
+                print('   - Type: $contentType');
+                print('📨 HEADERS:');
+                print(
+                  '   - Content-Type: multipart/form-data (auto-set by MultipartRequest)',
+                );
+                print('   - No custom headers (matching HTML version)');
+                print('=====================================\n');
+
+                var uri = Uri.parse(apiUrl);
+                var request = http.MultipartRequest('POST', uri);
+
+                // Send the full file using bytes to ensure complete file is sent
+                // Backend expects: audio_file field with binary file data
+                request.files.add(
+                  http.MultipartFile.fromBytes(
+                    'audio_file', // Field name as per backend spec
+                    fileBytes, // Full file bytes
+                    filename: fileName,
+                    contentType: MediaType.parse(contentType),
+                  ),
+                );
+
+                // Headers - Match HTML version exactly
+                // HTML doesn't set any special headers - browser handles Content-Type automatically
+                // Flutter's MultipartRequest also sets Content-Type automatically
+                // Don't set 'accept' header - let server decide response format
+
+                print(
+                  '⏳ Sending request to API with ${fileBytes.length} bytes...\n',
+                );
+                print('🌐 Network Request Details:');
+                final parsedUri = Uri.parse(apiUrl);
+                print('   - Host: ${parsedUri.host}');
+                print('   - Port: ${parsedUri.port}');
+                print('   - Scheme: ${parsedUri.scheme}');
+                print('   - Path: ${parsedUri.path}');
+                print('   - Query: ${parsedUri.query}');
+                print('   - Full URL: $apiUrl');
+                print('');
+
+                // Test connection first (optional - can help diagnose issues)
+                print('🔍 Testing server connectivity...');
+                try {
+                  final testClient = http.Client();
+                  final testResponse = await testClient
+                      .get(
+                        Uri.parse(
+                          '${parsedUri.scheme}://${parsedUri.host}:${parsedUri.port}',
+                        ),
+                      )
+                      .timeout(const Duration(seconds: 10));
+                  print(
+                    '   ✅ Server is reachable (HTTP ${testResponse.statusCode})',
+                  );
+                  testClient.close();
+                } catch (e) {
+                  print('   ⚠️  Server connectivity test failed: $e');
+                  print(
+                    '   ℹ️  This might be normal if server only accepts POST requests',
+                  );
+                }
+                print('');
+
+                final stopwatch = Stopwatch()..start();
+
+                // Send request with timeout (2 minutes for audio processing)
+                print('📤 Sending POST request to API...');
+                var response = await request.send().timeout(
+                  const Duration(seconds: 120), // 2 minutes timeout
+                  onTimeout: () {
+                    throw TimeoutException(
+                      'Request timeout after 2 minutes',
+                      const Duration(seconds: 120),
+                    );
+                  },
+                );
+                stopwatch.stop();
+
+                print(
+                  '✅ Response received in ${stopwatch.elapsedMilliseconds}ms',
+                );
+                print('📊 STATUS CODE: ${response.statusCode}');
+                print('📋 RESPONSE HEADERS:');
+                response.headers.forEach((key, value) {
+                  print('   - $key: $value');
+                });
+
+                var responseBody = await response.stream.bytesToString();
+                final responseLength = responseBody.length;
+
+                print(
+                  '📦 RESPONSE BODY LENGTH: ${(responseLength / 1024).toStringAsFixed(2)} KB',
+                );
+                print(
+                  '📄 RESPONSE BODY (first 500 chars): ${responseBody.length > 500 ? "${responseBody.substring(0, 500)}..." : responseBody}',
+                );
+
+                if (response.statusCode == 200) {
+                  print('✅ SUCCESS: API call completed successfully');
+                  print('========== API CALL END ==========\n');
+                  setDialogState(() {
+                    dialogApiResponse = responseBody;
+                  });
+                } else {
+                  print(
+                    '❌ ERROR: Server returned status ${response.statusCode}',
+                  );
+                  print('📄 ERROR RESPONSE BODY: $responseBody');
+                  print('========== API CALL END ==========\n');
+                  setDialogState(() {
+                    dialogApiResponse =
+                        "Error: Server returned status ${response.statusCode}";
+                  });
+                }
+              } on TimeoutException catch (e) {
+                print('⏱️ TIMEOUT ERROR: Request timed out after 2 minutes');
+                print('   - Message: ${e.message}');
+                print('   - Duration: ${e.duration}');
+                print('========== API CALL END ==========\n');
+                setDialogState(() {
+                  dialogApiResponse =
+                      "Error: Request timed out after 2 minutes. The audio processing is taking longer than expected. Please try again or check your internet connection.";
+                });
+              } on SocketException catch (e) {
+                print('🌐 NETWORK ERROR: Connection failed');
+                print('   - Message: ${e.message}');
+                print('   - Address: ${e.address}');
+                print('   - Port: ${e.port}');
+                print('   - OS Error: ${e.osError}');
+                print('   - OS Error Code: ${e.osError?.errorCode}');
+                print('   - OS Error Message: ${e.osError?.message}');
+                print('\n🔍 TROUBLESHOOTING:');
+                print('   1. Is the server running at $apiUrl?');
+                print(
+                  '   2. If using localhost in HTML, iOS Simulator cannot access it.',
+                );
+                print(
+                  '      → Use your Mac\'s IP address instead (e.g., http://192.168.x.x:3400/transcribe/)',
+                );
+                print('   3. Check if server is accessible: curl $apiUrl');
+                print('   4. Verify firewall settings allow port 3400');
+                print(
+                  '   5. For remote server, ensure it\'s running and accessible',
+                );
+                print('========== API CALL END ==========\n');
+
+                String errorMessage;
+                if (e.osError?.errorCode == 61) {
+                  // Connection refused
+                  if (apiUrl.contains('localhost') ||
+                      apiUrl.contains('127.0.0.1')) {
+                    errorMessage =
+                        "Error: Cannot connect to localhost from iOS Simulator.\n\n"
+                        "Solution: Use your Mac's IP address instead of localhost.\n"
+                        "Example: http://192.168.1.100:3400/transcribe/\n\n"
+                        "Find your Mac IP: System Preferences > Network";
+                  } else {
+                    errorMessage =
+                        "Error: Connection refused.\n\n"
+                        "The server at $apiUrl is not responding.\n\n"
+                        "Possible causes:\n"
+                        "• Server is not running\n"
+                        "• Firewall blocking connection\n"
+                        "• Wrong IP address or port\n"
+                        "• Network connectivity issues";
+                  }
+                } else {
+                  errorMessage =
+                      "Error: Cannot connect to server.\n\n"
+                      "Details: ${e.message}\n"
+                      "Server: $apiUrl\n\n"
+                      "Please check:\n"
+                      "• Internet connection\n"
+                      "• Server is running\n"
+                      "• Correct server address";
+                }
+
+                setDialogState(() {
+                  dialogApiResponse = errorMessage;
+                });
+              } on HttpException catch (e) {
+                print('📡 HTTP ERROR: ${e.message}');
+                print('========== API CALL END ==========\n');
+                setDialogState(() {
+                  dialogApiResponse = "Error: HTTP error - ${e.message}";
+                });
+              } catch (e, stackTrace) {
+                print('❌ EXCEPTION: ${e.toString()}');
+                print('   - Type: ${e.runtimeType}');
+                print('📚 STACK TRACE:');
+                print(stackTrace);
+                print('========== API CALL END ==========\n');
+                setDialogState(() {
+                  dialogApiResponse = "Error: ${e.toString()}";
+                });
+              } finally {
+                setDialogState(() => dialogIsLoading = false);
+              }
+            }
+
+            Future<void> startRecording() async {
+              // Check current permission status first
+              PermissionStatus status = await Permission.microphone.status;
+
+              // If permission is not granted, request it
+              if (!status.isGranted) {
+                status = await Permission.microphone.request();
+              }
+
+              // Handle different permission states
+              if (status.isPermanentlyDenied) {
+                // Permission is permanently denied, show dialog to open settings
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Microphone Permission Required"),
+                      content: const Text(
+                        "Microphone permission is permanently denied. Please enable it in app settings to record audio.",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await openAppSettings();
+                          },
+                          child: const Text("Open Settings"),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return;
               }
 
-              setState(() => isLoading = true);
+              if (!status.isGranted) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Microphone permission is required to record audio. Please grant permission when prompted.",
+                      ),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+                return;
+              }
 
+              // Double-check with the recorder itself
+              if (!await dialogRecorder!.hasPermission()) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Microphone permission not available. Please check your device settings.",
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              // Start recording in WAV format (supported by API)
+              // Note: record package doesn't support MP3 encoding directly
+              // WAV is a lossless format and is supported by the API
               try {
-                var uri = Uri.parse('$baseUrl${widget.dua.arabic}');
-                print('$baseUrl${widget.dua.arabic}');
-                print(widget.dua.arabic);
-                print(_recordedPath);
-                var request = http.MultipartRequest('POST', uri);
-                request.files.add(
-                  await http.MultipartFile.fromPath(
-                    'audio_file',
-                    _recordedPath!,
-                    contentType: MediaType('audio', 'mp3'),
+                final dir = await getTemporaryDirectory();
+                final timestamp = DateTime.now().millisecondsSinceEpoch;
+                final filePath = p.join(dir.path, 'recording_$timestamp.wav');
+
+                await dialogRecorder!.start(
+                  const RecordConfig(
+                    encoder: AudioEncoder.wav,
+                    bitRate: 128000,
+                    sampleRate: 44100,
                   ),
+                  path: filePath,
                 );
 
-                request.headers.addAll({
-                  'accept': 'text/html',
-                  'Content-Type': 'multipart/form-data',
+                setDialogState(() {
+                  dialogIsRecording = true;
+                  dialogRecordingDuration = Duration.zero;
+                  dialogApiResponse = null;
                 });
 
-                var response = await request.send();
-                var responseBody = await response.stream.bytesToString();
-
-                setState(() {
-                  apiResponse = responseBody;
-                  // print(apiResponse);
-                });
+                // Update recording duration
+                updateRecordingDuration();
               } catch (e) {
-                setState(() {
-                  apiResponse = "Error: $e";
-                });
-              } finally {
-                setState(() => isLoading = false);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Failed to start recording: $e"),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
               }
             }
 
-            Future<void> toggleRecording() async {
-              // if (_isRecording) {
-              //   final path = await _recorder.stop();
-              //   setState(() => _isRecording = false);
-              //   if (path != null) {
-              //     _recordedPath = path;
-              //     String? mp3Path = await convertAacToMp3(_recordedPath!);
-              //     print("Recording complete: $mp3Path");
-              //     _recordedPath = mp3Path;
-              //     await sendToApi();
-              //   }
-              // } else {
-              //   var status = await Permission.microphone.request();
-              //   if (status.isGranted) {
-              //     final hasPermission = await _recorder.hasPermission();
-              //     if (hasPermission) {
-              //       final dir = await getTemporaryDirectory();
-              //       final filePath = p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}.aac');
-              //       await _recorder.start(path: filePath, encoder: AudioEncoder.AAC);
-              //       setState(() {
-              //         _isRecording = true;
-              //         _recordedPath = filePath;
-              //       });
-              //     }
-              //   } else {
-              //     ScaffoldMessenger.of(context).showSnackBar(
-              //       SnackBar(content: Text("Microphone permission is required.")),
-              //     );
-              //   }
-              // }
+            Future<void> stopRecording() async {
+              if (dialogRecorder != null && dialogIsRecording) {
+                final path = await dialogRecorder!.stop();
+                setDialogState(() {
+                  dialogIsRecording = false;
+                });
+
+                if (path != null) {
+                  // Automatically send to API after recording stops
+                  await sendToApi(path);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Failed to save recording."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+
+            String formatDuration(Duration duration) {
+              String twoDigits(int n) => n.toString().padLeft(2, "0");
+              final minutes = twoDigits(duration.inMinutes.remainder(60));
+              final seconds = twoDigits(duration.inSeconds.remainder(60));
+              return "$minutes:$seconds";
             }
 
             return AlertDialog(
-              title: const Text("Audio Recorder"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
                 children: [
-                  Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Text(
-                      widget.dua.arabic,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
+                  Icon(Icons.mic, color: Color(0xff2A158F)),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Check Recitation",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
-                  if (isLoading) CircularProgressIndicator(),
-                  if (apiResponse != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      "Response:",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: Html(data: "$apiResponse"),
-                    ),
-                    // Text(apiResponse!, textAlign: TextAlign.start),
-                  ],
-                  Text(_isRecording ? "Recording..." : "Ready to record"),
                 ],
               ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Arabic text display - This is what will be sent to API
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Color(0xff2A158F),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              "Recording this Arabic text:",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Color(0xff2A158F).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Color(0xff2A158F).withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: Text(
+                              widget.dua.arabic,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: Color(0xff2A158F),
+                                fontFamily: 'arabic',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Recording indicator
+                    if (dialogIsRecording) ...[
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Pulsing animation
+                            TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.8, end: 1.2),
+                              duration: const Duration(milliseconds: 1000),
+                              onEnd: () {
+                                setDialogState(() {});
+                              },
+                              builder: (context, value, child) {
+                                return Container(
+                                  width: 60 * value,
+                                  height: 60 * value,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withValues(alpha: 0.3),
+                                    shape: BoxShape.circle,
+                                  ),
+                                );
+                              },
+                            ),
+                            const Icon(Icons.mic, color: Colors.red, size: 40),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Recording...",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        formatDuration(dialogRecordingDuration),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+
+                    // Loading indicator
+                    if (dialogIsLoading) ...[
+                      const SizedBox(height: 24),
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xff2A158F),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Processing your recitation...",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+
+                    // API Response
+                    if (dialogApiResponse != null && !dialogIsLoading) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  "Result:",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Directionality(
+                              textDirection: TextDirection.rtl,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 300,
+                                ),
+                                child: SingleChildScrollView(
+                                  child: Html(
+                                    data: dialogApiResponse!,
+                                    style: {
+                                      "body": Style(
+                                        margin: Margins.zero,
+                                        padding: HtmlPaddings.zero,
+                                      ),
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Ready state
+                    if (!dialogIsRecording &&
+                        !dialogIsLoading &&
+                        dialogApiResponse == null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Color(0xff2A158F).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.mic_none,
+                          color: Color(0xff2A158F),
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Ready to record",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               actions: [
-                TextButton(
-                  onPressed: toggleRecording,
-                  child: Text(
-                    _isRecording ? "Finish Recording" : "Start Recording",
+                // Start/Stop Recording Button
+                ElevatedButton.icon(
+                  onPressed: dialogIsLoading
+                      ? null
+                      : dialogIsRecording
+                      ? stopRecording
+                      : startRecording,
+                  icon: Icon(
+                    dialogIsRecording ? Icons.stop : Icons.mic,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    dialogIsRecording ? "Stop Recording" : "Start Recording",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: dialogIsRecording
+                        ? Colors.red
+                        : Color(0xff2A158F),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
-                // TextButton(
-                //   onPressed: () async {
-                //     final result = await FilePicker.platform.pickFiles(
-                //       type: FileType.custom,
-                //       allowedExtensions: ['mp3'],
-                //     );
-                //     if (result != null && result.files.single.path != null) {
-                //       setState(() {
-                //         _recordedPath = result.files.single.path!;
-                //       });
-                //       await sendToApi();
-                //     } else {
-                //       ScaffoldMessenger.of(context).showSnackBar(
-                //         SnackBar(content: Text("No file selected")),
-                //       );
-                //     }
-                //   },
-                //   child: const Text("Upload MP3"),
-                // ),
+                // Close Button
                 TextButton(
                   onPressed: () async {
-                    if (_isRecording) {
-                      // await _recorder.stop();
-                      setState(() => _isRecording = false);
+                    if (dialogIsRecording) {
+                      await stopRecording();
                     }
-                    Navigator.of(context).pop();
+                    dialogRecorder?.dispose();
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
                   },
-                  child: const Text("Close"),
+                  child: const Text(
+                    "Close",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               ],
             );
           },
         );
       },
+    );
+  }
+
+  Future<void> _captureAndShare() async {
+    try {
+      RenderRepaintBoundary boundary =
+          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      var image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // Save image to temporary file
+      final tempDir = await getTemporaryDirectory();
+      final file = await File('${tempDir.path}/shared_dua.png').create();
+      await file.writeAsBytes(pngBytes);
+
+      // Share using share_plus
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: "Check out this beautiful Dua");
+    } catch (e) {
+      print("Error sharing: $e");
+    }
+  }
+
+  Widget _buildBenefitContainer(
+    String text,
+    bool isRtl,
+    ThemeController themeController,
+    String userLanguage, {
+    int? index,
+  }) {
+    final isLastItem =
+        index != null &&
+        widget.dua.benefits != null &&
+        index == widget.dua.benefits!.length - 1;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      margin: EdgeInsets.only(
+        top: index == null || index == 0 ? 12 : 10,
+        left: 15,
+        right: 15,
+        bottom: isLastItem ? 12 : 8,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Color(0xffF8F6FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Color(0xff2A158F).withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xff2A158F).withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.white,
+              blurRadius: 1,
+              offset: Offset(0, -1),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative icon in top-right
+            Positioned(
+              top: 12,
+              right: isRtl ? null : 16,
+              left: isRtl ? 16 : null,
+              child: Icon(
+                Icons.auto_awesome,
+                color: Color(0xff2A158F).withValues(alpha: 0.2),
+                size: 20,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Benefits icon
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Color(0xff2A158F).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.favorite,
+                      color: Color(0xff2A158F),
+                      size: 20,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      text,
+                      textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                      style: TextStyle(
+                        color: Color(0xff1A0E5C),
+                        fontSize: userLanguage == 'Urdu'
+                            ? themeController.textSize - 2
+                            : themeController.textSize,
+                        fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
+                        height: userLanguage == 'Urdu'
+                            ? ((themeController.textSize * 2) - 8) /
+                                  themeController.textSize
+                            : 1.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -555,28 +1295,6 @@ class _DuaTileState extends State<DuaTile> {
     );
   }
 
-  Future<void> _captureAndShare() async {
-    try {
-      RenderRepaintBoundary boundary =
-          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      var image = await boundary.toImage(pixelRatio: 3.0);
-      ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
-
-      // Save image to temporary file
-      final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/shared_dua.png').create();
-      await file.writeAsBytes(pngBytes);
-
-      // Share using share_plus
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: "Check out this beautiful Dua");
-    } catch (e) {
-      print("Error sharing: $e");
-    }
-  }
-
   Widget _buildBenefitsList() {
     final userLanguage = Get.find<UserController>().selectedLanguage;
     final themeController = Get.find<ThemeController>();
@@ -639,113 +1357,6 @@ class _DuaTileState extends State<DuaTile> {
           );
         }),
       ],
-    );
-  }
-
-  Widget _buildBenefitContainer(
-    String text,
-    bool isRtl,
-    ThemeController themeController,
-    String userLanguage, {
-    int? index,
-  }) {
-    final isLastItem =
-        index != null &&
-        widget.dua.benefits != null &&
-        index == widget.dua.benefits!.length - 1;
-
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      margin: EdgeInsets.only(
-        top: index == null || index == 0 ? 12 : 10,
-        left: 15,
-        right: 15,
-        bottom: isLastItem ? 12 : 8,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Color(0xffF8F6FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Color(0xff2A158F).withOpacity(0.15),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xff2A158F).withOpacity(0.08),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: Colors.white,
-              blurRadius: 1,
-              offset: Offset(0, -1),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Decorative icon in top-right
-            Positioned(
-              top: 12,
-              right: isRtl ? null : 16,
-              left: isRtl ? 16 : null,
-              child: Icon(
-                Icons.auto_awesome,
-                color: Color(0xff2A158F).withOpacity(0.2),
-                size: 20,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Benefits icon
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Color(0xff2A158F).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.favorite,
-                      color: Color(0xff2A158F),
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      text,
-                      textAlign: isRtl ? TextAlign.right : TextAlign.left,
-                      style: TextStyle(
-                        color: Color(0xff1A0E5C),
-                        fontSize: userLanguage == 'Urdu'
-                            ? themeController.textSize - 2
-                            : themeController.textSize,
-                        fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
-                        height: userLanguage == 'Urdu'
-                            ? ((themeController.textSize * 2) - 8) /
-                                  themeController.textSize
-                            : 1.5,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
