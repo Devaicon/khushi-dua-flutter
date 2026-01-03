@@ -59,6 +59,7 @@ dependencies:
   permission_handler:
   path_provider:
   google_mobile_ads:
+  http: ^1.6.0
 
 dependency_overrides:
   record_linux: ^1.2.1

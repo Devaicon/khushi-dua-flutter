@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 
 import '../../controllers/themeController.dart';
-import '../../models/categoryModel.dart';
 import '../../models/subCategoryModel.dart';
 import '../imageScreen.dart';
 import '../openDuasScreen.dart';
@@ -19,19 +18,19 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<SubCategoryModel> filteredSubCategories = [];
 
-
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_filterSubCategories);
   }
 
-
   void _filterSubCategories() {
     String query = _searchController.text.toLowerCase();
     setState(() {
       filteredSubCategories = Get.find<CategoryController>().allSubCategories
-          .where((subCategory) => subCategory.english.toLowerCase().contains(query))
+          .where(
+            (subCategory) => subCategory.english.toLowerCase().contains(query),
+          )
           .toList();
     });
   }
@@ -77,24 +76,40 @@ class _SearchScreenState extends State<SearchScreen> {
           // Results List
           Expanded(
             child: filteredSubCategories.isEmpty
-                ? Center(child: Text("No results found".tr, style: TextStyle(color: Colors.black)))
+                ? Center(
+                    child: Text(
+                      "No results found".tr,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  )
                 : ListView.builder(
-              itemCount: filteredSubCategories.length,
-              itemBuilder: (context, index) {
-                return InkWell(
-                  onTap: (){
-                    if(Get.find<ThemeController>().selectedAgeGroup==0){
-                      Get.to(ImageScreen(subCategoryModel:filteredSubCategories[index]),transition: Transition.fadeIn);
-                    }else{
-                      Get.to(OpenDuasScreen(filteredSubCategories[index]));
-                    }
-                  },
-                  child: ListTile(
-                    title: Text(filteredSubCategories[index].english, style: TextStyle(color: Colors.black)),
+                    itemCount: filteredSubCategories.length,
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        onTap: () {
+                          if (Get.find<ThemeController>().selectedAgeGroup ==
+                              0) {
+                            Get.to(
+                              ImageScreen(
+                                subCategoryModel: filteredSubCategories[index],
+                              ),
+                              transition: Transition.fadeIn,
+                            );
+                          } else {
+                            Get.to(
+                              OpenDuasScreen(filteredSubCategories[index]),
+                            );
+                          }
+                        },
+                        child: ListTile(
+                          title: Text(
+                            filteredSubCategories[index].english,
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),

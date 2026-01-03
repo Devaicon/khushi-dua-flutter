@@ -18,9 +18,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -46,6 +44,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
   @override
   void initState() {
     super.initState();
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<DuaController>().getFilteredDuas(widget._subCategoryModel);
     });
@@ -66,7 +65,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
         });
       }
     } catch (e) {
-      print("Error updating Dua status: $e");
+      debugPrint("Error updating Dua status: $e");
     }
   }
 
@@ -313,7 +312,7 @@ class _DuaTileState extends State<DuaTile> {
           } else {
             print('   ✅ URL matches expected value');
           }
-          print('');
+          debugPrint('');
         })
         .catchError((error) {
           print('❌ ERROR fetching base URL from Firebase: $error');
@@ -1425,6 +1424,7 @@ class _DuaTileState extends State<DuaTile> {
                     Divider(height: 2, color: rwhite),
                     if (themeController.showTransliteration)
                       Text(
+                        widget.dua.transliteration,
                         widget.dua.transliteration,
                         textAlign: TextAlign.start,
                         style: TextStyle(

@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-
-class SubCategoryModel{
+class SubCategoryModel {
   String id = '';
   String arabic = '';
   String bengali = '';
@@ -26,12 +24,12 @@ class SubCategoryModel{
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   bool isEnabled = true;
-  int order=0;
-  String categoryId="";
-  bool littleKids=true;
-  bool olderKids=true;
-  bool grownUps=true;
-  String image="";
+  int order = 0;
+  String categoryId = "";
+  bool littleKids = true;
+  bool olderKids = true;
+  bool grownUps = true;
+  String image = "";
 
   SubCategoryModel({
     required this.id,
@@ -119,8 +117,12 @@ class SubCategoryModel{
   factory SubCategoryModel.fromMap(Map<String, dynamic> map) {
     return SubCategoryModel(
       id: map["id"] ?? '',
-      createdAt: map["createdAt"] != null ? map["createdAt"].toDate() : DateTime.now(),
-      updatedAt: map["updatedAt"] != null ? map["updatedAt"].toDate() : DateTime.now(),
+      createdAt: map["createdAt"] != null
+          ? map["createdAt"].toDate()
+          : DateTime.now(),
+      updatedAt: map["updatedAt"] != null
+          ? map["updatedAt"].toDate()
+          : DateTime.now(),
       arabic: map["arabic"] ?? '',
       bengali: map["bengali"] ?? '',
       english: map["english"] ?? '',
@@ -148,10 +150,9 @@ class SubCategoryModel{
       olderKids: map["olderKids"] ?? true,
       grownUps: map["grownUps"] ?? true,
       categoryId: map["categoryId"] ?? '',
-        image: map["image"]
+      image: map["image"],
     );
   }
-
 
   Map<String, dynamic> toMap() {
     return {
@@ -184,9 +185,8 @@ class SubCategoryModel{
       "grownUps": grownUps,
       "olderKids": olderKids,
       "littleKids": littleKids,
-      "categoryId":categoryId,
-      "image":image,
+      "categoryId": categoryId,
+      "image": image,
     };
   }
-
 }

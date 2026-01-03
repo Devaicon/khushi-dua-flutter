@@ -34,7 +34,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
   String locationName = "Loading...";
   String timezoneName = "UTC"; // Default timezone
 
-  List<NamazModel> _namazList = [];
+  final List<NamazModel> _namazList = [];
 
   // Calculation and Juristic Method state
   String selectedCalculationMethod = "karachi";
@@ -56,10 +56,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
   Future<void> _loadPrayerSettings() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      selectedCalculationMethod = prefs.getString("calculationMethod") ?? "karachi";
+      selectedCalculationMethod =
+          prefs.getString("calculationMethod") ?? "karachi";
       selectedJuristicMethod = prefs.getString("juristicMethod") ?? "shafi";
     });
     _updateCalculationParams();
+    super.initState();
     setPosition();
   }
 
@@ -152,9 +154,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
     // Get current position
     currentPosition = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
     return currentPosition!;
   }
@@ -171,7 +171,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         String city = place.locality ?? place.subAdministrativeArea ?? "";
         String country = place.country ?? "";
         String isoCountryCode = place.isoCountryCode ?? "";
-        
+
         // Determine timezone based on coordinates (simplified approach)
         // You can use a timezone package for more accurate timezone detection
         if (isoCountryCode.isNotEmpty) {
@@ -195,7 +195,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
           int offsetHours = (position.longitude / 15).round();
           timezoneName = _getTimezoneFromOffset(offsetHours);
         }
-        
+
         setState(() {
           if (city.isNotEmpty && country.isNotEmpty) {
             locationName = "$city, $country";
@@ -252,18 +252,18 @@ class _PrayerScreenState extends State<PrayerScreen> {
       11: "Pacific/Norfolk",
       12: "Pacific/Auckland",
     };
-    
+
     // Try exact match first
     if (timezoneMap.containsKey(offsetHours)) {
       return timezoneMap[offsetHours]!;
     }
-    
+
     // Try with half-hour offset (for India, etc.)
     double halfHourOffset = offsetHours + 0.5;
     if (timezoneMap.containsKey(halfHourOffset)) {
       return timezoneMap[halfHourOffset]!;
     }
-    
+
     // For offsets outside the map, use closest match or default
     // Clamp offset to reasonable range
     int clampedOffset = offsetHours.clamp(-12, 12);
@@ -283,7 +283,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
       // Use current position if available, else use default coordinates
       Coordinates coords;
       if (currentPosition != null) {
-        coords = Coordinates(currentPosition!.latitude, currentPosition!.longitude);
+        coords = Coordinates(
+          currentPosition!.latitude,
+          currentPosition!.longitude,
+        );
       } else {
         coords = coordinates;
       }
@@ -311,64 +314,78 @@ class _PrayerScreenState extends State<PrayerScreen> {
       }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      
+
       // Clear existing list before adding new times
       List<NamazModel> newNamazList = [];
-      
+
       if (prayerTimes.fajrStartTime != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.fajrStartTime!),
-          name: "Fajr",
-          speakerEnabled: prefs.getString("fajrSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.fajrStartTime!),
+            name: "Fajr",
+            speakerEnabled: prefs.getString("fajrSpeaker") ?? "on",
+          ),
+        );
       }
-      
+
       if (prayerTimes.sunrise != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.sunrise!),
-          name: "Sunrise",
-          speakerEnabled: prefs.getString("sunriseSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.sunrise!),
+            name: "Sunrise",
+            speakerEnabled: prefs.getString("sunriseSpeaker") ?? "on",
+          ),
+        );
       }
-      
+
       if (prayerTimes.dhuhrStartTime != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.dhuhrStartTime!),
-          name: "Dhuhr",
-          speakerEnabled: prefs.getString("dhuhrSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.dhuhrStartTime!),
+            name: "Dhuhr",
+            speakerEnabled: prefs.getString("dhuhrSpeaker") ?? "on",
+          ),
+        );
       }
-      
+
       if (prayerTimes.asrStartTime != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.asrStartTime!),
-          name: "Asr",
-          speakerEnabled: prefs.getString("asrSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.asrStartTime!),
+            name: "Asr",
+            speakerEnabled: prefs.getString("asrSpeaker") ?? "on",
+          ),
+        );
       }
-      
+
       if (prayerTimes.maghribStartTime != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.maghribStartTime!),
-          name: "Maghrib",
-          speakerEnabled: prefs.getString("maghribSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.maghribStartTime!),
+            name: "Maghrib",
+            speakerEnabled: prefs.getString("maghribSpeaker") ?? "on",
+          ),
+        );
       }
-      
+
       if (prayerTimes.ishaStartTime != null) {
-        newNamazList.add(NamazModel(
-          time: DateFormat('hh:mm a').format(prayerTimes.ishaStartTime!),
-          name: "Ishaa",
-          speakerEnabled: prefs.getString("ishaSpeaker") ?? "on"
-        ));
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.ishaStartTime!),
+            name: "Ishaa",
+            speakerEnabled: prefs.getString("ishaSpeaker") ?? "on",
+          ),
+        );
       }
 
       setState(() {
         _namazList = newNamazList;
         isLoadingPrayerTimes = false;
       });
-      
-      print('Prayer times calculated successfully. List length: ${_namazList.length}');
+
+      print(
+        'Prayer times calculated successfully. List length: ${_namazList.length}',
+      );
     } catch (e, stackTrace) {
       print('Error calculating prayer times: $e');
       print('Stack trace: $stackTrace');
@@ -392,12 +409,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
         locationAllowed = true;
         locationName = "Lahore, Pakistan";
         timezoneName = "Asia/Karachi";
-        
+
         // We'll handle this in _calculatePrayerTimes by using coordinates directly
         coordinates = Coordinates(31.5497, 74.3436);
         setState(() {});
       }
-      
+
       // Always calculate prayer times - use current position if available, else default coordinates
       if (locationAllowed) {
         // Get location name from coordinates (non-blocking if it fails)
@@ -409,7 +426,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             // Continue anyway with default location name
           }
         }
-        
+
         // Calculate prayer times for the selected date
         await _calculatePrayerTimes(selectedEnglishDate);
       }
@@ -444,14 +461,25 @@ class _PrayerScreenState extends State<PrayerScreen> {
       }
     }
 
-    selectedHijriDate.hijriToGregorian(selectedHijriDate.hYear, selectedHijriDate.hMonth, selectedHijriDate.hDay);
-    
+    selectedHijriDate.hijriToGregorian(
+      selectedHijriDate.hYear,
+      selectedHijriDate.hMonth,
+      selectedHijriDate.hDay,
+    );
+
     // Recalculate prayer times for the new date
     _calculatePrayerTimes(selectedEnglishDate);
-    
+
     setState(() {
       // Update UI
     });
+    selectedHijriDate.hijriToGregorian(
+      selectedHijriDate.hYear,
+      selectedHijriDate.hMonth,
+      selectedHijriDate.hDay,
+    );
+    // Print the next Hijri date
+    debugPrint('Next Hijri Date: ${selectedHijriDate.toFormat("dd MM yyyy")}');
   }
 
   void _decrementDate() {
@@ -478,10 +506,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
       selectedHijriDate.hMonth,
       selectedHijriDate.hDay,
     );
-    
+
     // Recalculate prayer times for the new date
     _calculatePrayerTimes(selectedEnglishDate);
-    
+
     setState(() {
       // Update UI
     });
@@ -494,50 +522,62 @@ class _PrayerScreenState extends State<PrayerScreen> {
         body: Container(
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(image: DecorationImage(fit: BoxFit.fill, image: AssetImage("assets/images/prayerBg.png"))),
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              fit: BoxFit.fill,
+              image: AssetImage("assets/images/prayerBg.png"),
+            ),
+          ),
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 20),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).padding.bottom + 20,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Align(
-                    alignment: Alignment.centerRight,
-                    child: InkWell(
-                      onTap: () {
-                        if (locationAllowed) {
-                          Get.to(CompassScreen(latitude: currentPosition?.latitude ?? 0, longitude: currentPosition?.longitude ?? 0),
-                              transition: Transition.fade);
-                        } else {
-                          Get.snackbar("Location required", "Please enable location permissions from your phone settings",
-                              backgroundColor: Colors.red);
-                        }
-                      },
-                      child: Image.asset(
-                        "assets/images/prayerLocation.png",
-                        width: 45,
-                        height: 50,
-                      ).marginOnly(top: 12),
-                    )),
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () {
+                      if (locationAllowed) {
+                        Get.to(
+                          CompassScreen(
+                            latitude: currentPosition?.latitude ?? 0,
+                            longitude: currentPosition?.longitude ?? 0,
+                          ),
+                          transition: Transition.fade,
+                        );
+                      } else {
+                        Get.snackbar(
+                          "Location required",
+                          "Please enable location permissions from your phone settings",
+                          backgroundColor: Colors.red,
+                        );
+                      }
+                    },
+                    child: Image.asset(
+                      "assets/images/prayerLocation.png",
+                      width: 45,
+                      height: 50,
+                    ).marginOnly(top: 12),
+                  ),
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.location_on,
-                      color: rwhite,
-                      size: 30,
-                    ),
-                    SizedBox(
-                      width: 12,
-                    ),
+                    Icon(Icons.location_on, color: rwhite, size: 30),
+                    SizedBox(width: 12),
                     Text(
                       locationName,
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: rwhite),
-                    )
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: rwhite,
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(
-                  height: 12,
-                ),
+                SizedBox(height: 12),
 
                 //calender
                 Row(
@@ -566,17 +606,24 @@ class _PrayerScreenState extends State<PrayerScreen> {
                                   color: Color(0xff2A158F),
                                 ),
                                 Text(
-                                  "${DateFormat('EEEE').format(selectedEnglishDate)}",
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                  DateFormat(
+                                    'EEEE',
+                                  ).format(selectedEnglishDate),
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
                             Text(
-                              "${selectedHijriDate.toFormat("dd MMMM yyyy")}",
+                              selectedHijriDate.toFormat("dd MMMM yyyy"),
                               style: TextStyle(fontSize: 18),
                             ),
                             Text(
-                              "${DateFormat('dd MMMM yyy').format(selectedEnglishDate)}",
+                              DateFormat(
+                                'dd MMMM yyy',
+                              ).format(selectedEnglishDate),
                               style: TextStyle(color: rhint),
                             ),
                           ],
@@ -594,59 +641,68 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ],
                 ),
 
-                SizedBox(
-                  height: 20,
-                ),
+                SizedBox(height: 20),
                 //namaz time
                 locationAllowed
                     ? isLoadingPrayerTimes
-                        ? Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: CircularProgressIndicator(color: rwhite),
-                            ),
-                          )
-                        : _namazList.isEmpty
-                            ? Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(20.0),
-                                  child: Text(
-                                    "Unable to load prayer times",
-                                    style: TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold),
+                          ? Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: CircularProgressIndicator(color: rwhite),
+                              ),
+                            )
+                          : _namazList.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: Text(
+                                  "Unable to load prayer times",
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              )
-                            : FadeInAnimationTTB(
-                                delay: 1,
-                                child: Container(
-                                  width: MediaQuery.of(context).size.width,
-                                  decoration: BoxDecoration(
-                                    color: rwhite.withOpacity(0.2),
-                                    border: Border.all(color: rwhite),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: NeverScrollableScrollPhysics(),
-                                      itemCount: _namazList.length,
-                                      itemBuilder: (context, index) {
-                                        if (index == _namazList.length - 1) {
-                                          return NamazTile(_namazList[index], false);
-                                        } else {
-                                          return NamazTile(_namazList[index], true);
-                                        }
-                                      }),
+                              ),
+                            )
+                          : FadeInAnimationTTB(
+                              delay: 1,
+                              child: Container(
+                                width: MediaQuery.of(context).size.width,
+                                decoration: BoxDecoration(
+                                  color: rwhite.withOpacity(0.2),
+                                  border: Border.all(color: rwhite),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
-                              )
+                                child: ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount: _namazList.length,
+                                  itemBuilder: (context, index) {
+                                    if (index == _namazList.length - 1) {
+                                      return NamazTile(
+                                        _namazList[index],
+                                        false,
+                                      );
+                                    } else {
+                                      return NamazTile(_namazList[index], true);
+                                    }
+                                  },
+                                ),
+                              ),
+                            )
                     : Center(
                         child: Text(
-                        "Location is not enabled",
-                        style: TextStyle(color: Colors.red, fontSize: 18, fontWeight: FontWeight.bold),
-                      )),
+                          "Location is not enabled",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
 
-                SizedBox(
-                  height: 20,
-                ),
+                SizedBox(height: 20),
 
                 // Calculation Method and Juristic Method Dropdowns
                 if (locationAllowed)
@@ -658,7 +714,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           child: _CalculationMethodDropdown(
                             selectedValue: selectedCalculationMethod,
                             onChanged: (String value) async {
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
                               await prefs.setString("calculationMethod", value);
                               setState(() {
                                 selectedCalculationMethod = value;
@@ -673,7 +730,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           child: _JuristicMethodDropdown(
                             selectedValue: selectedJuristicMethod,
                             onChanged: (String value) async {
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
                               await prefs.setString("juristicMethod", value);
                               setState(() {
                                 selectedJuristicMethod = value;
@@ -687,9 +745,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                   ),
 
-                SizedBox(
-                  height: 15,
-                ),
+                SizedBox(height: 15),
 
                 FadeInAnimationBTT(
                   delay: 1,
@@ -698,15 +754,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.7,
                       height: 50,
-                      decoration:
-                          BoxDecoration(color: rwhite.withOpacity(0.2), borderRadius: BorderRadius.circular(19), border: Border.all(color: rwhite)),
-                      child: Divider(
-                        height: 2,
-                        color: rwhite,
+                      decoration: BoxDecoration(
+                        color: rwhite.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(19),
+                        border: Border.all(color: rwhite),
                       ),
+                      child: Divider(height: 2, color: rwhite),
                     ),
                   ),
-                )
+                ),
               ],
             ).marginSymmetric(horizontal: 12),
           ),
@@ -736,103 +792,103 @@ class _NamazTileState extends State<NamazTile> {
           mainAxisSize: MainAxisSize.max,
           children: [
             Expanded(
-                flex: 1,
-                child: Text(
-                  "${widget._namazModel.time}",
-                  style: TextStyle(fontSize: 20),
-                )),
+              flex: 1,
+              child: Text(
+                widget._namazModel.time,
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
             Expanded(
-                flex: 2,
-                child: Text(
-                  "${widget._namazModel.name}",
-                  style: TextStyle(fontSize: 20),
-                ).marginSymmetric(horizontal: 10)),
+              flex: 2,
+              child: Text(
+                widget._namazModel.name,
+                style: TextStyle(fontSize: 20),
+              ).marginSymmetric(horizontal: 10),
+            ),
             Expanded(
-                flex: 1,
-                child: InkWell(
-                  onTap: () async {
-                    SharedPreferences prefs = await SharedPreferences.getInstance();
+              flex: 1,
+              child: InkWell(
+                onTap: () async {
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
 
-                    setState(() {
-                      if (widget._namazModel.speakerEnabled == "on") {
-                        widget._namazModel.speakerEnabled = "off";
-                        if (widget._namazModel.name == "Fajr") {
-                          prefs.setString("fajrSpeaker", "off");
-                        }
-                        if (widget._namazModel.name == "Sunrise") {
-                          prefs.setString("sunriseSpeaker", "off");
-                        }
-                        if (widget._namazModel.name == "Dhuhr") {
-                          prefs.setString("dhuhrSpeaker", "off");
-                        }
-                        if (widget._namazModel.name == "Asr") {
-                          prefs.setString("asrSpeaker", "off");
-                        }
-                        if (widget._namazModel.name == "Maghrib") {
-                          prefs.setString("maghribSpeaker", "off");
-                        }
-                        if (widget._namazModel.name == "Ishaa") {
-                          prefs.setString("ishaSpeaker", "off");
-                        }
-                      } else if (widget._namazModel.speakerEnabled == "off") {
-                        widget._namazModel.speakerEnabled = "vibrate";
-                        if (widget._namazModel.name == "Fajr") {
-                          prefs.setString("fajrSpeaker", "vibrate");
-                        }
-                        if (widget._namazModel.name == "Sunrise") {
-                          prefs.setString("sunriseSpeaker", "vibrate");
-                        }
-                        if (widget._namazModel.name == "Dhuhr") {
-                          prefs.setString("dhuhrSpeaker", "vibrate");
-                        }
-                        if (widget._namazModel.name == "Asr") {
-                          prefs.setString("asrSpeaker", "vibrate");
-                        }
-                        if (widget._namazModel.name == "Maghrib") {
-                          prefs.setString("maghribSpeaker", "vibrate");
-                        }
-                        if (widget._namazModel.name == "Ishaa") {
-                          prefs.setString("ishaSpeaker", "vibrate");
-                        }
-                      } else {
-                        widget._namazModel.speakerEnabled = "on";
-                        if (widget._namazModel.name == "Fajr") {
-                          prefs.setString("fajrSpeaker", "on");
-                        }
-                        if (widget._namazModel.name == "Sunrise") {
-                          prefs.setString("sunriseSpeaker", "on");
-                        }
-                        if (widget._namazModel.name == "Dhuhr") {
-                          prefs.setString("dhuhrSpeaker", "on");
-                        }
-                        if (widget._namazModel.name == "Asr") {
-                          prefs.setString("asrSpeaker", "on");
-                        }
-                        if (widget._namazModel.name == "Maghrib") {
-                          prefs.setString("maghribSpeaker", "on");
-                        }
-                        if (widget._namazModel.name == "Ishaa") {
-                          prefs.setString("ishaSpeaker", "on");
-                        }
+                  setState(() {
+                    if (widget._namazModel.speakerEnabled == "on") {
+                      widget._namazModel.speakerEnabled = "off";
+                      if (widget._namazModel.name == "Fajr") {
+                        prefs.setString("fajrSpeaker", "off");
                       }
-                    });
-                  },
-                  child: Icon(
-                    widget._namazModel.speakerEnabled == "on"
-                        ? Icons.volume_up_rounded
-                        : widget._namazModel.speakerEnabled == "off"
-                            ? Icons.volume_mute
-                            : Icons.vibration,
-                    color: rblack,
-                  ),
-                )),
+                      if (widget._namazModel.name == "Sunrise") {
+                        prefs.setString("sunriseSpeaker", "off");
+                      }
+                      if (widget._namazModel.name == "Dhuhr") {
+                        prefs.setString("dhuhrSpeaker", "off");
+                      }
+                      if (widget._namazModel.name == "Asr") {
+                        prefs.setString("asrSpeaker", "off");
+                      }
+                      if (widget._namazModel.name == "Maghrib") {
+                        prefs.setString("maghribSpeaker", "off");
+                      }
+                      if (widget._namazModel.name == "Ishaa") {
+                        prefs.setString("ishaSpeaker", "off");
+                      }
+                    } else if (widget._namazModel.speakerEnabled == "off") {
+                      widget._namazModel.speakerEnabled = "vibrate";
+                      if (widget._namazModel.name == "Fajr") {
+                        prefs.setString("fajrSpeaker", "vibrate");
+                      }
+                      if (widget._namazModel.name == "Sunrise") {
+                        prefs.setString("sunriseSpeaker", "vibrate");
+                      }
+                      if (widget._namazModel.name == "Dhuhr") {
+                        prefs.setString("dhuhrSpeaker", "vibrate");
+                      }
+                      if (widget._namazModel.name == "Asr") {
+                        prefs.setString("asrSpeaker", "vibrate");
+                      }
+                      if (widget._namazModel.name == "Maghrib") {
+                        prefs.setString("maghribSpeaker", "vibrate");
+                      }
+                      if (widget._namazModel.name == "Ishaa") {
+                        prefs.setString("ishaSpeaker", "vibrate");
+                      }
+                    } else {
+                      widget._namazModel.speakerEnabled = "on";
+                      if (widget._namazModel.name == "Fajr") {
+                        prefs.setString("fajrSpeaker", "on");
+                      }
+                      if (widget._namazModel.name == "Sunrise") {
+                        prefs.setString("sunriseSpeaker", "on");
+                      }
+                      if (widget._namazModel.name == "Dhuhr") {
+                        prefs.setString("dhuhrSpeaker", "on");
+                      }
+                      if (widget._namazModel.name == "Asr") {
+                        prefs.setString("asrSpeaker", "on");
+                      }
+                      if (widget._namazModel.name == "Maghrib") {
+                        prefs.setString("maghribSpeaker", "on");
+                      }
+                      if (widget._namazModel.name == "Ishaa") {
+                        prefs.setString("ishaSpeaker", "on");
+                      }
+                    }
+                  });
+                },
+                child: Icon(
+                  widget._namazModel.speakerEnabled == "on"
+                      ? Icons.volume_up_rounded
+                      : widget._namazModel.speakerEnabled == "off"
+                      ? Icons.volume_mute
+                      : Icons.vibration,
+                  color: rblack,
+                ),
+              ),
+            ),
           ],
         ).marginSymmetric(horizontal: 12, vertical: 8),
-        if (widget.bottomLine)
-          Divider(
-            height: 2,
-            color: rwhite,
-          )
+        if (widget.bottomLine) Divider(height: 2, color: rwhite),
       ],
     );
   }
@@ -951,7 +1007,10 @@ class _CalculationMethodDropdown extends StatelessWidget {
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           "Done",
-                          style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: rbluedark,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -971,7 +1030,9 @@ class _CalculationMethodDropdown extends StatelessWidget {
                           item['label']!,
                           style: TextStyle(
                             color: isSelected ? rbluedark : rblack,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         trailing: isSelected
@@ -1103,7 +1164,10 @@ class _JuristicMethodDropdown extends StatelessWidget {
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           "Done",
-                          style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: rbluedark,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -1123,7 +1187,9 @@ class _JuristicMethodDropdown extends StatelessWidget {
                           item['label']!,
                           style: TextStyle(
                             color: isSelected ? rbluedark : rblack,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                         trailing: isSelected

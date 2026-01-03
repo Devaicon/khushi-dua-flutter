@@ -6,8 +6,8 @@ import '../models/subCategoryModel.dart';
 import '../services/categoryService.dart';
 
 class CategoryController extends GetxController {
-  List<CategoryModel> _allCategories = [];
-  List<SubCategoryModel> _allSubCategories = [];
+  final List<CategoryModel> _allCategories = [];
+  final List<SubCategoryModel> _allSubCategories = [];
   List<SubCategoryModel> _filteredSubCategories = [];
 
   List<CategoryModel> get allCategories => _allCategories;
@@ -34,7 +34,9 @@ class CategoryController extends GetxController {
   }
 
   addCategoryToList(CategoryModel categoryModel) {
-    int existingIndex = _allCategories.indexWhere((cat) => cat.id == categoryModel.id);
+    int existingIndex = _allCategories.indexWhere(
+      (cat) => cat.id == categoryModel.id,
+    );
 
     if (existingIndex == -1) {
       _allCategories.add(categoryModel);
@@ -46,7 +48,9 @@ class CategoryController extends GetxController {
   }
 
   addSubCategoryToList(SubCategoryModel subCategoryModel) {
-    int existingIndex = _allSubCategories.indexWhere((cat) => cat.id == subCategoryModel.id);
+    int existingIndex = _allSubCategories.indexWhere(
+      (cat) => cat.id == subCategoryModel.id,
+    );
 
     if (existingIndex == -1) {
       _allSubCategories.add(subCategoryModel);
@@ -58,12 +62,16 @@ class CategoryController extends GetxController {
   }
 
   getSubCategories(CategoryModel categoryModel) {
-    ThemeController _themeController=Get.find<ThemeController>();
+    ThemeController _themeController = Get.find<ThemeController>();
     // print(categoryModel.id);
     // print(_allSubCategories.length);
     _filteredSubCategories.clear();
     _filteredSubCategories = _allSubCategories
-        .where((element) => element.categoryId == categoryModel.id && element.isEnabled == true)
+        .where(
+          (element) =>
+              element.categoryId == categoryModel.id &&
+              element.isEnabled == true,
+        )
         .toList();
 
     // for (var item in _allSubCategories) {

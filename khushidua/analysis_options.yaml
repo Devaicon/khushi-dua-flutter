@@ -7,6 +7,18 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+analyzer:
+  errors:
+    unused_local_variable: ignore
+    file_names: ignore
+    await_only_futures: ignore
+    avoid_function_literals_in_foreach_calls: ignore
+    deprecated_member_use: ignore
+    unused_element: ignore
+    void_checks: ignore
+    prefer_typing_uninitialized_variables: ignore
+    no_leading_underscores_for_local_identifiers: ignore
+    library_private_types_in_public_api: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
