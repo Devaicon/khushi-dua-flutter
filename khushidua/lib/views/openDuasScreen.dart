@@ -7,7 +7,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -19,9 +18,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../constants/colors.dart';
@@ -44,6 +41,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
   @override
   void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<DuaController>().getFilteredDuas(widget._subCategoryModel);
     });
@@ -64,7 +62,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
         });
       }
     } catch (e) {
-      print("Error updating Dua status: $e");
+      debugPrint("Error updating Dua status: $e");
     }
   }
 
@@ -275,6 +273,7 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   void initState() {
+    super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
   }
@@ -283,7 +282,7 @@ class _DuaTileState extends State<DuaTile> {
     await sysConfigRef.doc("MemoizationURL").get().then((value) {
       baseUrl = value.data()!["URL"];
     });
-    print(baseUrl);
+    debugPrint(baseUrl);
   }
 
   void _openRecordingDialog() {
@@ -291,7 +290,7 @@ class _DuaTileState extends State<DuaTile> {
       context: context,
       builder: (context) {
         String? apiResponse;
-        bool _isLoading = false;
+        bool isLoading = false;
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -303,13 +302,13 @@ class _DuaTileState extends State<DuaTile> {
                 return;
               }
 
-              setState(() => _isLoading = true);
+              setState(() => isLoading = true);
 
               try {
                 var uri = Uri.parse('$baseUrl${widget.dua.arabic}');
-                print('$baseUrl${widget.dua.arabic}');
-                print(widget.dua.arabic);
-                print(_recordedPath);
+                debugPrint('$baseUrl${widget.dua.arabic}');
+                debugPrint(widget.dua.arabic);
+                debugPrint(_recordedPath);
                 var request = http.MultipartRequest('POST', uri);
                 request.files.add(
                   await http.MultipartFile.fromPath(
@@ -329,14 +328,14 @@ class _DuaTileState extends State<DuaTile> {
 
                 setState(() {
                   apiResponse = responseBody;
-                  // print(apiResponse);
+                  // debugPrint(apiResponse);
                 });
               } catch (e) {
                 setState(() {
                   apiResponse = "Error: $e";
                 });
               } finally {
-                setState(() => _isLoading = false);
+                setState(() => isLoading = false);
               }
             }
 
@@ -347,7 +346,7 @@ class _DuaTileState extends State<DuaTile> {
               //   if (path != null) {
               //     _recordedPath = path;
               //     String? mp3Path = await convertAacToMp3(_recordedPath!);
-              //     print("Recording complete: $mp3Path");
+              //     debugPrint("Recording complete: $mp3Path");
               //     _recordedPath = mp3Path;
               //     await sendToApi();
               //   }
@@ -380,14 +379,14 @@ class _DuaTileState extends State<DuaTile> {
                   Directionality(
                     textDirection: TextDirection.rtl,
                     child: Text(
-                      "${widget.dua.arabic}",
+                      widget.dua.arabic,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
                       ),
                     ),
                   ),
-                  if (_isLoading) CircularProgressIndicator(),
+                  if (isLoading) CircularProgressIndicator(),
                   if (apiResponse != null) ...[
                     const SizedBox(height: 16),
                     Text(
@@ -396,7 +395,7 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                     Directionality(
                       textDirection: TextDirection.rtl,
-                      child: Html(data: "${apiResponse}"),
+                      child: Html(data: "$apiResponse"),
                     ),
                     // Text(apiResponse!, textAlign: TextAlign.start),
                   ],
@@ -559,7 +558,7 @@ class _DuaTileState extends State<DuaTile> {
         XFile(file.path),
       ], text: "Check out this beautiful Dua");
     } catch (e) {
-      print("Error sharing: $e");
+      debugPrint("Error sharing: $e");
     }
   }
 
@@ -612,7 +611,7 @@ class _DuaTileState extends State<DuaTile> {
                         ),
                         Expanded(
                           child: Text(
-                            "${widget.dua.arabic}",
+                            widget.dua.arabic,
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               color: rblack,
@@ -626,7 +625,7 @@ class _DuaTileState extends State<DuaTile> {
                     Divider(height: 2, color: rwhite),
                     if (themeController.showTransliteration)
                       Text(
-                        "${widget.dua.transliteration}",
+                        widget.dua.transliteration,
                         textAlign: TextAlign.start,
                         style: TextStyle(
                           color: rblack,
@@ -643,7 +642,9 @@ class _DuaTileState extends State<DuaTile> {
                                   "Urdu")
                             InkWell(
                               onTap: () {
-                                if(Get.find<UserController>().selectedLanguage == "Urdu"){
+                                if (Get.find<UserController>()
+                                        .selectedLanguage ==
+                                    "Urdu") {
                                   if (widget.dua.urduTranslation != null ||
                                       widget.dua.urduTranslation != "") {
                                     return widget.onToggle(
@@ -651,7 +652,7 @@ class _DuaTileState extends State<DuaTile> {
                                       widget.dua.id,
                                     );
                                   }
-                                }else{
+                                } else {
                                   if (widget.dua.englishTranslation != null ||
                                       widget.dua.englishTranslation != "") {
                                     return widget.onToggle(
@@ -660,19 +661,29 @@ class _DuaTileState extends State<DuaTile> {
                                     );
                                   }
                                 }
-
                               },
                               child: Icon(
                                 isPlaying
                                     ? Icons.stop_circle
                                     : Icons.play_circle,
-                                color: Get.find<UserController>().selectedLanguage=="Urdu"?widget.dua.urduTranslation!=null?Color(0xff2A158F):rpink:widget.dua.englishTranslation!=null?Color(0xff2A158F):rpink,
+                                color:
+                                    Get.find<UserController>()
+                                            .selectedLanguage ==
+                                        "Urdu"
+                                    ? widget.dua.urduTranslation != null
+                                          ? Color(0xff2A158F)
+                                          : rpink
+                                    : widget.dua.englishTranslation != null
+                                    ? Color(0xff2A158F)
+                                    : rpink,
                               ),
                             ),
                           SizedBox(width: 20),
                           Expanded(
                             child: Text(
-                              "${widget.dua.getName(Get.find<UserController>().selectedLanguage)}",
+                              widget.dua.getName(
+                                Get.find<UserController>().selectedLanguage,
+                              ),
                               textAlign: TextAlign.start,
                               style: TextStyle(
                                 color: rblack,

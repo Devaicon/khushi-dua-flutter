@@ -41,14 +41,12 @@ class _SignupScreenState extends State<SignupScreen> {
                       width: MediaQuery.of(context).size.width,
                       height: 200,
                       decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xffEEB6A3),
-                          Color(0xffC3CCF6),
-                        ],
-                      )),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
+                        ),
+                      ),
                       alignment: Alignment.center,
                       child: GetBuilder<UserController>(
                         builder: (userController) {
@@ -77,24 +75,39 @@ class _SignupScreenState extends State<SignupScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.grey,
                                       border: Border.all(
-                                          color: themeController.selectedAgeGroup == 0
-                                              ? rpink
-                                              : themeController.selectedAgeGroup == 1
-                                                  ? rblue
-                                                  : rgreen,
-                                          width: 3),
+                                        color:
+                                            themeController.selectedAgeGroup ==
+                                                0
+                                            ? rpink
+                                            : themeController
+                                                      .selectedAgeGroup ==
+                                                  1
+                                            ? rblue
+                                            : rgreen,
+                                        width: 3,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: userController.avatar != "" ? ClipOval(child: Image.asset(userController.avatar)) : SizedBox(),
+                                    child: userController.avatar != ""
+                                        ? ClipOval(
+                                            child: Image.asset(
+                                              userController.avatar,
+                                            ),
+                                          )
+                                        : SizedBox(),
                                   ),
                                 ),
                               ),
                               FadeInAnimationBTT(
-                                  delay: 1,
-                                  child: Text(
-                                    "${userName}",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                  ).marginOnly(top: 8))
+                                delay: 1,
+                                child: Text(
+                                  userName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ).marginOnly(top: 8),
+                              ),
                             ],
                           );
                         },
@@ -108,7 +121,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Text(
                           "Name".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         TextFormField(
                           controller: nameController,
@@ -138,7 +155,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         ).marginOnly(top: 10),
                         Text(
                           "Email".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ).marginOnly(top: 20),
                         TextFormField(
                           controller: emailController,
@@ -168,7 +189,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         ).marginOnly(top: 12),
                         Text(
                           "Password".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ).marginOnly(top: 20),
                         TextFormField(
                           controller: passwordController,
@@ -198,16 +223,20 @@ class _SignupScreenState extends State<SignupScreen> {
                         ).marginOnly(top: 12),
                         Text(
                           "Confirm Password".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ).marginOnly(top: 20),
                         TextFormField(
                           controller: cPasswordController,
                           validator: (cPassword) {
-                            if (cPassword == null||cPassword.isEmpty) {
+                            if (cPassword == null || cPassword.isEmpty) {
                               return "Confirm your password".tr;
-                            } else if(passwordController.text!=cPassword){
+                            } else if (passwordController.text != cPassword) {
                               return "Passwords don't match";
-                            }else {
+                            } else {
                               cPasswordController.text = cPassword;
                               return null;
                             }
@@ -229,10 +258,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ).marginOnly(top: 12),
                         InkWell(
-                          onTap: () async{
-                            if (formKey.currentState != null && formKey.currentState!.validate()) {
-                              await AuthService().register(emailController.text, passwordController.text,nameController.text);
-
+                          onTap: () async {
+                            if (formKey.currentState != null &&
+                                formKey.currentState!.validate()) {
+                              await AuthService().register(
+                                emailController.text,
+                                passwordController.text,
+                                nameController.text,
+                              );
                             } else {
                               return;
                             }
@@ -241,16 +274,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             width: MediaQuery.of(context).size.width,
                             height: 60,
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: rbluedark),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: rbluedark,
+                            ),
                             child: Text(
                               "Create an account".tr,
                               style: TextStyle(color: rwhite),
                             ),
                           ).marginOnly(top: 20),
                         ),
-                        SizedBox(
-                          height: 30,
-                        ),
+                        SizedBox(height: 30),
                         Align(
                           alignment: Alignment.center,
                           child: Row(
@@ -261,16 +295,23 @@ class _SignupScreenState extends State<SignupScreen> {
                                 style: TextStyle(color: rblack),
                               ),
                               InkWell(
-                                  onTap: () {
-                                    Get.to(LoginScreen(), transition: Transition.downToUp);
-                                  },
-                                  child: Text(
-                                    "Login now! ".tr,
-                                    style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
-                                  )),
+                                onTap: () {
+                                  Get.to(
+                                    LoginScreen(),
+                                    transition: Transition.downToUp,
+                                  );
+                                },
+                                child: Text(
+                                  "Login now! ".tr,
+                                  style: TextStyle(
+                                    color: rbluedark,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        )
+                        ),
                       ],
                     ).marginSymmetric(horizontal: 20, vertical: 20),
                   ),

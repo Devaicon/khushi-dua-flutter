@@ -5,19 +5,16 @@ import 'package:khushidua/controllers/userController.dart';
 import 'package:khushidua/views/dashboard.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../constants/userData.dart';
-
 class BlockedScreen extends StatelessWidget {
   const BlockedScreen({super.key});
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
-    SharedPreferences prefs=await SharedPreferences.getInstance();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.clear();
     Get.find<UserController>().setLoggedIn(false);
     Get.find<UserController>().setUserName("");
     Get.find<UserController>().setPoints(0);
-
 
     Get.offAll(Dashboard());
   }
@@ -44,10 +41,13 @@ class BlockedScreen extends StatelessWidget {
                 onPressed: _logout,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
                 ),
                 child: const Text("Logout", style: TextStyle(fontSize: 18)),
-              )
+              ),
             ],
           ),
         ),

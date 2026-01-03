@@ -6,14 +6,17 @@ import 'package:khushidua/models/subCategoryModel.dart';
 
 import '../models/categoryModel.dart';
 
-class CategoryService{
-  CategoryController _categoryController=Get.find<CategoryController>();
+class CategoryService {
+  final CategoryController _categoryController = Get.find<CategoryController>();
 
   getAllCategories() async {
     categoryRef.snapshots().listen((event) {
       event.docChanges.forEach((element) {
-        if (element.type == DocumentChangeType.added || element.type == DocumentChangeType.modified) {
-          _categoryController.addCategoryToList(CategoryModel.fromMap(element.doc.data()!));
+        if (element.type == DocumentChangeType.added ||
+            element.type == DocumentChangeType.modified) {
+          _categoryController.addCategoryToList(
+            CategoryModel.fromMap(element.doc.data()!),
+          );
         }
       });
     });
@@ -22,8 +25,11 @@ class CategoryService{
   getAllSubCategories() async {
     subCategoryRef.snapshots().listen((event) {
       event.docChanges.forEach((element) {
-        if (element.type == DocumentChangeType.added || element.type == DocumentChangeType.modified) {
-          _categoryController.addSubCategoryToList(SubCategoryModel.fromMap(element.doc.data()!));
+        if (element.type == DocumentChangeType.added ||
+            element.type == DocumentChangeType.modified) {
+          _categoryController.addSubCategoryToList(
+            SubCategoryModel.fromMap(element.doc.data()!),
+          );
         }
       });
     });

@@ -38,14 +38,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: MediaQuery.of(context).size.width,
                       height: 200,
                       decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xffEEB6A3),
-                          Color(0xffC3CCF6),
-                        ],
-                      )),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
+                        ),
+                      ),
                       alignment: Alignment.center,
                       child: GetBuilder<UserController>(
                         builder: (userController) {
@@ -53,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               InkWell(
-                                onTap:(){
+                                onTap: () {
                                   Get.back();
                                 },
                                 child: Align(
@@ -74,24 +72,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.grey,
                                       border: Border.all(
-                                          color: themeController.selectedAgeGroup == 0
-                                              ? rpink
-                                              : themeController.selectedAgeGroup == 1
-                                                  ? rblue
-                                                  : rgreen,
-                                          width: 3),
+                                        color:
+                                            themeController.selectedAgeGroup ==
+                                                0
+                                            ? rpink
+                                            : themeController
+                                                      .selectedAgeGroup ==
+                                                  1
+                                            ? rblue
+                                            : rgreen,
+                                        width: 3,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: userController.avatar != "" ? ClipOval(child: Image.asset(userController.avatar)) : SizedBox(),
+                                    child: userController.avatar != ""
+                                        ? ClipOval(
+                                            child: Image.asset(
+                                              userController.avatar,
+                                            ),
+                                          )
+                                        : SizedBox(),
                                   ),
                                 ),
                               ),
                               FadeInAnimationBTT(
-                                  delay: 1,
-                                  child: Text(
-                                    "${userName}",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                  ).marginOnly(top: 8))
+                                delay: 1,
+                                child: Text(
+                                  userName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ).marginOnly(top: 8),
+                              ),
                             ],
                           );
                         },
@@ -105,12 +118,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           "Email".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ).marginOnly(top: 20),
                         TextFormField(
                           controller: emailController,
                           validator: (email) {
-                            if (email == null||email.isEmpty) {
+                            if (email == null || email.isEmpty) {
                               return "Email is required".tr;
                             } else {
                               emailController.text = email;
@@ -135,12 +152,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ).marginOnly(top: 12),
                         Text(
                           "Password".tr,
-                          style: TextStyle(fontSize: 18, color: rblack, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: rblack,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ).marginOnly(top: 20),
                         TextFormField(
                           controller: passwordController,
                           validator: (password) {
-                            if (password == null|| password.isEmpty) {
+                            if (password == null || password.isEmpty) {
                               return "Password is required".tr;
                             } else {
                               passwordController.text = password;
@@ -164,9 +185,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ).marginOnly(top: 12),
                         InkWell(
-                          onTap: () async{
-                            if (formKey.currentState != null && formKey.currentState!.validate()) {
-                              await AuthService().login(emailController.text, passwordController.text);
+                          onTap: () async {
+                            if (formKey.currentState != null &&
+                                formKey.currentState!.validate()) {
+                              await AuthService().login(
+                                emailController.text,
+                                passwordController.text,
+                              );
                             } else {
                               return;
                             }
@@ -175,16 +200,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: MediaQuery.of(context).size.width,
                             height: 60,
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: rbluedark),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: rbluedark,
+                            ),
                             child: Text(
                               "Login".tr,
                               style: TextStyle(color: rwhite),
                             ),
                           ).marginOnly(top: 20),
                         ),
-                        SizedBox(
-                          height: 30,
-                        ),
+                        SizedBox(height: 30),
                         Align(
                           alignment: Alignment.center,
                           child: Row(
@@ -195,16 +221,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(color: rblack),
                               ),
                               InkWell(
-                                  onTap: () {
-                                    Get.back();
-                                  },
-                                  child: Text(
-                                    "Signup now! ".tr,
-                                    style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
-                                  )),
+                                onTap: () {
+                                  Get.back();
+                                },
+                                child: Text(
+                                  "Signup now! ".tr,
+                                  style: TextStyle(
+                                    color: rbluedark,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        )
+                        ),
                       ],
                     ).marginSymmetric(horizontal: 20, vertical: 20),
                   ),

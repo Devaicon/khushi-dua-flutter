@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:khushidua/controllers/categoryController.dart';
@@ -67,7 +65,7 @@ class _DashboardState extends State<Dashboard> {
           });
         },
         onAdFailedToLoad: (ad, error) {
-          print('Ad failed to load: $error');
+          debugPrint('Ad failed to load: $error');
           ad.dispose();
         },
       ),
@@ -78,11 +76,11 @@ class _DashboardState extends State<Dashboard> {
 
   getSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId= await prefs.getString("userId")??"";
+    String userId = await prefs.getString("userId") ?? "";
 
-    if(userId!=""){
+    if (userId != "") {
       Get.find<UserController>().getUserData(userId);
-    }else{
+    } else {
       isLoggedIn = await prefs.getBool("isLoggedIn") ?? false;
       points = await prefs.getInt("userPoints") ?? 0;
       userName = await prefs.getString("userName") ?? "Guest User";
@@ -105,21 +103,25 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: GetBuilder<UserController>(builder: (userController) {
-        return Column(
-          children: [
-            Expanded(child: _selectedScreen),
-            if(userController.userModel==null||(!userController.userModel!.isMember)||userController.userModel!.isBlocked)
-            if (_isAdLoaded)
-              Container(
-                alignment: Alignment.center,
-                width: _bannerAd!.size.width.toDouble(),
-                height:80,
-                child: AdWidget(ad: _bannerAd!),
-              ),
-          ],
-        );
-      },),
+      body: GetBuilder<UserController>(
+        builder: (userController) {
+          return Column(
+            children: [
+              Expanded(child: _selectedScreen),
+              if (userController.userModel == null ||
+                  (!userController.userModel!.isMember) ||
+                  userController.userModel!.isBlocked)
+                if (_isAdLoaded)
+                  Container(
+                    alignment: Alignment.center,
+                    width: _bannerAd!.size.width.toDouble(),
+                    height: 80,
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
+            ],
+          );
+        },
+      ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         elevation: 0,

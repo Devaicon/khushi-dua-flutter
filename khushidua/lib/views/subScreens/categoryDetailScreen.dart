@@ -8,7 +8,6 @@ import '../../animations/fadeInAnimationBTT.dart';
 import '../../constants/colors.dart';
 import '../../models/categoryModel.dart';
 import '../../models/subCategoryModel.dart';
-import '../../models/duaModel.dart';
 import '../imageScreen.dart';
 import '../openDuasScreen.dart';
 
@@ -48,11 +47,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
             List<bool> subCategoryCompleted = List.generate(total, (index) {
               final subId = subCategories[index].id;
-              final duas = allDuas.where((d) => d.subCategoryIds.contains(subId));
-              return duas.isNotEmpty && duas.every((d) => readDuas.contains(d.id));
+              final duas = allDuas.where(
+                (d) => d.subCategoryIds.contains(subId),
+              );
+              return duas.isNotEmpty &&
+                  duas.every((d) => readDuas.contains(d.id));
             });
 
-            int completedInFirstHalf = subCategoryCompleted.sublist(0, half).where((e) => e).length;
+            int completedInFirstHalf = subCategoryCompleted
+                .sublist(0, half)
+                .where((e) => e)
+                .length;
 
             bool isEnabled(int index) {
               if (userModel == null) return index < half;
@@ -68,16 +73,18 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       Material(
                         elevation: 8,
                         borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(40),
-                            bottomRight: Radius.circular(40)),
+                          bottomLeft: Radius.circular(40),
+                          bottomRight: Radius.circular(40),
+                        ),
                         child: Container(
                           width: MediaQuery.of(context).size.width,
                           height: 150,
                           decoration: BoxDecoration(
                             color: widget.color,
                             borderRadius: const BorderRadius.only(
-                                bottomLeft: Radius.circular(40),
-                                bottomRight: Radius.circular(40)),
+                              bottomLeft: Radius.circular(40),
+                              bottomRight: Radius.circular(40),
+                            ),
                           ),
                           alignment: Alignment.center,
                           child: Column(
@@ -97,10 +104,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                   FadeInAnimationBTT(
                                     delay: 1,
                                     child: Text(
-                                      widget.categoryModel.getName(userController.selectedLanguage),
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                                      widget.categoryModel.getName(
+                                        userController.selectedLanguage,
+                                      ),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                      ),
                                     ).marginOnly(top: 8),
-                                  )
+                                  ),
                                 ],
                               ),
                             ],
@@ -147,7 +159,13 @@ class SubCategoryTile extends StatelessWidget {
   final int index;
   final bool isClickable;
 
-  const SubCategoryTile(this.color, this.subCategoryModel, this.index, {super.key, required this.isClickable});
+  const SubCategoryTile(
+    this.color,
+    this.subCategoryModel,
+    this.index, {
+    super.key,
+    required this.isClickable,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -156,32 +174,44 @@ class SubCategoryTile extends StatelessWidget {
       child: InkWell(
         onTap: isClickable
             ? () {
-          final themeController = Get.find<ThemeController>();
-          if (themeController.selectedAgeGroup == 0|| themeController.selectedAgeGroup==1) {
-            Get.to(ImageScreen(subCategoryModel: subCategoryModel), transition: Transition.fadeIn);
-          } else {
-            Get.to(OpenDuasScreen(subCategoryModel));
-          }
-        }
+                final themeController = Get.find<ThemeController>();
+                if (themeController.selectedAgeGroup == 0 ||
+                    themeController.selectedAgeGroup == 1) {
+                  Get.to(
+                    ImageScreen(subCategoryModel: subCategoryModel),
+                    transition: Transition.fadeIn,
+                  );
+                } else {
+                  Get.to(OpenDuasScreen(subCategoryModel));
+                }
+              }
             : null,
         child: Material(
           elevation: 8,
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: color),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: color,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
-                    subCategoryModel.getName(Get.find<UserController>().selectedLanguage),
-                    style: TextStyle(color: rblack.withOpacity(0.6), fontSize: 20),
+                    subCategoryModel.getName(
+                      Get.find<UserController>().selectedLanguage,
+                    ),
+                    style: TextStyle(
+                      color: rblack.withOpacity(0.6),
+                      fontSize: 20,
+                    ),
                   ),
                 ),
                 Icon(
                   isClickable ? Icons.navigate_next : Icons.lock_outline,
                   color: rblack,
-                )
+                ),
               ],
             ).marginSymmetric(horizontal: 50, vertical: 20),
           ),
