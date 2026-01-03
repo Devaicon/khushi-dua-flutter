@@ -14,11 +14,6 @@ class DuaService {
         // This is the initial load - process all documents
         for (var doc in event.docs) {
           final data = doc.data();
-          print('\n🔥 FIRESTORE INITIAL LOAD 🔥');
-          print('Doc ID: ${doc.id}');
-          print('benefits field: ${data["benefits"]}');
-          print('benefits type: ${data["benefits"]?.runtimeType}');
-          print('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n');
           _duaController.addDuaToList(DuaModel.fromMap(data));
         }
       } else {
@@ -27,12 +22,6 @@ class DuaService {
           if (element.type == DocumentChangeType.added ||
               element.type == DocumentChangeType.modified) {
             final data = element.doc.data()!;
-            print('\n🔥 FIRESTORE DATA RECEIVED 🔥');
-            print('Doc ID: ${element.doc.id}');
-            print('Data keys: ${data.keys.toList()}');
-            print('benefits field: ${data["benefits"]}');
-            print('benefits type: ${data["benefits"]?.runtimeType}');
-            print('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n');
             _duaController.addDuaToList(DuaModel.fromMap(data));
           }
         });

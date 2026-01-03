@@ -61,7 +61,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
       selectedJuristicMethod = prefs.getString("juristicMethod") ?? "shafi";
     });
     _updateCalculationParams();
-    super.initState();
     setPosition();
   }
 
@@ -379,7 +378,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
       }
 
       setState(() {
-        _namazList = newNamazList;
+        _namazList.clear();
+        _namazList.addAll(newNamazList);
         isLoadingPrayerTimes = false;
       });
 
@@ -390,7 +390,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
       print('Error calculating prayer times: $e');
       print('Stack trace: $stackTrace');
       setState(() {
-        _namazList = [];
+        _namazList.clear();
         isLoadingPrayerTimes = false;
       });
     }
