@@ -18,11 +18,11 @@ import 'package:http_parser/http_parser.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
-import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path/path.dart' as p;
+import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/colors.dart';
 import '../controllers/userController.dart';
@@ -66,7 +66,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
         });
       }
     } catch (e) {
-      print("Error updating Dua status: $e");
+      debugPrint("Error updating Dua status: $e");
     }
   }
 
@@ -304,21 +304,10 @@ class _DuaTileState extends State<DuaTile> {
         .get()
         .then((value) {
           baseUrl = value.data()!["URL"];
-          print('\n🔗 BASE URL FETCHED FROM FIREBASE:');
-          print('   URL: $baseUrl');
-          print('   Expected: http://34.238.195.141:3400/transcribe/');
-          if (baseUrl != 'http://34.238.195.141:3400/transcribe/') {
-            print('   ⚠️  WARNING: URL does not match expected value!');
-            print('   Please update Firebase config with the new URL.');
-          } else {
-            print('   ✅ URL matches expected value');
-          }
-          print('');
         })
         .catchError((error) {
-          print('❌ ERROR fetching base URL from Firebase: $error');
+          debugPrint('Error fetching base URL from Firebase: $error');
           baseUrl = 'http://34.238.195.141:3400/transcribe/'; // Fallback
-          print('   Using fallback URL: $baseUrl');
         });
   }
 
