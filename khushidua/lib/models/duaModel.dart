@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class DuaModel {
   String id = '';
   String arabic = '';
@@ -81,11 +83,11 @@ class DuaModel {
 
   /// Safely parses benefits field which might be a List, String, or null
   static List<Map<String, dynamic>>? _parseBenefitsList(dynamic benefits) {
-    print('_parseBenefitsList called with: $benefits');
-    print('  Type: ${benefits?.runtimeType}');
+    debugPrint('_parseBenefitsList called with: $benefits');
+    debugPrint('  Type: ${benefits?.runtimeType}');
 
     if (benefits == null) {
-      print('  Result: null (benefits is null)');
+      debugPrint('  Result: null (benefits is null)');
       return null;
     }
 
@@ -102,32 +104,32 @@ class DuaModel {
             )
             .toList()
             .cast<Map<String, dynamic>>();
-        print('  Result: List with ${result.length} items');
+        debugPrint('  Result: List with ${result.length} items');
         return result;
       } catch (e) {
-        print('  Result: null (conversion failed: $e)');
+        debugPrint('  Result: null (conversion failed: $e)');
         return null;
       }
     }
 
     // If it's a String, return null (we'll handle it separately)
     if (benefits is String) {
-      print('  Result: null (benefits is String, handled separately)');
+      debugPrint('  Result: null (benefits is String, handled separately)');
       return null;
     }
 
     // For any other type, return null
-    print('  Result: null (unknown type)');
+    debugPrint('  Result: null (unknown type)');
     return null;
   }
 
   /// Safely parses benefits field as String
   static String? _parseBenefitsString(dynamic benefits) {
-    print('_parseBenefitsString called with: $benefits');
-    print('  Type: ${benefits?.runtimeType}');
+    debugPrint('_parseBenefitsString called with: $benefits');
+    debugPrint('  Type: ${benefits?.runtimeType}');
 
     if (benefits == null) {
-      print('  Result: null (benefits is null)');
+      debugPrint('  Result: null (benefits is null)');
       return null;
     }
 
@@ -135,16 +137,16 @@ class DuaModel {
     if (benefits is String) {
       var trimmed = benefits.trim();
       var result = trimmed.isEmpty ? null : benefits;
-      print('  Result: ${result ?? "null (empty string)"}');
+      debugPrint('  Result: ${result ?? "null (empty string)"}');
       return result;
     }
 
     // For any other type, return null
-    print('  Result: null (not a String)');
+    debugPrint('  Result: null (not a String)');
     return null;
   }
 
-  // Debug method to print benefits data
+  // Debug method to debugPrint benefits data
   DuaModel _debugPrintBenefits() {
     return this;
   }
