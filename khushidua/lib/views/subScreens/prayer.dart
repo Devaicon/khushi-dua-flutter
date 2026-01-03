@@ -668,27 +668,40 @@ class _PrayerScreenState extends State<PrayerScreen> {
                               ),
                             )
                           : FadeInAnimationTTB(
-                              delay: 1,
+                              delay: 0.5,
                               child: Container(
-                                width: MediaQuery.of(context).size.width,
-                                decoration: BoxDecoration(
-                                  color: rwhite.withOpacity(0.2),
-                                  border: Border.all(color: rwhite),
-                                  borderRadius: BorderRadius.circular(24),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 20,
                                 ),
-                                child: ListView.builder(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(32),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.separated(
                                   shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
+                                  physics: const NeverScrollableScrollPhysics(),
                                   itemCount: _namazList.length,
+                                  separatorBuilder: (context, index) => Divider(
+                                    height: 1,
+                                    color: Colors.white.withOpacity(0.1),
+                                  ).marginSymmetric(horizontal: 20),
                                   itemBuilder: (context, index) {
-                                    if (index == _namazList.length - 1) {
-                                      return NamazTile(
-                                        _namazList[index],
-                                        false,
-                                      );
-                                    } else {
-                                      return NamazTile(_namazList[index], true);
-                                    }
+                                    return NamazTile(
+                                      _namazList[index],
+                                      index == _namazList.length - 1
+                                          ? false
+                                          : true,
+                                    );
                                   },
                                 ),
                               ),
@@ -748,23 +761,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ),
 
                 SizedBox(height: 15),
-
-                FadeInAnimationBTT(
-                  delay: 1,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.7,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: rwhite.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(19),
-                        border: Border.all(color: rwhite),
-                      ),
-                      child: Divider(height: 2, color: rwhite),
-                    ),
-                  ),
-                ),
               ],
             ).marginSymmetric(horizontal: 12),
           ),
@@ -787,112 +783,134 @@ class NamazTile extends StatefulWidget {
 class _NamazTileState extends State<NamazTile> {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Expanded(
-              flex: 1,
-              child: Text(
-                widget._namazModel.time,
-                style: TextStyle(fontSize: 20),
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                widget._namazModel.name,
-                style: TextStyle(fontSize: 20),
-              ).marginSymmetric(horizontal: 10),
+            child: Icon(
+              _getPrayerIcon(widget._namazModel.name),
+              color: Colors.white,
+              size: 20,
             ),
-            Expanded(
-              flex: 1,
-              child: InkWell(
-                onTap: () async {
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-
-                  setState(() {
-                    if (widget._namazModel.speakerEnabled == "on") {
-                      widget._namazModel.speakerEnabled = "off";
-                      if (widget._namazModel.name == "Fajr") {
-                        prefs.setString("fajrSpeaker", "off");
-                      }
-                      if (widget._namazModel.name == "Sunrise") {
-                        prefs.setString("sunriseSpeaker", "off");
-                      }
-                      if (widget._namazModel.name == "Dhuhr") {
-                        prefs.setString("dhuhrSpeaker", "off");
-                      }
-                      if (widget._namazModel.name == "Asr") {
-                        prefs.setString("asrSpeaker", "off");
-                      }
-                      if (widget._namazModel.name == "Maghrib") {
-                        prefs.setString("maghribSpeaker", "off");
-                      }
-                      if (widget._namazModel.name == "Ishaa") {
-                        prefs.setString("ishaSpeaker", "off");
-                      }
-                    } else if (widget._namazModel.speakerEnabled == "off") {
-                      widget._namazModel.speakerEnabled = "vibrate";
-                      if (widget._namazModel.name == "Fajr") {
-                        prefs.setString("fajrSpeaker", "vibrate");
-                      }
-                      if (widget._namazModel.name == "Sunrise") {
-                        prefs.setString("sunriseSpeaker", "vibrate");
-                      }
-                      if (widget._namazModel.name == "Dhuhr") {
-                        prefs.setString("dhuhrSpeaker", "vibrate");
-                      }
-                      if (widget._namazModel.name == "Asr") {
-                        prefs.setString("asrSpeaker", "vibrate");
-                      }
-                      if (widget._namazModel.name == "Maghrib") {
-                        prefs.setString("maghribSpeaker", "vibrate");
-                      }
-                      if (widget._namazModel.name == "Ishaa") {
-                        prefs.setString("ishaSpeaker", "vibrate");
-                      }
-                    } else {
-                      widget._namazModel.speakerEnabled = "on";
-                      if (widget._namazModel.name == "Fajr") {
-                        prefs.setString("fajrSpeaker", "on");
-                      }
-                      if (widget._namazModel.name == "Sunrise") {
-                        prefs.setString("sunriseSpeaker", "on");
-                      }
-                      if (widget._namazModel.name == "Dhuhr") {
-                        prefs.setString("dhuhrSpeaker", "on");
-                      }
-                      if (widget._namazModel.name == "Asr") {
-                        prefs.setString("asrSpeaker", "on");
-                      }
-                      if (widget._namazModel.name == "Maghrib") {
-                        prefs.setString("maghribSpeaker", "on");
-                      }
-                      if (widget._namazModel.name == "Ishaa") {
-                        prefs.setString("ishaSpeaker", "on");
-                      }
-                    }
-                  });
-                },
-                child: Icon(
-                  widget._namazModel.speakerEnabled == "on"
-                      ? Icons.volume_up_rounded
-                      : widget._namazModel.speakerEnabled == "off"
-                      ? Icons.volume_mute
-                      : Icons.vibration,
-                  color: rblack,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget._namazModel.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
                 ),
+                Text(
+                  widget._namazModel.time,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: () async {
+              SharedPreferences prefs = await SharedPreferences.getInstance();
+              setState(() {
+                if (widget._namazModel.speakerEnabled == "on") {
+                  widget._namazModel.speakerEnabled = "off";
+                  _saveSpeakerSetting(prefs, widget._namazModel.name, "off");
+                } else if (widget._namazModel.speakerEnabled == "off") {
+                  widget._namazModel.speakerEnabled = "vibrate";
+                  _saveSpeakerSetting(
+                    prefs,
+                    widget._namazModel.name,
+                    "vibrate",
+                  );
+                } else {
+                  widget._namazModel.speakerEnabled = "on";
+                  _saveSpeakerSetting(prefs, widget._namazModel.name, "on");
+                }
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                widget._namazModel.speakerEnabled == "on"
+                    ? Icons.notifications_active_rounded
+                    : widget._namazModel.speakerEnabled == "off"
+                    ? Icons.notifications_off_rounded
+                    : Icons.vibration_rounded,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-          ],
-        ).marginSymmetric(horizontal: 12, vertical: 8),
-        if (widget.bottomLine) Divider(height: 2, color: rwhite),
-      ],
+          ),
+        ],
+      ),
     );
+  }
+
+  IconData _getPrayerIcon(String name) {
+    switch (name.toLowerCase()) {
+      case 'fajr':
+        return Icons.wb_twilight_rounded;
+      case 'sunrise':
+        return Icons.wb_sunny_rounded;
+      case 'dhuhr':
+        return Icons.wb_sunny_rounded;
+      case 'asr':
+        return Icons.wb_cloudy_rounded;
+      case 'maghrib':
+        return Icons.wb_twilight_rounded;
+      case 'ishaa':
+        return Icons.nightlight_round;
+      default:
+        return Icons.access_time_filled_rounded;
+    }
+  }
+
+  void _saveSpeakerSetting(SharedPreferences prefs, String name, String value) {
+    String key = "";
+    switch (name) {
+      case "Fajr":
+        key = "fajrSpeaker";
+        break;
+      case "Sunrise":
+        key = "sunriseSpeaker";
+        break;
+      case "Dhuhr":
+        key = "dhuhrSpeaker";
+        break;
+      case "Asr":
+        key = "asrSpeaker";
+        break;
+      case "Maghrib":
+        key = "maghribSpeaker";
+        break;
+      case "Ishaa":
+        key = "ishaSpeaker";
+        break;
+    }
+    if (key.isNotEmpty) {
+      prefs.setString(key, value);
+    }
   }
 }
 

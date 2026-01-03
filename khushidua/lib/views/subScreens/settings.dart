@@ -103,10 +103,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Container(
                           width: MediaQuery.of(context).size.width,
                           height: 200,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                               colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
                             ),
                           ),
@@ -124,20 +124,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         width: 90,
                                         height: 90,
                                         decoration: BoxDecoration(
-                                          color: Colors.grey,
+                                          color: Colors.white,
                                           border: Border.all(
-                                            color:
-                                                themeController
-                                                        .selectedAgeGroup ==
-                                                    0
-                                                ? rpink
-                                                : themeController
-                                                          .selectedAgeGroup ==
-                                                      1
-                                                ? rblue
-                                                : rgreen,
-                                            width: 3,
+                                            color: Colors.white.withOpacity(
+                                              0.5,
+                                            ),
+                                            width: 4,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
+                                              blurRadius: 15,
+                                              offset: const Offset(0, 5),
+                                            ),
+                                          ],
                                           shape: BoxShape.circle,
                                         ),
                                         child: userController.avatar != ""
@@ -154,11 +156,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     delay: 1,
                                     child: Text(
                                       userName,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 18,
+                                        fontSize: 22,
+                                        color: rbluedark,
+                                        letterSpacing: 0.5,
                                       ),
-                                    ).marginOnly(top: 8),
+                                    ).marginOnly(top: 12),
                                   ),
                                 ],
                               );
@@ -168,39 +172,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       FadeInAnimationTTB(
                         delay: 1,
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          padding: const EdgeInsets.all(10.0),
-                          physics: NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount:
-                                    MediaQuery.of(context).size.width <= 450
-                                    ? 1
-                                    : 3,
-                                crossAxisSpacing: 10.0,
-                                mainAxisSpacing: 10.0,
-                                childAspectRatio: 5,
-                              ),
-                          itemCount: settingsList.length,
-                          itemBuilder: (context, index) {
+                        child: Column(
+                          children: List.generate(settingsList.length, (index) {
                             if (index == 4) {
                               if (userController.isLoggedIn &&
                                   userController.userModel!.isMember) {
-                              } else {
-                                return SettingTile(
-                                  settingsList[index],
-                                  functionsList[index],
-                                );
+                                return const SizedBox.shrink();
                               }
-                            } else {
-                              return SettingTile(
-                                settingsList[index],
-                                functionsList[index],
-                              );
                             }
-                            return null;
-                          },
+                            return SettingTile(
+                              settingsList[index],
+                              functionsList[index],
+                            );
+                          }),
                         ).marginOnly(top: 12),
                       ),
                       GetBuilder<UserController>(
@@ -311,39 +295,66 @@ class _SettingTileState extends State<SettingTile> {
         widget.function();
       },
       child: Container(
-        height: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Color(0xff89A2FB),
-          borderRadius: BorderRadius.circular(19),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Icon(widget._settingsModel.icon, color: rblack.withOpacity(0.6)),
-            SizedBox(width: 12),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget._settingsModel.title.tr,
-                  style: TextStyle(
-                    color: rblack,
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  widget._settingsModel.subTitle.tr,
-                  style: TextStyle(
-                    color: rblack.withOpacity(0.6),
-                    fontSize: 19,
-                  ),
-                ),
-              ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
-        ).marginSymmetric(horizontal: 20),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: rbluedark.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(
+                widget._settingsModel.icon,
+                color: rbluedark,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget._settingsModel.title.tr,
+                    style: const TextStyle(
+                      color: rbluedark,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (widget._settingsModel.subTitle.isNotEmpty)
+                    Text(
+                      widget._settingsModel.subTitle.tr,
+                      style: TextStyle(
+                        color: rblack.withOpacity(0.5),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.grey.withOpacity(0.3),
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }

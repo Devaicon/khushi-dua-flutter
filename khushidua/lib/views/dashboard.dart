@@ -36,11 +36,11 @@ class _DashboardState extends State<Dashboard> {
       case 1:
         return const PrayerScreen();
       case 2:
-        return const SettingsScreen();
-      case 3:
         return const SearchScreen();
-      case 4:
+      case 3:
         return const NotificationScreen();
+      case 4:
+        return const SettingsScreen();
       default:
         return const HomeScreen();
     }
@@ -173,24 +173,24 @@ class _DashboardState extends State<Dashboard> {
           showUnselectedLabels: false,
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/prayer.png", 0),
-              label: 'Prayer',
-            ),
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/home.png", 1),
+              icon: _buildNavItem("assets/images/home.png", 0),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/settings.png", 2),
-              label: 'Settings',
+              icon: _buildNavItem("assets/images/prayer.png", 1),
+              label: 'Prayer',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/search.png", 3),
+              icon: _buildNavItem("assets/images/search.png", 2),
               label: 'Search',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/notification.png", 4),
+              icon: _buildNavItem("assets/images/notification.png", 3),
               label: 'Notification',
+            ),
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/settings.png", 4),
+              label: 'Settings',
             ),
           ],
           currentIndex: _selectedIndex,

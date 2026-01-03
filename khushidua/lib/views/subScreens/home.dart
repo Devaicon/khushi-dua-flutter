@@ -114,10 +114,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     sliver: SliverGrid(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3, // More compact grid
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.85,
+                            crossAxisCount:
+                                2, // Reverting to balanced 2 columns
+                            crossAxisSpacing: 20,
+                            mainAxisSpacing: 20,
+                            childAspectRatio: 1.1, // More spacious
                           ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final category = filteredCategories[index];
@@ -429,51 +430,57 @@ class _CategoryTileState extends State<CategoryTile>
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20), // Slightly more subtle
+            borderRadius: BorderRadius.circular(28), // Softer, more premium
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
+                color: widget.color.withOpacity(0.12),
+                blurRadius: 25,
+                offset: const Offset(0, 12),
               ),
             ],
-            border: Border.all(color: widget.color.withOpacity(0.1), width: 1),
+            border: Border.all(
+              color: widget.color.withOpacity(0.08),
+              width: 1.5,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(10), // More compact
+                padding: const EdgeInsets.all(16), // More generous padding
                 decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.1),
+                  color: widget.color.withOpacity(0.08),
                   shape: BoxShape.circle,
                 ),
-                child: Image.network(
-                  widget.categoryModel.logo,
-                  width: 28, // Smaller icon for better balance
-                  height: 28,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.category_outlined,
-                    color: Colors.grey,
-                    size: 24,
+                child: Hero(
+                  tag: 'category_logo_${widget.categoryModel.id}',
+                  child: Image.network(
+                    widget.categoryModel.logo,
+                    width: 36, // Slightly larger, more clear
+                    height: 36,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.category_rounded,
+                      color: Colors.grey,
+                      size: 30,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               Text(
                 widget.categoryModel.getName(
                   Get.find<UserController>().selectedLanguage,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1, // Single line for cleaner look
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: rbluedark,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12, // Refined font size
-                  height: 1.1,
+                  fontWeight: FontWeight.bold, // More premium bold
+                  fontSize: 14, // Balanced size
+                  letterSpacing: 0.3,
                 ),
-              ).paddingSymmetric(horizontal: 6),
+              ).paddingSymmetric(horizontal: 12),
             ],
           ),
         ),

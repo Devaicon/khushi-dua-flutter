@@ -59,6 +59,7 @@ dependencies:
   permission_handler:
   path_provider:
   google_mobile_ads:
+  iconsax: ^0.0.8
 
 
 dependency_overrides:

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
+import '../../constants/colors.dart';
 
 import '../../controllers/themeController.dart';
+import '../../controllers/userController.dart';
 import '../../models/subCategoryModel.dart';
 import '../imageScreen.dart';
 import '../openDuasScreen.dart';
@@ -26,10 +28,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _filterSubCategories() {
     String query = _searchController.text.toLowerCase();
+    String selectedLanguage = Get.find<UserController>().selectedLanguage;
     setState(() {
       filteredSubCategories = Get.find<CategoryController>().allSubCategories
           .where(
-            (subCategory) => subCategory.english.toLowerCase().contains(query),
+            (subCategory) => subCategory
+                .getName(selectedLanguage)
+                .toLowerCase()
+                .contains(query),
           )
           .toList();
     });
@@ -49,27 +55,50 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextFormField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.blue.withOpacity(0.3),
-                prefixIcon: Icon(Icons.search, color: Colors.black),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: TextFormField(
+                controller: _searchController,
+                style: const TextStyle(
+                  color: rbluedark,
+                  fontWeight: FontWeight.w500,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+                decoration: InputDecoration(
+                  hintText: "Search for Duas...".tr,
+                  hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: rbluedark,
+                    size: 24,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear_rounded,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 15,
+                  ),
                 ),
               ),
-              style: TextStyle(color: Colors.black),
             ),
           ),
 
@@ -83,28 +112,66 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   )
                 : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     itemCount: filteredSubCategories.length,
                     itemBuilder: (context, index) {
+                      final subCategory = filteredSubCategories[index];
                       return InkWell(
                         onTap: () {
                           if (Get.find<ThemeController>().selectedAgeGroup ==
                               0) {
                             Get.to(
-                              ImageScreen(
-                                subCategoryModel: filteredSubCategories[index],
-                              ),
+                              ImageScreen(subCategoryModel: subCategory),
                               transition: Transition.fadeIn,
                             );
                           } else {
-                            Get.to(
-                              OpenDuasScreen(filteredSubCategories[index]),
-                            );
+                            Get.to(OpenDuasScreen(subCategory));
                           }
                         },
-                        child: ListTile(
-                          title: Text(
-                            filteredSubCategories[index].english,
-                            style: TextStyle(color: Colors.black),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: rbluedark.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.menu_book_rounded,
+                                  color: rbluedark,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  subCategory.getName(
+                                    Get.find<UserController>().selectedLanguage,
+                                  ),
+                                  style: const TextStyle(
+                                    color: rblack,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.grey,
+                                size: 16,
+                              ),
+                            ],
                           ),
                         ),
                       );
