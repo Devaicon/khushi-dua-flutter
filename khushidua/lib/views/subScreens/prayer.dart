@@ -97,7 +97,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         params.madhab = PrayerMadhab.shafi;
       }
     } catch (e) {
-      print('Error updating calculation params: $e');
+      debugPrint('Error updating calculation params: $e');
       // Fallback to default
       params = PrayerCalculationMethod.karachi();
       params.madhab = PrayerMadhab.shafi;
@@ -271,7 +271,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<void> _calculatePrayerTimes(DateTime date) async {
     if (!locationAllowed) {
-      print('Cannot calculate prayer times: locationAllowed=$locationAllowed');
+      debugPrint(
+        'Cannot calculate prayer times: locationAllowed=$locationAllowed',
+      );
       return;
     }
 
@@ -303,7 +305,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         );
       } catch (e) {
         // If dateTime parameter doesn't work, try without it (will use current date)
-        print('Trying without dateTime parameter: $e');
+        debugPrint('Trying without dateTime parameter: $e');
         prayerTimes = PrayerTimes(
           coordinates: coords,
           calculationParameters: params,
@@ -383,12 +385,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
         isLoadingPrayerTimes = false;
       });
 
-      print(
+      debugPrint(
         'Prayer times calculated successfully. List length: ${_namazList.length}',
       );
     } catch (e, stackTrace) {
-      print('Error calculating prayer times: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error calculating prayer times: $e');
+      debugPrint('Stack trace: $stackTrace');
       setState(() {
         _namazList.clear();
         isLoadingPrayerTimes = false;
@@ -403,7 +405,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         position = await _determinePosition();
         currentPosition = position;
       } catch (e) {
-        print('Error getting position: $e');
+        debugPrint('Error getting position: $e');
         // If permission denied or error, use default coordinates (Lahore, Pakistan)
         // Create a mock position using coordinates directly
         locationAllowed = true;
@@ -422,7 +424,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
           try {
             await _getLocationName(currentPosition!);
           } catch (e) {
-            print('Error getting location name: $e');
+            debugPrint('Error getting location name: $e');
             // Continue anyway with default location name
           }
         }
@@ -431,8 +433,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
         await _calculatePrayerTimes(selectedEnglishDate);
       }
     } catch (e, stackTrace) {
-      print('Error in setPosition: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error in setPosition: $e');
+      debugPrint('Stack trace: $stackTrace');
       // Fallback to default location
       locationAllowed = true;
       locationName = "Lahore, Pakistan";
