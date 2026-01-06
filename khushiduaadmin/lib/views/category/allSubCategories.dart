@@ -414,15 +414,32 @@ class _SubCategoryTileState extends State<SubCategoryTile> {
                   fontWeight: FontWeight.normal),
             )),
         Expanded(
-            flex: 1,
-            child: InkWell(
-              onTap: () {
-                Get.to(EditSubCategory(widget.subCategoryModel));
-              },
-              child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SvgPicture.asset("assets/svgs/eye.svg")),
-            )),
+          flex: 1,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  debugPrint(
+                      "Navigating to EditSubCategory for: ${widget.subCategoryModel.english}");
+                  Get.to(() => EditSubCategory(widget.subCategoryModel),
+                      transition: Transition.rightToLeft);
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Tooltip(
+                    message: "Edit SubCategory",
+                    child: SvgPicture.asset(
+                      "assets/svgs/eye.svg",
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);
   }

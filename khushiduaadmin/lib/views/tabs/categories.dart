@@ -421,15 +421,32 @@ class _CategoryTileState extends State<CategoryTile> {
                   fontWeight: FontWeight.normal),
             )),
         Expanded(
-            flex: 1,
-            child: InkWell(
-              onTap: () {
-                Get.to(EditCategory(model: widget.categoryModel));
-              },
-              child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SvgPicture.asset("assets/svgs/eye.svg")),
-            )),
+          flex: 1,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  debugPrint(
+                      "Navigating to EditCategory for: ${widget.categoryModel.english}");
+                  Get.to(() => EditCategory(model: widget.categoryModel),
+                      transition: Transition.rightToLeft);
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Tooltip(
+                    message: "Edit Category",
+                    child: SvgPicture.asset(
+                      "assets/svgs/eye.svg",
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);
   }

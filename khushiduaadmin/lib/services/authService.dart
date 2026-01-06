@@ -52,13 +52,22 @@ class AuthService {
   }
 
   getAdminDetails() async {
-    // SharedPreferences sharedPreferences=await SharedPreferences.getInstance();
     String? adminId = html.window.localStorage['adminId'];
+    if (adminId == null) return;
 
-    await managementRef.doc(adminId).get().then((value) {
-      _authController
-          .setManagementUserModel(ManagementModel.fromMap(value.data()!));
-    });
+    try {
+      var snapshot = await managementRef.doc(adminId).get();
+      if (snapshot.exists && snapshot.data() != null) {
+        _authController
+            .setManagementUserModel(ManagementModel.fromMap(snapshot.data()!));
+      } else {
+        debugPrint("Admin document does not exist, clearing session.");
+        html.window.localStorage.remove('adminId');
+        Get.offAllNamed('/login');
+      }
+    } catch (e) {
+      debugPrint("Error fetching admin details: $e");
+    }
   }
 
   Future<String?> changePassword(

@@ -382,15 +382,32 @@ class _DuaTileState extends State<DuaTile> {
                   fontWeight: FontWeight.normal),
             )),
         Expanded(
-            flex: 1,
-            child: InkWell(
-              onTap: () {
-                Get.to(EditDua(duaModel: widget.duaModel));
-              },
-              child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SvgPicture.asset("assets/svgs/eye.svg")),
-            )),
+          flex: 1,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  debugPrint(
+                      "Navigating to EditDua for: ${widget.duaModel.english}");
+                  Get.to(() => EditDua(duaModel: widget.duaModel),
+                      transition: Transition.rightToLeft);
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Tooltip(
+                    message: "Edit Dua",
+                    child: SvgPicture.asset(
+                      "assets/svgs/eye.svg",
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);
   }

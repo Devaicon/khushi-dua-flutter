@@ -224,10 +224,9 @@ class _EditSubCategoryState extends State<EditSubCategory> {
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      SizedBox(
-                                        height:
-                                            MediaQuery.of(context).size.height *
-                                                0.17,
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
                                         child: Row(
                                           children: [
                                             SizedBox(
