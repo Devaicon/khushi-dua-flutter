@@ -2,6 +2,7 @@ import 'dart:html';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:khushiduaadmin/constants/firebaseRef.dart';
 import 'package:khushiduaadmin/controllers/categoryController.dart';
@@ -11,14 +12,15 @@ import 'package:khushiduaadmin/models/subCategoryModel.dart';
 import '../widgets/customSnackbar.dart';
 
 class CategoryService {
-  CategoryController _categoryController = Get.find<CategoryController>();
+  final CategoryController _categoryController = Get.find<CategoryController>();
 
   createCategory(CategoryModel categoryModel, File catLogo) async {
     _categoryController.setLoading(true);
     categoryModel.id = categoryRef.doc().id;
     try {
       // categoryModel.image = (await uploadFileToFirebase(catImage, "${categoryModel.id}/categoryImage"))!;
-      categoryModel.logo = (await uploadFileToFirebase(catLogo, "${categoryModel.id}/categoryLogo"))!;
+      categoryModel.logo = (await uploadFileToFirebase(
+          catLogo, "${categoryModel.id}/categoryLogo"))!;
 
       await categoryRef.doc(categoryModel.id).set(categoryModel.toMap());
       _categoryController.setLoading(false);
@@ -43,18 +45,27 @@ class CategoryService {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print("Error uploading file: $e");
+      debugPrint("Error uploading file: $e");
       return null;
     }
   }
 
   getAllCategories() async {
     categoryRef.snapshots().listen((event) {
-      event.docChanges.forEach((element) {
-        if (element.type == DocumentChangeType.added || element.type == DocumentChangeType.modified) {
-          _categoryController.addCategoryToList(CategoryModel.fromMap(element.doc.data()!));
+      bool changed = false;
+      for (var element in event.docChanges) {
+        if (element.type == DocumentChangeType.added ||
+            element.type == DocumentChangeType.modified) {
+          _categoryController.addCategoryToList(
+            CategoryModel.fromMap(element.doc.data()!),
+            shouldUpdate: false, // Don't update individual items
+          );
+          changed = true;
         }
-      });
+      }
+      if (changed) {
+        _categoryController.update(); // Update once per snapshot
+      }
     });
   }
 
@@ -66,7 +77,8 @@ class CategoryService {
       //   // categoryModel.image = (await uploadFileToFirebase(catImage, "${categoryModel.id}/categoryImage"))!;
       // }
       if (catLogo != null) {
-        categoryModel.logo = (await uploadFileToFirebase(catLogo, "${categoryModel.id}/categoryLogo"))!;
+        categoryModel.logo = (await uploadFileToFirebase(
+            catLogo, "${categoryModel.id}/categoryLogo"))!;
       }
       await categoryRef.doc(categoryModel.id).update(categoryModel.toMap());
       _categoryController.setLoading(false);
@@ -79,11 +91,12 @@ class CategoryService {
     }
   }
 
-  Future<List<SubCategoryModel>> getSubCategories(CategoryModel categoryModel) async {
+  Future<List<SubCategoryModel>> getSubCategories(
+      CategoryModel categoryModel) async {
     try {
       _categoryController.setLoading(true);
       final snapshot = await subCategoryRef
-          .where("categoryId",isEqualTo: categoryModel.id)
+          .where("categoryId", isEqualTo: categoryModel.id)
           .orderBy("order")
           .get();
 
@@ -92,24 +105,22 @@ class CategoryService {
         return SubCategoryModel.fromMap(data);
       }).toList();
 
-      print("✅ Subcategories fetched: ${subCategories.length}");
+      debugPrint("✅ Subcategories fetched: ${subCategories.length}");
       return subCategories;
     } catch (e, stack) {
-      print("❌ ERROR in getSubCategories: $e");
-      print("📍 StackTrace: $stack");
+      debugPrint("❌ ERROR in getSubCategories: $e");
+      debugPrint("📍 StackTrace: $stack");
       return [];
     } finally {
       _categoryController.setLoading(false);
     }
   }
 
-
-  createSubCategory(SubCategoryModel subCategoryModel,File catImage) async {
+  createSubCategory(SubCategoryModel subCategoryModel, File catImage) async {
     _categoryController.setLoading(true);
     subCategoryModel.id = subCategoryRef.doc().id;
-    if (catImage != null) {
-      subCategoryModel.image = (await uploadFileToFirebase(catImage, "${subCategoryModel.id}/subCategoryImage"))!;
-    }
+    subCategoryModel.image = (await uploadFileToFirebase(
+        catImage, "${subCategoryModel.id}/subCategoryImage"))!;
     await subCategoryRef.doc(subCategoryModel.id).set(subCategoryModel.toMap());
     _categoryController.setLoading(false);
     Get.back();
@@ -118,21 +129,26 @@ class CategoryService {
     CustomSnackbar.show("Success", "Sub Category created successfully");
   }
 
-   getAllSubCategories() {
-     subCategoryRef.snapshots().listen((event) {
-       event.docChanges.forEach((element) {
-         if (element.type == DocumentChangeType.added || element.type == DocumentChangeType.modified) {
-           _categoryController.addSubCategoryToList(SubCategoryModel.fromMap(element.doc.data()!));
-         }
-       });
-     });
-   }
+  getAllSubCategories() {
+    subCategoryRef.snapshots().listen((event) {
+      for (var element in event.docChanges) {
+        if (element.type == DocumentChangeType.added ||
+            element.type == DocumentChangeType.modified) {
+          _categoryController.addSubCategoryToList(
+              SubCategoryModel.fromMap(element.doc.data()!));
+        }
+      }
+    });
+  }
 
-  editSubCategory(SubCategoryModel subCategoryModel, image) async{
-    if(image!=null){
-      subCategoryModel.image = (await uploadFileToFirebase(image, "${subCategoryModel.id}/subCategoryImage"))!;
+  editSubCategory(SubCategoryModel subCategoryModel, image) async {
+    if (image != null) {
+      subCategoryModel.image = (await uploadFileToFirebase(
+          image, "${subCategoryModel.id}/subCategoryImage"))!;
     }
-    await subCategoryRef.doc(subCategoryModel.id).update(subCategoryModel.toMap());
+    await subCategoryRef
+        .doc(subCategoryModel.id)
+        .update(subCategoryModel.toMap());
     Get.back();
     Get.back();
 

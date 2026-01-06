@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class ManagementModel {
   String id = "";
   String firstName = "";
@@ -9,17 +7,16 @@ class ManagementModel {
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
 
-  ManagementModel({
-    required this.id,
-    required this.email,
-    required this.firstName,
-    required this.lastName,
-    required this.role,
-    required this.createdAt,
-    required this.updatedAt
-  });
+  ManagementModel(
+      {required this.id,
+      required this.email,
+      required this.firstName,
+      required this.lastName,
+      required this.role,
+      required this.createdAt,
+      required this.updatedAt});
 
-  factory ManagementModel.fromMap(Map<String, dynamic> map){
+  factory ManagementModel.fromMap(Map<String, dynamic> map) {
     return ManagementModel(
         id: map["id"],
         email: map["email"],
@@ -29,18 +26,15 @@ class ManagementModel {
         createdAt: map["createdAt"].toDate(),
         updatedAt: map["updatedAt"].toDate());
   }
-  Map<String,dynamic>toMap(){
+  Map<String, dynamic> toMap() {
     return {
-      "id":id,
-      "email":email,
-      "firstName":firstName,
-      "lastName":lastName,
-      "role":role,
-      "createdAt":createdAt,
-      "updatedAt":updatedAt
+      "id": id,
+      "email": email,
+      "firstName": firstName,
+      "lastName": lastName,
+      "role": role,
+      "createdAt": createdAt,
+      "updatedAt": updatedAt
     };
   }
-
 }
-
-

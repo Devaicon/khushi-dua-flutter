@@ -19,7 +19,8 @@ class UsersTab extends StatefulWidget {
 
 class _UsersTabState extends State<UsersTab> {
   String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return number.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 
   @override
@@ -31,14 +32,15 @@ class _UsersTabState extends State<UsersTab> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TopBar(title: "Users"),
+              const TopBar(title: "Users"),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
                     child: Container(
                       height: 125,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16), color: rBg),
                       alignment: Alignment.center,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -46,7 +48,9 @@ class _UsersTabState extends State<UsersTab> {
                           Container(
                             width: 50,
                             height: 50,
-                            decoration: BoxDecoration(color: Color(0xff955C00), shape: BoxShape.circle),
+                            decoration: const BoxDecoration(
+                                color: Color(0xff955C00),
+                                shape: BoxShape.circle),
                             alignment: Alignment.center,
                             child: SvgPicture.asset("assets/svgs/coins.svg"),
                           ),
@@ -55,18 +59,26 @@ class _UsersTabState extends State<UsersTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TweenAnimationBuilder<int>(
-                                tween: IntTween(begin: 0, end: userController.allUsers.length),
-                                duration: Duration(seconds: 2),
+                                tween: IntTween(
+                                    begin: 0,
+                                    end: userController.allUsers.length),
+                                duration: const Duration(seconds: 2),
                                 builder: (context, value, child) {
                                   return Text(
                                     _formatNumber(value),
-                                    style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                    style: const TextStyle(
+                                        color: rWhite,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 30),
                                   );
                                 },
                               ),
-                              Text(
+                              const Text(
                                 "Total Users",
-                                style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                style: TextStyle(
+                                    color: rWhite,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 16),
                               ),
                             ],
                           ).marginOnly(left: 12)
@@ -74,13 +86,14 @@ class _UsersTabState extends State<UsersTab> {
                       ),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     width: 10,
                   ),
                   Expanded(
                     child: Container(
                       height: 125,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16), color: rBg),
                       alignment: Alignment.center,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -88,7 +101,9 @@ class _UsersTabState extends State<UsersTab> {
                           Container(
                             width: 50,
                             height: 50,
-                            decoration: BoxDecoration(color: Color(0xff883232), shape: BoxShape.circle),
+                            decoration: const BoxDecoration(
+                                color: Color(0xff883232),
+                                shape: BoxShape.circle),
                             alignment: Alignment.center,
                             child: SvgPicture.asset("assets/svgs/coins.svg"),
                           ),
@@ -98,18 +113,30 @@ class _UsersTabState extends State<UsersTab> {
                             children: [
                               // Text("${coinController.allCoins.length??0}",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                               TweenAnimationBuilder<int>(
-                                tween: IntTween(begin: 0, end: userController.allUsers.where((element) => element.isMember == true).toList().length),
-                                duration: Duration(seconds: 1),
+                                tween: IntTween(
+                                    begin: 0,
+                                    end: userController.allUsers
+                                        .where((element) =>
+                                            element.isMember == true)
+                                        .toList()
+                                        .length),
+                                duration: const Duration(seconds: 1),
                                 builder: (context, value, child) {
                                   return Text(
                                     _formatNumber(value),
-                                    style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                    style: const TextStyle(
+                                        color: rWhite,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 30),
                                   );
                                 },
                               ),
-                              Text(
+                              const Text(
                                 "Total Members",
-                                style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                style: TextStyle(
+                                    color: rWhite,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 16),
                               ),
                             ],
                           ).marginOnly(left: 12)
@@ -117,13 +144,14 @@ class _UsersTabState extends State<UsersTab> {
                       ),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     width: 10,
                   ),
                   Expanded(
                     child: Container(
                       height: 125,
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16), color: rBg),
                       alignment: Alignment.center,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -131,7 +159,9 @@ class _UsersTabState extends State<UsersTab> {
                           Container(
                             width: 50,
                             height: 50,
-                            decoration: BoxDecoration(color: Color(0xff008A3F), shape: BoxShape.circle),
+                            decoration: const BoxDecoration(
+                                color: Color(0xff008A3F),
+                                shape: BoxShape.circle),
                             alignment: Alignment.center,
                             child: SvgPicture.asset("assets/svgs/coins.svg"),
                           ),
@@ -141,18 +171,30 @@ class _UsersTabState extends State<UsersTab> {
                             children: [
                               // Text("3,450",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                               TweenAnimationBuilder<int>(
-                                tween: IntTween(begin: 0, end: userController.allUsers.where((element) => element.isBlocked == true).toList().length),
-                                duration: Duration(seconds: 1),
+                                tween: IntTween(
+                                    begin: 0,
+                                    end: userController.allUsers
+                                        .where((element) =>
+                                            element.isBlocked == true)
+                                        .toList()
+                                        .length),
+                                duration: const Duration(seconds: 1),
                                 builder: (context, value, child) {
                                   return Text(
                                     _formatNumber(value),
-                                    style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                    style: const TextStyle(
+                                        color: rWhite,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 30),
                                   );
                                 },
                               ),
-                              Text(
+                              const Text(
                                 "Blocked Users",
-                                style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                style: TextStyle(
+                                    color: rWhite,
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 16),
                               ),
                             ],
                           ).marginOnly(left: 12)
@@ -160,18 +202,19 @@ class _UsersTabState extends State<UsersTab> {
                       ),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     width: 10,
                   ),
                   Expanded(child: Container())
                 ],
               ).marginOnly(top: 12),
-              SizedBox(
+              const SizedBox(
                 height: 20,
               ),
               Container(
                 width: MediaQuery.of(context).size.width,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: rBg),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12), color: rBg),
                 child: Column(
                   children: [
                     TableHeader(),
@@ -179,7 +222,7 @@ class _UsersTabState extends State<UsersTab> {
                       itemCount: userController.allUsers.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
-                        return  UserTile(userController.allUsers[index]);
+                        return UserTile(userController.allUsers[index]);
                       },
                     ),
                   ],
@@ -198,7 +241,7 @@ Widget TableHeader() {
     decoration: BoxDecoration(
       color: rWhite.withOpacity(0.05),
     ),
-    child: Row(
+    child: const Row(
       children: [
         Expanded(
             flex: 1,
@@ -258,97 +301,138 @@ class _UserTileState extends State<UserTile> {
         Expanded(
             flex: 1,
             child: Text(
-              "${"${widget.userModel.id.substring(0, 5)}..."}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              "${widget.userModel.id.substring(0, 5)}...",
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 2,
             child: Text(
-              "${"${widget.userModel.email}"}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              widget.userModel.email,
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-            Text(
-            "${"${widget.userModel.name}"}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )
+                Text(
+                  widget.userModel.name,
+                  style: const TextStyle(
+                      color: rWhite, fontWeight: FontWeight.normal),
+                )
               ],
             )),
         Expanded(
             flex: 1,
             child: Text(
               "${widget.userModel.isMember}",
-              style: TextStyle(color: widget.userModel.isMember ? rGreen : rRed, fontWeight: FontWeight.normal),
+              style: TextStyle(
+                  color: widget.userModel.isMember ? rGreen : rRed,
+                  fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Text(
               widget.userModel.isBlocked ? "Blocked" : "Active",
-              style: TextStyle(color: widget.userModel.isBlocked ? rRed : rGreen, fontWeight: FontWeight.normal),
+              style: TextStyle(
+                  color: widget.userModel.isBlocked ? rRed : rGreen,
+                  fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-
                 InkWell(
                   onTap: () {
                     //show membership dialog
-                    if(widget.userModel.isMember){
+                    if (widget.userModel.isMember) {
                       showMemberPopUp(false);
-                    }else{
+                    } else {
                       showMemberPopUp(true);
                     }
                   },
-                  child: Align(alignment: Alignment.centerLeft, child: Icon(Icons.credit_card,color: widget.userModel.isMember?rHint:rGreen,)),
+                  child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Icon(
+                        Icons.credit_card,
+                        color: widget.userModel.isMember ? rHint : rGreen,
+                      )),
                 ).marginOnly(left: 12),
                 InkWell(
                   onTap: () {
                     //show block popup
-                    if(widget.userModel.isBlocked){
+                    if (widget.userModel.isBlocked) {
                       showBlockPopUp(false);
-                    }else{
+                    } else {
                       showBlockPopUp(true);
                     }
-
                   },
-                  child: Align(alignment: Alignment.centerLeft, child: Icon(Icons.block,color: rRed,)),
+                  child: const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Icon(
+                        Icons.block,
+                        color: rRed,
+                      )),
                 ).marginOnly(left: 12),
               ],
             )),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);
   }
-  showBlockPopUp(bool action){
+
+  showBlockPopUp(bool action) {
     showDialog(
       context: context,
       builder: (context) {
         return ElasticIn(
           child: AlertDialog(
             backgroundColor: rBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(action?"Block":"UnBlock", style: TextStyle(fontWeight: FontWeight.bold,color: rWhite)),
-            content: action?Text("Are you sure you want to block ${widget.userModel.name}?",style: TextStyle(fontSize: 16,color: rWhite),):
-            Text("Are you sure you want to unblock ${widget.userModel.name}?",style: TextStyle(fontSize: 16,color: rWhite),),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(action ? "Block" : "UnBlock",
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: rWhite)),
+            content: action
+                ? Text(
+                    "Are you sure you want to block ${widget.userModel.name}?",
+                    style: const TextStyle(fontSize: 16, color: rWhite),
+                  )
+                : Text(
+                    "Are you sure you want to unblock ${widget.userModel.name}?",
+                    style: const TextStyle(fontSize: 16, color: rWhite),
+                  ),
             actions: [
-              TextButton(onPressed: (){
-                Get.back();
-              }, child: Text("Cancel",style: TextStyle(color: rRed),)),
-              SizedBox(
+              TextButton(
+                  onPressed: () {
+                    Get.back();
+                  },
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(color: rRed),
+                  )),
+              const SizedBox(
                 height: 20,
               ),
               GestureDetector(
                 onTap: () async {
-                  await userRef.doc(widget.userModel.id).update({"isBlocked":action});
-                  if(action==true){
-                    await Get.find<NotificationController>().sendIndividualNotification(widget.userModel, "Account suspended", "Your account has been blocked due to malicious activity");
-                  }else{
-                    await Get.find<NotificationController>().sendIndividualNotification(widget.userModel, "Account activated", "Your account has been unbanned");
+                  await userRef
+                      .doc(widget.userModel.id)
+                      .update({"isBlocked": action});
+                  if (action == true) {
+                    await Get.find<NotificationController>()
+                        .sendIndividualNotification(
+                            widget.userModel,
+                            "Account suspended",
+                            "Your account has been blocked due to malicious activity");
+                  } else {
+                    await Get.find<NotificationController>()
+                        .sendIndividualNotification(
+                            widget.userModel,
+                            "Account activated",
+                            "Your account has been unbanned");
                   }
                   Get.back();
                 },
@@ -368,7 +452,11 @@ class _UserTileState extends State<UserTile> {
                     ),
                   ),
                   alignment: Alignment.center,
-                  child: Text("Confirm", style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text("Confirm",
+                      style: TextStyle(
+                          color: rWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -379,31 +467,56 @@ class _UserTileState extends State<UserTile> {
     );
   }
 
-  showMemberPopUp(bool action){
+  showMemberPopUp(bool action) {
     showDialog(
       context: context,
       builder: (context) {
         return ElasticIn(
           child: AlertDialog(
             backgroundColor: rBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(action?"Grant Membership":"Revoke Membership", style: TextStyle(fontWeight: FontWeight.bold,color: rWhite)),
-            content: action?Text("Are you sure you want to make ${widget.userModel.name} paid member?",style: TextStyle(fontSize: 16,color: rWhite),):
-            Text("Are you sure you want to revoke ${widget.userModel.name}'s membership?",style: TextStyle(fontSize: 16,color: rWhite),),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(action ? "Grant Membership" : "Revoke Membership",
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: rWhite)),
+            content: action
+                ? Text(
+                    "Are you sure you want to make ${widget.userModel.name} paid member?",
+                    style: const TextStyle(fontSize: 16, color: rWhite),
+                  )
+                : Text(
+                    "Are you sure you want to revoke ${widget.userModel.name}'s membership?",
+                    style: const TextStyle(fontSize: 16, color: rWhite),
+                  ),
             actions: [
-              TextButton(onPressed: (){
-                Get.back();
-              }, child: Text("Cancel",style: TextStyle(color: rRed),)),
-              SizedBox(
+              TextButton(
+                  onPressed: () {
+                    Get.back();
+                  },
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(color: rRed),
+                  )),
+              const SizedBox(
                 height: 20,
               ),
               GestureDetector(
                 onTap: () async {
-                  await userRef.doc(widget.userModel.id).update({"isMember":action});
-                  if(action){
-                    await Get.find<NotificationController>().sendIndividualNotification(widget.userModel, "Account upgraded", "You have successfully purchased premium membership");
-                  }else{
-                    await Get.find<NotificationController>().sendIndividualNotification(widget.userModel, "Account degraded", "You account membership has been expired");
+                  await userRef
+                      .doc(widget.userModel.id)
+                      .update({"isMember": action});
+                  if (action) {
+                    await Get.find<NotificationController>()
+                        .sendIndividualNotification(
+                            widget.userModel,
+                            "Account upgraded",
+                            "You have successfully purchased premium membership");
+                  } else {
+                    await Get.find<NotificationController>()
+                        .sendIndividualNotification(
+                            widget.userModel,
+                            "Account degraded",
+                            "You account membership has been expired");
                   }
                   Get.back();
                 },
@@ -423,7 +536,11 @@ class _UserTileState extends State<UserTile> {
                     ),
                   ),
                   alignment: Alignment.center,
-                  child: Text("Confirm", style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text("Confirm",
+                      style: TextStyle(
+                          color: rWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

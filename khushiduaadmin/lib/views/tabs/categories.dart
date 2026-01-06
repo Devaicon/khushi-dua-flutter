@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -19,7 +20,8 @@ class CategoriesTab extends StatefulWidget {
 
 class _CategoriesTabState extends State<CategoriesTab> {
   String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return number.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 
   @override
@@ -32,14 +34,16 @@ class _CategoriesTabState extends State<CategoriesTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TopBar(title: "Categories"),
+                const TopBar(title: "Categories"),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -47,7 +51,9 @@ class _CategoriesTabState extends State<CategoriesTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff955C00), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff955C00),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -56,18 +62,27 @@ class _CategoriesTabState extends State<CategoriesTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 TweenAnimationBuilder<int>(
-                                  tween: IntTween(begin: 0, end: categoryController.allCategories.length),
-                                  duration: Duration(seconds: 2),
+                                  tween: IntTween(
+                                      begin: 0,
+                                      end: categoryController
+                                          .allCategories.length),
+                                  duration: const Duration(seconds: 2),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Total Categories",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -75,13 +90,15 @@ class _CategoriesTabState extends State<CategoriesTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -89,7 +106,9 @@ class _CategoriesTabState extends State<CategoriesTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff883232), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff883232),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -100,18 +119,29 @@ class _CategoriesTabState extends State<CategoriesTab> {
                                 // Text("${coinController.allCoins.length??0}",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                                 TweenAnimationBuilder<int>(
                                   tween: IntTween(
-                                      begin: 0, end: categoryController.allCategories.where((element) => element.isEnabled == false).toList().length),
-                                  duration: Duration(seconds: 1),
+                                      begin: 0,
+                                      end: categoryController.allCategories
+                                          .where((element) =>
+                                              element.isEnabled == false)
+                                          .toList()
+                                          .length),
+                                  duration: const Duration(seconds: 1),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Disabled Categories",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -119,13 +149,15 @@ class _CategoriesTabState extends State<CategoriesTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -133,7 +165,9 @@ class _CategoriesTabState extends State<CategoriesTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff008A3F), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff008A3F),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -144,18 +178,29 @@ class _CategoriesTabState extends State<CategoriesTab> {
                                 // Text("3,450",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                                 TweenAnimationBuilder<int>(
                                   tween: IntTween(
-                                      begin: 0, end: categoryController.allCategories.where((element) => element.isEnabled == true).toList().length),
-                                  duration: Duration(seconds: 1),
+                                      begin: 0,
+                                      end: categoryController.allCategories
+                                          .where((element) =>
+                                              element.isEnabled == true)
+                                          .toList()
+                                          .length),
+                                  duration: const Duration(seconds: 1),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Enabled Categories",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -163,7 +208,7 @@ class _CategoriesTabState extends State<CategoriesTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(child: Container())
@@ -172,21 +217,27 @@ class _CategoriesTabState extends State<CategoriesTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    const Text(
                       "All Categories",
-                      style: TextStyle(color: rWhite, fontWeight: FontWeight.w600, fontSize: 20),
+                      style: TextStyle(
+                          color: rWhite,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20),
                     ),
                     InkWell(
                       splashColor: Colors.transparent,
                       onTap: () {
-                        Get.to(CreateNewCategory(), transition: Transition.upToDown);
+                        Get.to(const CreateNewCategory(),
+                            transition: Transition.upToDown);
                       },
                       child: Container(
-                        decoration: BoxDecoration(color: rGreen, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                            color: rGreen,
+                            borderRadius: BorderRadius.circular(8)),
                         child: Row(
                           children: [
                             SvgPicture.asset("assets/svgs/add.svg"),
-                            Text(
+                            const Text(
                               "Create a new Category",
                               style: TextStyle(color: rWhite),
                             ).marginOnly(left: 8)
@@ -196,38 +247,60 @@ class _CategoriesTabState extends State<CategoriesTab> {
                     )
                   ],
                 ).marginOnly(top: 12),
-                SizedBox(
+                const SizedBox(
                   height: 20,
                 ),
                 Container(
                   width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: rBg),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12), color: rBg),
                   child: Column(
                     children: [
                       TableHeader(),
                       Theme(
                         data: Theme.of(context).copyWith(
-                          iconTheme: IconThemeData(color: Colors.white),
+                          iconTheme: const IconThemeData(color: Colors.white),
                         ),
                         child: ReorderableListView(
                           shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           onReorder: (oldIndex, newIndex) async {
                             if (newIndex > oldIndex) newIndex -= 1;
-            
-                            final movedCategory = categoryController.allCategories.removeAt(oldIndex);
-                            categoryController.allCategories.insert(newIndex, movedCategory);
-            
-                            for (int i = 0; i < categoryController.allCategories.length; i++) {
-                              final category = categoryController.allCategories[i];
-                              await categoryRef.doc(category.id).update({"order": i});
+
+                            final movedCategory = categoryController
+                                .allCategories
+                                .removeAt(oldIndex);
+                            categoryController.allCategories
+                                .insert(newIndex, movedCategory);
+
+                            // Optimization: Use WriteBatch for multiple updates
+                            final batch = FirebaseFirestore.instance.batch();
+                            for (int i = 0;
+                                i < categoryController.allCategories.length;
+                                i++) {
+                              final category =
+                                  categoryController.allCategories[i];
+                              category.order = i; // Update local model order
+                              batch.update(
+                                  categoryRef.doc(category.id), {"order": i});
+                            }
+
+                            try {
+                              categoryController
+                                  .update(); // Trigger UI update locally first
+                              await batch.commit();
+                            } catch (e) {
+                              debugPrint("Error updating order: $e");
                             }
                           },
                           children: [
-                            for (int index = 0; index < categoryController.allCategories.length; index++)
+                            for (int index = 0;
+                                index < categoryController.allCategories.length;
+                                index++)
                               CategoryTile(
                                 categoryController.allCategories[index],
-                                key: ValueKey(categoryController.allCategories[index].id),
+                                key: ValueKey(
+                                    categoryController.allCategories[index].id),
                               ),
                           ],
                         ),
@@ -249,7 +322,7 @@ Widget TableHeader() {
     decoration: BoxDecoration(
       color: rWhite.withOpacity(0.05),
     ),
-    child: Row(
+    child: const Row(
       children: [
         Expanded(
             flex: 1,
@@ -309,14 +382,16 @@ class _CategoryTileState extends State<CategoryTile> {
         Expanded(
             flex: 1,
             child: Text(
-              "${"${widget.categoryModel.id.substring(0, 5)}..."}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              "${widget.categoryModel.id.substring(0, 5)}...",
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Text(
-              "${"${widget.categoryModel.order}"}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              "${widget.categoryModel.order}",
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 2,
@@ -324,7 +399,7 @@ class _CategoryTileState extends State<CategoryTile> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Image.network(
-                  "${widget.categoryModel.logo}",
+                  widget.categoryModel.logo,
                   width: 40,
                   height: 40,
                 ),
@@ -333,14 +408,17 @@ class _CategoryTileState extends State<CategoryTile> {
         Expanded(
             flex: 2,
             child: Text(
-              "${widget.categoryModel.english}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              widget.categoryModel.english,
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Text(
               widget.categoryModel.isEnabled ? "Enabled" : "Disabled",
-              style: TextStyle(color: widget.categoryModel.isEnabled ? rGreen : rRed, fontWeight: FontWeight.normal),
+              style: TextStyle(
+                  color: widget.categoryModel.isEnabled ? rGreen : rRed,
+                  fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
@@ -348,7 +426,9 @@ class _CategoryTileState extends State<CategoryTile> {
               onTap: () {
                 Get.to(EditCategory(model: widget.categoryModel));
               },
-              child: Align(alignment: Alignment.centerLeft, child: SvgPicture.asset("assets/svgs/eye.svg")),
+              child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset("assets/svgs/eye.svg")),
             )),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);

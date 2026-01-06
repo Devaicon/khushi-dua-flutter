@@ -1,15 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:khushiduaadmin/controllers/authController.dart';
 import 'dart:html' as html;
 import '../constants/firebaseRef.dart';
 import '../models/managementModel.dart';
-import '../views/dashboard.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  AuthController _authController = Get.find<AuthController>();
+  final AuthController _authController = Get.find<AuthController>();
 
   createAdmin() async {
     try {
@@ -18,7 +17,7 @@ class AuthService {
         email: "admin@gmail.com",
         password: "123456",
       );
-      ManagementModel _managementModel = ManagementModel(
+      ManagementModel managementModel = ManagementModel(
           id: userCredential.user!.uid,
           email: userCredential.user!.email!,
           role: "Super_Admin",
@@ -26,11 +25,9 @@ class AuthService {
           updatedAt: DateTime.now(),
           firstName: 'Admin',
           lastName: 'John');
-      await managementRef
-          .doc(_managementModel.id)
-          .set(_managementModel.toMap());
+      await managementRef.doc(managementModel.id).set(managementModel.toMap());
     } on FirebaseAuthException catch (e) {
-      print('Error creating admin: ${e.message}');
+      debugPrint('Error creating admin: ${e.message}');
     }
   }
 
@@ -46,10 +43,10 @@ class AuthService {
         _authController
             .setManagementUserModel(ManagementModel.fromMap(value.data()!));
         _authController.setLoading(false);
-        Get.offAll(DashboardScreen(), transition: Transition.downToUp);
+        Get.offAllNamed('/dashboard');
       });
     } on FirebaseAuthException {
-      print("Error logging in");
+      debugPrint("Error logging in");
       _authController.setLoading(false);
     }
   }
@@ -57,7 +54,6 @@ class AuthService {
   getAdminDetails() async {
     // SharedPreferences sharedPreferences=await SharedPreferences.getInstance();
     String? adminId = html.window.localStorage['adminId'];
-    ;
 
     await managementRef.doc(adminId).get().then((value) {
       _authController
@@ -107,7 +103,7 @@ class AuthService {
         password: password,
       );
 
-      ManagementModel _managementModel = ManagementModel(
+      ManagementModel managementModel = ManagementModel(
           id: userCredential.user!.uid,
           email: userCredential.user!.email!,
           role: role.isEmpty ? "Admin" : role,
@@ -116,9 +112,7 @@ class AuthService {
           firstName: firstName,
           lastName: lastName);
 
-      await managementRef
-          .doc(_managementModel.id)
-          .set(_managementModel.toMap());
+      await managementRef.doc(managementModel.id).set(managementModel.toMap());
       return null; // Success
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {

@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'package:khushiduaadmin/constants/firebaseRef.dart';
 import 'package:khushiduaadmin/controllers/duaController.dart';
 import 'package:khushiduaadmin/models/duaModel.dart';
@@ -19,9 +19,9 @@ class DuasTab extends StatefulWidget {
 }
 
 class _DuasTabState extends State<DuasTab> {
-
   String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return number.toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 
   @override
@@ -34,14 +34,16 @@ class _DuasTabState extends State<DuasTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TopBar(title: "Duas"),
+                const TopBar(title: "Duas"),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -49,7 +51,9 @@ class _DuasTabState extends State<DuasTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff955C00), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff955C00),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -58,18 +62,26 @@ class _DuasTabState extends State<DuasTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 TweenAnimationBuilder<int>(
-                                  tween: IntTween(begin: 0, end: duaController.allDuas.length),
-                                  duration: Duration(seconds: 2),
+                                  tween: IntTween(
+                                      begin: 0,
+                                      end: duaController.allDuas.length),
+                                  duration: const Duration(seconds: 2),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Total Duas",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -77,13 +89,15 @@ class _DuasTabState extends State<DuasTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -91,7 +105,9 @@ class _DuasTabState extends State<DuasTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff883232), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff883232),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -102,18 +118,29 @@ class _DuasTabState extends State<DuasTab> {
                                 // Text("${coinController.allCoins.length??0}",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                                 TweenAnimationBuilder<int>(
                                   tween: IntTween(
-                                      begin: 0, end: duaController.allDuas.where((element) => element.isEnabled == false).toList().length),
-                                  duration: Duration(seconds: 1),
+                                      begin: 0,
+                                      end: duaController.allDuas
+                                          .where((element) =>
+                                              element.isEnabled == false)
+                                          .toList()
+                                          .length),
+                                  duration: const Duration(seconds: 1),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Disabled Duas",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -121,13 +148,15 @@ class _DuasTabState extends State<DuasTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(
                       child: Container(
                         height: 125,
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: rBg),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: rBg),
                         alignment: Alignment.center,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -135,7 +164,9 @@ class _DuasTabState extends State<DuasTab> {
                             Container(
                               width: 50,
                               height: 50,
-                              decoration: BoxDecoration(color: Color(0xff008A3F), shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                  color: Color(0xff008A3F),
+                                  shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: SvgPicture.asset("assets/svgs/coins.svg"),
                             ),
@@ -146,18 +177,29 @@ class _DuasTabState extends State<DuasTab> {
                                 // Text("3,450",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
                                 TweenAnimationBuilder<int>(
                                   tween: IntTween(
-                                      begin: 0, end: duaController.allDuas.where((element) => element.isEnabled == true).toList().length),
-                                  duration: Duration(seconds: 1),
+                                      begin: 0,
+                                      end: duaController.allDuas
+                                          .where((element) =>
+                                              element.isEnabled == true)
+                                          .toList()
+                                          .length),
+                                  duration: const Duration(seconds: 1),
                                   builder: (context, value, child) {
                                     return Text(
                                       _formatNumber(value),
-                                      style: TextStyle(color: rWhite, fontWeight: FontWeight.bold, fontSize: 30),
+                                      style: const TextStyle(
+                                          color: rWhite,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30),
                                     );
                                   },
                                 ),
-                                Text(
+                                const Text(
                                   "Enabled Duas",
-                                  style: TextStyle(color: rWhite, fontWeight: FontWeight.normal, fontSize: 16),
+                                  style: TextStyle(
+                                      color: rWhite,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 16),
                                 ),
                               ],
                             ).marginOnly(left: 12)
@@ -165,7 +207,7 @@ class _DuasTabState extends State<DuasTab> {
                         ),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       width: 10,
                     ),
                     Expanded(child: Container())
@@ -174,21 +216,27 @@ class _DuasTabState extends State<DuasTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    const Text(
                       "All Duas",
-                      style: TextStyle(color: rWhite, fontWeight: FontWeight.w600, fontSize: 20),
+                      style: TextStyle(
+                          color: rWhite,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20),
                     ),
                     InkWell(
                       splashColor: Colors.transparent,
                       onTap: () {
-                        Get.to(CreateNewDua(), transition: Transition.upToDown);
+                        Get.to(const CreateNewDua(),
+                            transition: Transition.upToDown);
                       },
                       child: Container(
-                        decoration: BoxDecoration(color: rGreen, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                            color: rGreen,
+                            borderRadius: BorderRadius.circular(8)),
                         child: Row(
                           children: [
                             SvgPicture.asset("assets/svgs/add.svg"),
-                            Text(
+                            const Text(
                               "Create a new Dua",
                               style: TextStyle(color: rWhite),
                             ).marginOnly(left: 8)
@@ -198,38 +246,50 @@ class _DuasTabState extends State<DuasTab> {
                     )
                   ],
                 ).marginOnly(top: 12),
-                SizedBox(
+                const SizedBox(
                   height: 20,
                 ),
                 Container(
                   width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: rBg),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12), color: rBg),
                   child: Column(
                     children: [
                       TableHeader(),
                       Theme(
                         data: Theme.of(context).copyWith(
-                          iconTheme: IconThemeData(color: Colors.white),
+                          iconTheme: const IconThemeData(color: Colors.white),
                         ),
                         child: ReorderableListView(
                           shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           onReorder: (oldIndex, newIndex) async {
                             if (newIndex > oldIndex) newIndex -= 1;
-            
-                            final movedCategory = duaController.allDuas.removeAt(oldIndex);
-                            duaController.allDuas.insert(newIndex, movedCategory);
-            
-                            for (int i = 0; i < duaController.allDuas.length; i++) {
+
+                            final movedDua =
+                                duaController.allDuas.removeAt(oldIndex);
+                            duaController.allDuas.insert(newIndex, movedDua);
+
+                            final batch = FirebaseFirestore.instance.batch();
+                            for (int i = 0;
+                                i < duaController.allDuas.length;
+                                i++) {
                               final dua = duaController.allDuas[i];
-                              await duaRef.doc(dua.id).update({"order": i});
+                              dua.order = i;
+                              batch.update(duaRef.doc(dua.id), {"order": i});
                             }
-                            setState(() {
-            
-                            });
+
+                            try {
+                              duaController.update();
+                              await batch.commit();
+                            } catch (e) {
+                              debugPrint("Error updating dua order: $e");
+                            }
                           },
                           children: [
-                            for (int index = 0; index < duaController.allDuas.length; index++)
+                            for (int index = 0;
+                                index < duaController.allDuas.length;
+                                index++)
                               DuaTile(
                                 duaController.allDuas[index],
                                 key: ValueKey(duaController.allDuas[index].id),
@@ -254,7 +314,7 @@ Widget TableHeader() {
     decoration: BoxDecoration(
       color: rWhite.withOpacity(0.05),
     ),
-    child: Row(
+    child: const Row(
       children: [
         Expanded(
             flex: 1,
@@ -302,20 +362,24 @@ class _DuaTileState extends State<DuaTile> {
         Expanded(
             flex: 1,
             child: Text(
-              "${"${widget.duaModel.id.substring(0, 5)}..."}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              "${widget.duaModel.id.substring(0, 5)}...",
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 2,
             child: Text(
-              "${widget.duaModel.english}",
-              style: TextStyle(color: rWhite, fontWeight: FontWeight.normal),
+              widget.duaModel.english,
+              style:
+                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
             child: Text(
               widget.duaModel.isEnabled ? "Enabled" : "Disabled",
-              style: TextStyle(color: widget.duaModel.isEnabled ? rGreen : rRed, fontWeight: FontWeight.normal),
+              style: TextStyle(
+                  color: widget.duaModel.isEnabled ? rGreen : rRed,
+                  fontWeight: FontWeight.normal),
             )),
         Expanded(
             flex: 1,
@@ -323,7 +387,9 @@ class _DuaTileState extends State<DuaTile> {
               onTap: () {
                 Get.to(EditDua(duaModel: widget.duaModel));
               },
-              child: Align(alignment: Alignment.centerLeft, child: SvgPicture.asset("assets/svgs/eye.svg")),
+              child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SvgPicture.asset("assets/svgs/eye.svg")),
             )),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);

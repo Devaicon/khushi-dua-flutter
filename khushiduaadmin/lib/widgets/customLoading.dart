@@ -14,16 +14,15 @@ class _CustomLoadingState extends State<CustomLoading> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        width: MediaQuery.of(context).size.width*0.1,
-        height: MediaQuery.of(context).size.width*0.1,
-        child: LoadingIndicator(
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.1,
+        height: MediaQuery.of(context).size.width * 0.1,
+        child: const LoadingIndicator(
             indicatorType: Indicator.ballScaleMultiple,
-            colors:  [rGreen,rHint,rRed],
+            colors: [rGreen, rHint, rRed],
             strokeWidth: 14,
             backgroundColor: Colors.transparent,
-            pathBackgroundColor: Colors.black
-        ),
+            pathBackgroundColor: Colors.black),
       ),
     );
   }
