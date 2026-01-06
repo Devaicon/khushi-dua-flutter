@@ -32,7 +32,9 @@ class _TopBarState extends State<TopBar> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    "${authController.adminModel.firstName} ${authController.adminModel.lastName}",
+                    authController.adminModel.firstName.isEmpty
+                        ? "Admin"
+                        : "${authController.adminModel.firstName} ${authController.adminModel.lastName}",
                     style: const TextStyle(color: rWhite),
                   ),
                   Container(
@@ -42,7 +44,10 @@ class _TopBarState extends State<TopBar> {
                         shape: BoxShape.circle, color: rBlack),
                     alignment: Alignment.center,
                     child: Text(
-                      authController.adminModel.firstName[0],
+                      authController.adminModel.firstName.isEmpty
+                          ? "A"
+                          : authController.adminModel.firstName[0]
+                              .toUpperCase(),
                       style: const TextStyle(
                           color: rWhite,
                           fontWeight: FontWeight.bold,

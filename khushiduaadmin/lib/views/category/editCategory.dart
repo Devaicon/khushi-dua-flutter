@@ -59,6 +59,7 @@ class _EditCategoryState extends State<EditCategory> {
   @override
   void initState() {
     super.initState();
+    // Initialize controllers
     arabicTextEditingController.text = widget.model.arabic;
     bengaliTextEditingController.text = widget.model.bengali;
     englishTextEditingController.text = widget.model.english;
@@ -80,11 +81,11 @@ class _EditCategoryState extends State<EditCategory> {
     telguTextEditingController.text = widget.model.telgu;
     turkishTextEditingController.text = widget.model.turkish;
     urduTextEditingController.text = widget.model.urdu;
-    setState(() {
-      isLittleKids = widget.model.littleKids;
-      isOlderKids = widget.model.olderKids;
-      isGrownUps = widget.model.grownUps;
-    });
+
+    // Initialize flags
+    isLittleKids = widget.model.littleKids;
+    isOlderKids = widget.model.olderKids;
+    isGrownUps = widget.model.grownUps;
   }
 
   void pickImage(String type) {
@@ -1486,6 +1487,10 @@ class _EditCategoryState extends State<EditCategory> {
                                     categoryController.updateCategory(
                                         categoryModel, catLogo);
                                   } else {
+                                    debugPrint("Category validation failed");
+                                    CustomSnackbar.show("Error",
+                                        "Please fill all required fields",
+                                        isSuccess: false);
                                     return;
                                   }
                                 },

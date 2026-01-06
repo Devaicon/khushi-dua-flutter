@@ -54,6 +54,7 @@ class _EditSubCategoryState extends State<EditSubCategory> {
   @override
   void initState() {
     super.initState();
+    // Initialize controllers
     arabicTextEditingController.text = widget.model.arabic;
     bengaliTextEditingController.text = widget.model.bengali;
     englishTextEditingController.text = widget.model.english;
@@ -75,12 +76,12 @@ class _EditSubCategoryState extends State<EditSubCategory> {
     telguTextEditingController.text = widget.model.telgu;
     turkishTextEditingController.text = widget.model.turkish;
     urduTextEditingController.text = widget.model.urdu;
-    setState(() {
-      isLittleKids = widget.model.littleKids;
-      isOlderKids = widget.model.olderKids;
-      isGrownUps = widget.model.grownUps;
-      subCatImageUrl = widget.model.image;
-    });
+
+    // Initialize flags
+    isLittleKids = widget.model.littleKids;
+    isOlderKids = widget.model.olderKids;
+    isGrownUps = widget.model.grownUps;
+    subCatImageUrl = widget.model.image;
   }
 
   void pickImage(String type) {
@@ -1483,6 +1484,10 @@ class _EditSubCategoryState extends State<EditSubCategory> {
                                           subCategoryModel, subCatImage);
                                     }
                                   } else {
+                                    debugPrint("SubCategory validation failed");
+                                    CustomSnackbar.show("Error",
+                                        "Please fill all required fields",
+                                        isSuccess: false);
                                     return;
                                   }
                                 },

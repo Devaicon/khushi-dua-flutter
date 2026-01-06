@@ -357,58 +357,62 @@ class DuaTile extends StatefulWidget {
 class _DuaTileState extends State<DuaTile> {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          Expanded(
+              flex: 1,
+              child: Text(
+                "${widget.duaModel.id.substring(0, 5)}...",
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 2,
+              child: Text(
+                widget.duaModel.english,
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 1,
+              child: Text(
+                widget.duaModel.isEnabled ? "Enabled" : "Disabled",
+                style: TextStyle(
+                    color: widget.duaModel.isEnabled ? rGreen : rRed,
+                    fontWeight: FontWeight.normal),
+              )),
+          Expanded(
             flex: 1,
-            child: Text(
-              "${widget.duaModel.id.substring(0, 5)}...",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              widget.duaModel.english,
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              widget.duaModel.isEnabled ? "Enabled" : "Disabled",
-              style: TextStyle(
-                  color: widget.duaModel.isEnabled ? rGreen : rRed,
-                  fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-          flex: 1,
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () {
-                  debugPrint(
-                      "Navigating to EditDua for: ${widget.duaModel.english}");
-                  Get.to(() => EditDua(duaModel: widget.duaModel),
-                      transition: Transition.rightToLeft);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: Tooltip(
-                    message: "Edit Dua",
-                    child: SvgPicture.asset(
-                      "assets/svgs/eye.svg",
-                      width: 20,
-                      height: 20,
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () {
+                    debugPrint(
+                        "Navigating to EditDua for: ${widget.duaModel.english}");
+                    Get.to(() => EditDua(duaModel: widget.duaModel),
+                        transition: Transition.rightToLeft);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Tooltip(
+                      message: "Edit Dua",
+                      child: SvgPicture.asset(
+                        "assets/svgs/eye.svg",
+                        width: 24,
+                        height: 24,
+                        color: rWhite,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10);
+        ],
+      ).marginSymmetric(horizontal: 12, vertical: 10),
+    );
   }
 }

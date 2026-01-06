@@ -87,6 +87,7 @@ class _EditDuaState extends State<EditDua> {
   @override
   void initState() {
     super.initState();
+    // Initialize controllers
     arabicTextEditingController.text = widget.duaModel.arabic;
     bengaliTextEditingController.text = widget.duaModel.bengali;
     transliterationTextEditingController.text = widget.duaModel.transliteration;
@@ -110,23 +111,23 @@ class _EditDuaState extends State<EditDua> {
     turkishTextEditingController.text = widget.duaModel.turkish;
     urduTextEditingController.text = widget.duaModel.urdu;
     descriptionTextEditingController.text = widget.duaModel.description ?? '';
+    benefitsTextAreaController.text = widget.duaModel.benefits ?? '';
+
+    // Initialize audio paths
     littleKidsAudio = widget.duaModel.littleKidsAudio;
     olderKidsAudio = widget.duaModel.olderKidsAudio;
     grownUpsKidsAudio = widget.duaModel.grownUpsAudio;
 
+    // Initialize flags
     isLittleKids = widget.duaModel.littleKids;
     isOlderKids = widget.duaModel.olderKids;
     isGrownUps = widget.duaModel.grownUps;
 
+    // Fetch selected subcategories
     selectedSubCategories = Get.find<CategoryController>()
         .allSubCategories
         .where((subCat) => widget.duaModel.subCategoryIds.contains(subCat.id))
         .toList();
-
-    // Initialize benefits text area with saved data
-    benefitsTextAreaController.text = widget.duaModel.benefits ?? '';
-
-    setState(() {});
   }
 
   void pickMp3File(String type) {

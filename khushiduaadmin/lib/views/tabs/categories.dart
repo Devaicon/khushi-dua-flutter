@@ -377,77 +377,81 @@ class CategoryTile extends StatefulWidget {
 class _CategoryTileState extends State<CategoryTile> {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          Expanded(
+              flex: 1,
+              child: Text(
+                "${widget.categoryModel.id.substring(0, 5)}...",
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 1,
+              child: Text(
+                "${widget.categoryModel.order}",
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 2,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.network(
+                    widget.categoryModel.logo,
+                    width: 40,
+                    height: 40,
+                  ),
+                ],
+              )),
+          Expanded(
+              flex: 2,
+              child: Text(
+                widget.categoryModel.english,
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 1,
+              child: Text(
+                widget.categoryModel.isEnabled ? "Enabled" : "Disabled",
+                style: TextStyle(
+                    color: widget.categoryModel.isEnabled ? rGreen : rRed,
+                    fontWeight: FontWeight.normal),
+              )),
+          Expanded(
             flex: 1,
-            child: Text(
-              "${widget.categoryModel.id.substring(0, 5)}...",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "${widget.categoryModel.order}",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 2,
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Image.network(
-                  widget.categoryModel.logo,
-                  width: 40,
-                  height: 40,
-                ),
-              ],
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              widget.categoryModel.english,
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              widget.categoryModel.isEnabled ? "Enabled" : "Disabled",
-              style: TextStyle(
-                  color: widget.categoryModel.isEnabled ? rGreen : rRed,
-                  fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-          flex: 1,
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () {
-                  debugPrint(
-                      "Navigating to EditCategory for: ${widget.categoryModel.english}");
-                  Get.to(() => EditCategory(model: widget.categoryModel),
-                      transition: Transition.rightToLeft);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: Tooltip(
-                    message: "Edit Category",
-                    child: SvgPicture.asset(
-                      "assets/svgs/eye.svg",
-                      width: 20,
-                      height: 20,
+                InkWell(
+                  onTap: () {
+                    debugPrint(
+                        "Navigating to EditCategory for: ${widget.categoryModel.english}");
+                    Get.to(() => EditCategory(model: widget.categoryModel),
+                        transition: Transition.rightToLeft);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Tooltip(
+                      message: "Edit Category",
+                      child: SvgPicture.asset(
+                        "assets/svgs/eye.svg",
+                        width: 24,
+                        height: 24,
+                        color: rWhite,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10);
+        ],
+      ).marginSymmetric(horizontal: 12, vertical: 10),
+    );
   }
 }

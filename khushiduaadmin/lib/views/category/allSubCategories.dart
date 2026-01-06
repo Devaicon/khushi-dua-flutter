@@ -382,65 +382,69 @@ class SubCategoryTile extends StatefulWidget {
 class _SubCategoryTileState extends State<SubCategoryTile> {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          Expanded(
+              flex: 1,
+              child: Text(
+                "${widget.subCategoryModel.id.substring(0, 5)}...",
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 1,
+              child: Text(
+                "${widget.subCategoryModel.order}",
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 2,
+              child: Text(
+                widget.subCategoryModel.english,
+                style: const TextStyle(
+                    color: rWhite, fontWeight: FontWeight.normal),
+              )),
+          Expanded(
+              flex: 1,
+              child: Text(
+                widget.subCategoryModel.isEnabled ? "Enabled" : "Disabled",
+                style: TextStyle(
+                    color: widget.subCategoryModel.isEnabled ? rGreen : rRed,
+                    fontWeight: FontWeight.normal),
+              )),
+          Expanded(
             flex: 1,
-            child: Text(
-              "${widget.subCategoryModel.id.substring(0, 5)}...",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "${widget.subCategoryModel.order}",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              widget.subCategoryModel.english,
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              widget.subCategoryModel.isEnabled ? "Enabled" : "Disabled",
-              style: TextStyle(
-                  color: widget.subCategoryModel.isEnabled ? rGreen : rRed,
-                  fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-          flex: 1,
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () {
-                  debugPrint(
-                      "Navigating to EditSubCategory for: ${widget.subCategoryModel.english}");
-                  Get.to(() => EditSubCategory(widget.subCategoryModel),
-                      transition: Transition.rightToLeft);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  child: Tooltip(
-                    message: "Edit SubCategory",
-                    child: SvgPicture.asset(
-                      "assets/svgs/eye.svg",
-                      width: 20,
-                      height: 20,
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () {
+                    debugPrint(
+                        "Navigating to EditSubCategory for: ${widget.subCategoryModel.english}");
+                    Get.to(() => EditSubCategory(widget.subCategoryModel),
+                        transition: Transition.rightToLeft);
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    child: Tooltip(
+                      message: "Edit SubCategory",
+                      child: SvgPicture.asset(
+                        "assets/svgs/eye.svg",
+                        width: 24,
+                        height: 24,
+                        color: rWhite,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10);
+        ],
+      ).marginSymmetric(horizontal: 12, vertical: 10),
+    );
   }
 }
