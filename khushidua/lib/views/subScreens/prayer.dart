@@ -367,6 +367,14 @@ class _PrayerScreenState extends State<PrayerScreen> {
             speakerEnabled: prefs.getString("maghribSpeaker") ?? "on",
           ),
         );
+        // Using Maghrib as proxy for Sunset as requested
+        newNamazList.add(
+          NamazModel(
+            time: DateFormat('hh:mm a').format(prayerTimes.maghribStartTime!),
+            name: "Sunset",
+            speakerEnabled: prefs.getString("sunsetSpeaker") ?? "on",
+          ),
+        );
       }
 
       if (prayerTimes.ishaStartTime != null) {
@@ -879,6 +887,8 @@ class _NamazTileState extends State<NamazTile> {
         return Icons.wb_cloudy_rounded;
       case 'maghrib':
         return Icons.wb_twilight_rounded;
+      case 'sunset':
+        return Icons.wb_twilight_rounded;
       case 'ishaa':
         return Icons.nightlight_round;
       default:
@@ -903,6 +913,9 @@ class _NamazTileState extends State<NamazTile> {
         break;
       case "Maghrib":
         key = "maghribSpeaker";
+        break;
+      case "Sunset":
+        key = "sunsetSpeaker";
         break;
       case "Ishaa":
         key = "ishaSpeaker";

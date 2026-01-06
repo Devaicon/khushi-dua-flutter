@@ -362,19 +362,6 @@ class _DuaTileState extends State<DuaTile> {
             // Initialize recorder for this dialog
             dialogRecorder ??= AudioRecorder();
 
-            void updateRecordingDuration() {
-              Future.delayed(const Duration(seconds: 1), () {
-                if (dialogIsRecording) {
-                  setDialogState(() {
-                    dialogRecordingDuration = Duration(
-                      seconds: dialogRecordingDuration.inSeconds + 1,
-                    );
-                  });
-                  updateRecordingDuration();
-                }
-              });
-            }
-
             Future<void> sendToApi(String audioPath) async {
               if (baseUrl.isEmpty) {
                 await getBaseUrl();
@@ -643,6 +630,52 @@ class _DuaTileState extends State<DuaTile> {
               }
             }
 
+            Future<void> stopRecording() async {
+              if (dialogRecorder != null && dialogIsRecording) {
+                final path = await dialogRecorder!.stop();
+                setDialogState(() {
+                  dialogIsRecording = false;
+                });
+
+                if (path != null) {
+                  // Automatically send to API after recording stops
+                  await sendToApi(path);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Failed to save recording."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+
+            void updateRecordingDuration() {
+              Future.delayed(const Duration(seconds: 1), () async {
+                if (dialogIsRecording) {
+                  if (dialogRecordingDuration.inSeconds >= 29) {
+                    await stopRecording();
+                    Get.snackbar(
+                      "Recording Limit",
+                      "Recording cannot be more than 29 seconds",
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                    );
+                    return;
+                  }
+                  setDialogState(() {
+                    dialogRecordingDuration = Duration(
+                      seconds: dialogRecordingDuration.inSeconds + 1,
+                    );
+                  });
+                  updateRecordingDuration();
+                }
+              });
+            }
+
             Future<void> startRecording() async {
               // Check current permission status first
               PermissionStatus status = await Permission.microphone.status;
@@ -750,29 +783,6 @@ class _DuaTileState extends State<DuaTile> {
               }
             }
 
-            Future<void> stopRecording() async {
-              if (dialogRecorder != null && dialogIsRecording) {
-                final path = await dialogRecorder!.stop();
-                setDialogState(() {
-                  dialogIsRecording = false;
-                });
-
-                if (path != null) {
-                  // Automatically send to API after recording stops
-                  await sendToApi(path);
-                } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Failed to save recording."),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            }
-
             String formatDuration(Duration duration) {
               String twoDigits(int n) => n.toString().padLeft(2, "0");
               final minutes = twoDigits(duration.inMinutes.remainder(60));
@@ -848,6 +858,22 @@ class _DuaTileState extends State<DuaTile> {
                       ],
                     ),
                     const SizedBox(height: 24),
+
+                    // Recording Limit Info
+                    if (!dialogIsLoading && dialogApiResponse == null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          "Max recording length: 29 seconds",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: dialogIsRecording
+                                ? Colors.red
+                                : Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
 
                     // Recording indicator
                     if (dialogIsRecording) ...[

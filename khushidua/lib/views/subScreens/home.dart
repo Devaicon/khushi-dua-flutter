@@ -429,7 +429,11 @@ class _CategoryTileState extends State<CategoryTile>
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: LinearGradient(
+              colors: [Colors.white, widget.color.withOpacity(0.15)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(28), // Softer, more premium
             boxShadow: [
               BoxShadow(
