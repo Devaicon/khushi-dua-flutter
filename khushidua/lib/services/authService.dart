@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../controllers/notificationController.dart';
 import '../views/blockedScreen.dart';
+import '../views/dashboard.dart';
 
 class AuthService {
   final UserController _userController = Get.find<UserController>();
@@ -50,8 +51,8 @@ class AuthService {
       _userController.setLoggedIn(true);
       await getUserData(userCredential.user!.uid);
       Get.find<NotificationController>().getAllNotifications();
-      Get.back();
-      CustomSnackbar.show("Success", "Signed up successfully");
+      Get.offAll(() => const Dashboard());
+      CustomSnackbar.show("Success", "Signed up successfully".tr);
     } on FirebaseAuthException {
       CustomSnackbar.show(
         "Error",
@@ -78,8 +79,8 @@ class AuthService {
       });
       getUserData(userCredential.user!.uid);
       Get.find<NotificationController>().getAllNotifications();
+      Get.offAll(() => const Dashboard());
       CustomSnackbar.show("Success", "Login successful".tr);
-      Get.back();
     } on FirebaseAuthException catch (e) {
       String errorMessage = "Something went wrong. Try again later".tr;
       if (e.code == 'user-not-found') {
