@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
-import '../../constants/userData.dart';
 import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../models/categoryModel.dart';
@@ -147,42 +146,44 @@ class _HomeScreenState extends State<HomeScreen> {
         ? rblue
         : rgreen;
 
-    return Row(
-      children: [
-        GetBuilder<UserController>(
-          builder: (userController) {
-            return const ProfileAvatar(size: 55);
-          },
-        ),
-        const SizedBox(width: 15),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return GetBuilder<UserController>(
+      builder: (userController) {
+        return Row(
           children: [
-            Text(
-              "Assalam o Alaikum".tr,
-              style: TextStyle(
-                color: rhint.withOpacity(0.8),
-                fontSize: 13,
-                letterSpacing: 0.5,
-              ),
+            const ProfileAvatar(size: 55),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Assalam o Alaikum".tr,
+                  style: TextStyle(
+                    color: rhint.withOpacity(0.8),
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Text(
+                  userController.isLoggedIn
+                      ? userController.userName
+                      : "Guest User".tr,
+                  style: const TextStyle(
+                    color: rtext,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              isLoggedIn ? userName : "Guest User",
-              style: TextStyle(
-                color: rtext,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const Spacer(),
+            _buildPointsBadge(accentColor, userController.points),
           ],
-        ),
-        const Spacer(),
-        _buildPointsBadge(accentColor),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildPointsBadge(Color accentColor) {
+  Widget _buildPointsBadge(Color accentColor, int userPoints) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -204,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Icon(Icons.stars_rounded, color: Colors.white, size: 18),
           const SizedBox(width: 4),
           Text(
-            "$points",
+            "$userPoints",
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
