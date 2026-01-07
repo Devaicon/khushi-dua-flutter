@@ -13,6 +13,7 @@ import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
 import '../subSettings/languageSettings.dart';
 import '../subSettings/audioDownloadSettings.dart';
+import '../../widgets/profileAvatar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -123,36 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     delay: 1,
                                     child: InkWell(
                                       onTap: _showAvatarPopup,
-                                      child: Container(
-                                        width: 90,
-                                        height: 90,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: Colors.white.withOpacity(
-                                              0.5,
-                                            ),
-                                            width: 4,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.1,
-                                              ),
-                                              blurRadius: 15,
-                                              offset: const Offset(0, 5),
-                                            ),
-                                          ],
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: userController.avatar != ""
-                                            ? ClipOval(
-                                                child: Image.asset(
-                                                  userController.avatar,
-                                                ),
-                                              )
-                                            : SizedBox(),
-                                      ),
+                                      child: const ProfileAvatar(size: 90),
                                     ),
                                   ),
                                   FadeInAnimationBTT(

@@ -10,6 +10,7 @@ import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../models/categoryModel.dart';
 import 'categoryDetailScreen.dart';
+import '../../widgets/profileAvatar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -150,25 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         GetBuilder<UserController>(
           builder: (userController) {
-            return Container(
-              width: 55,
-              height: 55,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.5),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-                border: Border.all(color: accentColor, width: 2),
-              ),
-              child: userController.avatar != ""
-                  ? ClipOval(child: Image.asset(userController.avatar))
-                  : const Icon(Icons.person, color: Colors.grey),
-            );
+            return const ProfileAvatar(size: 55);
           },
         ),
         const SizedBox(width: 15),

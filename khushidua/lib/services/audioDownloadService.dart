@@ -82,7 +82,7 @@ class AudioDownloadService extends GetxService {
     }
 
     _isDownloading = true;
-    _prepareTasks();
+    await _prepareTasks();
     _processQueue();
   }
 
@@ -105,10 +105,11 @@ class AudioDownloadService extends GetxService {
     return true;
   }
 
-  void _prepareTasks() {
+  Future<void> _prepareTasks() async {
     final duaController = Get.find<DuaController>();
     final themeController = Get.find<ThemeController>();
     final ageGroup = themeController.selectedAgeGroup;
+    final directory = await getApplicationDocumentsDirectory();
 
     tasks.clear();
     for (var dua in duaController.allDuas) {
@@ -127,12 +128,19 @@ class AudioDownloadService extends GetxService {
 
       if (url.isNotEmpty) {
         final fileName = "dua_${dua.id}_$suffix.mp3";
+        final filePath = "${directory.path}/$fileName";
+        final fileExists = await File(filePath).exists();
+
         tasks.add(
           DownloadTask(
             id: dua.id,
             url: url,
             fileName: fileName,
-            title: dua.english, // Use English name for display in downloads
+            title: dua.english,
+            status: fileExists
+                ? DownloadStatus.completed
+                : DownloadStatus.pending,
+            progress: fileExists ? 1.0 : 0.0,
           ),
         );
       }

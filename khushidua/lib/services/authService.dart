@@ -78,11 +78,22 @@ class AuthService {
       });
       getUserData(userCredential.user!.uid);
       Get.find<NotificationController>().getAllNotifications();
-      CustomSnackbar.show("Success", "Login successfull");
-    } on FirebaseAuthException {
+      CustomSnackbar.show("Success", "Login successful".tr);
+      Get.back();
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Something went wrong. Try again later".tr;
+      if (e.code == 'user-not-found') {
+        errorMessage = "No user found for that email.".tr;
+      } else if (e.code == 'wrong-password') {
+        errorMessage = "Wrong password provided.".tr;
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "The email address is badly formatted.".tr;
+      }
+      CustomSnackbar.show("Error", errorMessage, isSuccess: false);
+    } catch (e) {
       CustomSnackbar.show(
         "Error",
-        "Something went wrong. Try again later",
+        "An unexpected error occurred".tr,
         isSuccess: false,
       );
     }

@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/colors.dart';
 import '../constants/userData.dart';
 import '../controllers/userController.dart';
+import '../helpers/adHelper.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -68,9 +69,9 @@ class _DashboardState extends State<Dashboard> {
     Get.find<NotificationController>().getAllNotifications();
 
     _bannerAd = BannerAd(
-      adUnitId: "ca-app-pub-3940256099942544/6300978111",
+      adUnitId: AdHelper.bannerAdUnitId,
       size: AdSize.banner,
-      request: AdRequest(),
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
           setState(() {

@@ -8,6 +8,7 @@ import '../../constants/userData.dart';
 import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../services/authService.dart';
+import '../../widgets/profileAvatar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,33 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 delay: 1,
                                 child: InkWell(
                                   onTap: _showAvatarPopup,
-                                  child: Container(
-                                    width: 90,
-                                    height: 90,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey,
-                                      border: Border.all(
-                                        color:
-                                            themeController.selectedAgeGroup ==
-                                                0
-                                            ? rpink
-                                            : themeController
-                                                      .selectedAgeGroup ==
-                                                  1
-                                            ? rblue
-                                            : rgreen,
-                                        width: 3,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: userController.avatar != ""
-                                        ? ClipOval(
-                                            child: Image.asset(
-                                              userController.avatar,
-                                            ),
-                                          )
-                                        : SizedBox(),
-                                  ),
+                                  child: const ProfileAvatar(size: 90),
                                 ),
                               ),
                               FadeInAnimationBTT(
