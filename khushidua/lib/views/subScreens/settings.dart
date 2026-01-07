@@ -12,6 +12,7 @@ import '../../controllers/userController.dart';
 import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
 import '../subSettings/languageSettings.dart';
+import '../subSettings/audioDownloadSettings.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -54,7 +55,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> downloadSettings() async {}
+  Future<void> downloadSettings() async {
+    Get.to(const AudioDownloadSettings(), transition: Transition.fade);
+  }
 
   languageSettings() {
     Get.to(LanguageSettings(), transition: Transition.fade);

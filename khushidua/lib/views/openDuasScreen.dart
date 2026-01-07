@@ -28,6 +28,7 @@ import '../constants/colors.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
+import '../services/audioDownloadService.dart';
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
@@ -78,7 +79,22 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
       });
     } else {
       await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(path));
+
+      // Check if local file exists
+      final downloadService = Get.find<AudioDownloadService>();
+      final themeController = Get.find<ThemeController>();
+      final localPath = await downloadService.getLocalPath(
+        duaId,
+        themeController.selectedAgeGroup,
+      );
+
+      if (localPath != null) {
+        debugPrint("Playing local audio: $localPath");
+        await _audioPlayer.play(DeviceFileSource(localPath));
+      } else {
+        debugPrint("Playing remote audio: $path");
+        await _audioPlayer.play(UrlSource(path));
+      }
 
       setState(() {
         _currentlyPlayingPath = path;
