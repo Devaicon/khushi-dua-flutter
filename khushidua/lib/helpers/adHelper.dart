@@ -2,16 +2,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class AdHelper {
-  // Replace these with your actual production Ad Unit IDs from AdMob Console
-  // These are currently set to Google's Test IDs
   static String get bannerAdUnitId {
     if (kReleaseMode) {
       if (Platform.isAndroid) {
-        // TODO: Replace with your production Android Banner Ad Unit ID
-        return 'ca-app-pub-3940256099942544/6300978111';
+        return 'ca-app-pub-7984236421784231/8879981117';
       } else if (Platform.isIOS) {
-        // TODO: Replace with your production iOS Banner Ad Unit ID
-        return 'ca-app-pub-3940256099942544/2934735716';
+        return 'ca-app-pub-7984236421784231/9563078215';
       }
     }
 
@@ -28,11 +24,9 @@ class AdHelper {
   static String get interstitialAdUnitId {
     if (kReleaseMode) {
       if (Platform.isAndroid) {
-        // TODO: Replace with your production Android Interstitial Ad Unit ID
-        return 'ca-app-pub-3940256099942544/1033173712';
+        return 'ca-app-pub-7984236421784231/8879981117';
       } else if (Platform.isIOS) {
-        // TODO: Replace with your production iOS Interstitial Ad Unit ID
-        return 'ca-app-pub-3940256099942544/4411468910';
+        return 'ca-app-pub-7984236421784231/9563078215';
       }
     }
 

@@ -20,18 +20,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Color> colors = [
-    Color(0xff9DD6F4),
-    Color(0xffFFD5EB),
-    Color(0xffDAFFF7),
-    Color(0xffF9FFB5),
-    Color(0xffFFE1B5),
-    Color(0xffF9D7D6),
-    Color(0xffD0FFB9),
-    Color(0xffDFF2FF),
-    Color(0xffD7D9FF),
-    Color(0xffDAD1FE),
-    Color(0xffC0E9FF),
-    Color(0xffE4FEFF),
+    Color(0xFF64B5F6), // Blue
+    Color(0xFFF06292), // Pink
+    Color(0xFF4DB6AC), // Teal
+    Color(0xFFFFF176), // Yellow
+    Color(0xFFFFB74D), // Orange
+    Color(0xFFE57373), // Red
+    Color(0xFFAED581), // Light Green
+    Color(0xFFBA68C8), // Purple
+    Color(0xFF4DD0E1), // Cyan
+    Color(0xFF90A4AE), // Blue Grey
+    Color(0xFF7986CB), // Indigo
+    Color(0xFFFF8A65), // Deep Orange
   ];
 
   @override
@@ -115,10 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount:
-                                2, // Reverting to balanced 2 columns
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 20,
-                            childAspectRatio: 1.1, // More spacious
+                                3, // Converted to 3x3 grid as requested
+                            crossAxisSpacing: 15, // Slightly reduced spacing
+                            mainAxisSpacing: 15,
+                            childAspectRatio: 0.85, // Taller to fit text
                           ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final category = filteredCategories[index];
@@ -413,21 +413,10 @@ class _CategoryTileState extends State<CategoryTile>
         scale: _scaleAnimation,
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, widget.color.withOpacity(0.15)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28), // Softer, more premium
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(0.12),
-                blurRadius: 25,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            color: widget.color.withOpacity(0.3), // More colorful background
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: widget.color.withOpacity(0.08),
+              color: widget.color.withOpacity(0.5),
               width: 1.5,
             ),
           ),
@@ -460,15 +449,15 @@ class _CategoryTileState extends State<CategoryTile>
                   Get.find<UserController>().selectedLanguage,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 1, // Single line for cleaner look
-                overflow: TextOverflow.ellipsis,
+                maxLines: 3, // Allow more lines for full name visibility
+                overflow: TextOverflow.visible,
                 style: TextStyle(
                   color: rbluedark,
-                  fontWeight: FontWeight.bold, // More premium bold
-                  fontSize: 14, // Balanced size
-                  letterSpacing: 0.3,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12, // Adjusted for 3-column layout
+                  height: 1.2,
                 ),
-              ).paddingSymmetric(horizontal: 12),
+              ).paddingSymmetric(horizontal: 4),
             ],
           ),
         ),
