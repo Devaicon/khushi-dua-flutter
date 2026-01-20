@@ -8,18 +8,19 @@ import 'controllers/initController.dart';
 import 'controllers/localization.dart';
 import 'firebase_options.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  // await MobileAds.instance.initialize();
 
-  MobileAds.instance.initialize().then((InitializationStatus status) {
-    debugPrint('AdMob initialized: ${status.adapterStatuses}');
-  }).catchError((e) {
-    debugPrint('AdMob initialization failed: $e');
-  });
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  MobileAds.instance
+      .initialize()
+      .then((InitializationStatus status) {
+        debugPrint('AdMob initialized: ${status.adapterStatuses}');
+      })
+      .catchError((e) {
+        debugPrint('AdMob initialization failed: $e');
+      });
   runApp(const MyApp());
 }
 

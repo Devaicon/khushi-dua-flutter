@@ -270,7 +270,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           color: rtext,
                           fontWeight: FontWeight.w900,
-                          fontSize: 18,
+                          fontSize: MediaQuery.of(context).size.width < 360
+                              ? 14
+                              : 18,
                         ),
                       ),
                       const SizedBox(height: 15),
@@ -324,12 +326,20 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color,
   ) {
     bool isSelected = themeController.selectedAgeGroup == index;
+    double screenWidth = MediaQuery.of(context).size.width;
+    double horizontalPadding = screenWidth < 360 ? 12 : 24;
+    double verticalPadding = screenWidth < 360 ? 8 : 12;
+    double fontSize = screenWidth < 360 ? 12 : 14;
+
     return InkWell(
       onTap: () => themeController.setSelectedAgeGroup(index),
       borderRadius: BorderRadius.circular(30),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -356,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             color: isSelected ? rbluedark : rtext,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: fontSize,
           ),
         ),
       ),
@@ -399,6 +410,12 @@ class _CategoryTileState extends State<CategoryTile>
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double iconSize = screenWidth < 360 ? 28 : 36;
+    double fontSize = screenWidth < 360 ? 10 : 12;
+    double circlePadding = screenWidth < 360 ? 10 : 16;
+    double spacing = screenWidth < 360 ? 8 : 16;
+
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) => _controller.reverse(),
@@ -424,7 +441,7 @@ class _CategoryTileState extends State<CategoryTile>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(16), // More generous padding
+                padding: EdgeInsets.all(circlePadding), // Responsive padding
                 decoration: BoxDecoration(
                   color: widget.color.withOpacity(0.08),
                   shape: BoxShape.circle,
@@ -433,17 +450,17 @@ class _CategoryTileState extends State<CategoryTile>
                   tag: 'category_logo_${widget.categoryModel.id}',
                   child: Image.network(
                     widget.categoryModel.logo,
-                    width: 36, // Slightly larger, more clear
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
+                    width: iconSize, // Responsive icon size
+                    height: iconSize,
+                    errorBuilder: (context, error, stackTrace) => Icon(
                       Icons.category_rounded,
                       color: Colors.grey,
-                      size: 30,
+                      size: iconSize * 0.8,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               Text(
                 widget.categoryModel.getName(
                   Get.find<UserController>().selectedLanguage,
@@ -454,8 +471,8 @@ class _CategoryTileState extends State<CategoryTile>
                 style: TextStyle(
                   color: rbluedark,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12, // Adjusted for 3-column layout
-                  height: 1.2,
+                  fontSize: fontSize, // Responsive font size
+                  height: 1.1,
                 ),
               ).paddingSymmetric(horizontal: 4),
             ],

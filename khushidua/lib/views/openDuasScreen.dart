@@ -1367,9 +1367,13 @@ class _DuaTileState extends State<DuaTile> {
                         // Copy to clipboard or other context action
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width < 360
+                              ? 16
+                              : 24,
+                          vertical: MediaQuery.of(context).size.width < 360
+                              ? 20
+                              : 32,
                         ),
                         width: double.infinity,
                         color: accentColor.withOpacity(0.02),
@@ -1378,7 +1382,9 @@ class _DuaTileState extends State<DuaTile> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.black,
-                            fontSize: themeController.textSize * 1.15,
+                            fontSize: MediaQuery.of(context).size.width < 360
+                                ? themeController.textSize
+                                : themeController.textSize * 1.15,
                             height: 2.0,
                             fontFamily: 'arabic',
                             fontWeight: FontWeight.w400,

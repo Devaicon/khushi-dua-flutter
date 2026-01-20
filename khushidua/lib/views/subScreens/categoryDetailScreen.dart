@@ -265,9 +265,13 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                       ),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 20,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: MediaQuery.of(context).size.width < 360
+                                ? 12
+                                : 20,
+                            vertical: MediaQuery.of(context).size.width < 360
+                                ? 12
+                                : 20,
                           ),
                           child: Row(
                             children: [
@@ -280,7 +284,10 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                                     color: widget.isClickable
                                         ? rbluedark
                                         : Colors.grey,
-                                    fontSize: 16,
+                                    fontSize:
+                                        MediaQuery.of(context).size.width < 360
+                                        ? 14
+                                        : 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -292,7 +299,9 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                                 color: widget.isClickable
                                     ? widget.color
                                     : Colors.grey.withOpacity(0.5),
-                                size: 18,
+                                size: MediaQuery.of(context).size.width < 360
+                                    ? 14
+                                    : 18,
                               ),
                             ],
                           ),
