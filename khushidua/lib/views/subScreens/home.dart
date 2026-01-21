@@ -303,17 +303,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildAgeGroupSelector(ThemeController themeController) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _buildAgeTab("Little Kids".tr, 0, themeController, rpink),
-          const SizedBox(width: 12),
-          _buildAgeTab("Older Kids".tr, 1, themeController, rblue),
-          const SizedBox(width: 12),
-          _buildAgeTab("Grown ups".tr, 2, themeController, rgreen),
+          Expanded(
+            child: _buildAgeTab("Little Kids".tr, 0, themeController, rpink),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildAgeTab("Older Kids".tr, 1, themeController, rblue),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildAgeTab("Grown ups".tr, 2, themeController, rgreen),
+          ),
         ],
       ),
     );
@@ -327,9 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     bool isSelected = themeController.selectedAgeGroup == index;
     double screenWidth = MediaQuery.of(context).size.width;
-    double horizontalPadding = screenWidth < 360 ? 12 : 24;
-    double verticalPadding = screenWidth < 360 ? 8 : 12;
-    double fontSize = screenWidth < 360 ? 12 : 14;
+    double horizontalPadding = screenWidth < 360 ? 4 : 8;
+    double verticalPadding = screenWidth < 360 ? 6 : 10;
+    double fontSize = screenWidth < 360 ? 11 : 13;
 
     return InkWell(
       onTap: () => themeController.setSelectedAgeGroup(index),
@@ -361,12 +365,16 @@ class _HomeScreenState extends State<HomeScreen> {
             color: isSelected ? color : Colors.grey.withOpacity(0.2),
           ),
         ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? rbluedark : rtext,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontSize: fontSize,
+        child: Center(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isSelected ? rbluedark : rtext,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: fontSize,
+            ),
           ),
         ),
       ),
@@ -440,23 +448,16 @@ class _CategoryTileState extends State<CategoryTile>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: EdgeInsets.all(circlePadding), // Responsive padding
-                decoration: BoxDecoration(
-                  color: widget.color.withOpacity(0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Hero(
-                  tag: 'category_logo_${widget.categoryModel.id}',
-                  child: Image.network(
-                    widget.categoryModel.logo,
-                    width: iconSize, // Responsive icon size
-                    height: iconSize,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.category_rounded,
-                      color: Colors.grey,
-                      size: iconSize * 0.8,
-                    ),
+              Hero(
+                tag: 'category_logo_${widget.categoryModel.id}',
+                child: Image.network(
+                  widget.categoryModel.logo,
+                  width: iconSize, // Responsive icon size
+                  height: iconSize,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.category_rounded,
+                    color: Colors.grey,
+                    size: iconSize * 0.8,
                   ),
                 ),
               ),
