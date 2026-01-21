@@ -167,14 +167,18 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
-        String city = place.locality ?? place.subAdministrativeArea ?? "";
+
+        // Robust city detection
+        String city = place.locality ?? "";
+        if (city.isEmpty) city = place.subLocality ?? "";
+        if (city.isEmpty) city = place.subAdministrativeArea ?? "";
+        if (city.isEmpty) city = place.name ?? "";
+
         String country = place.country ?? "";
         String isoCountryCode = place.isoCountryCode ?? "";
 
         // Determine timezone based on coordinates (simplified approach)
-        // You can use a timezone package for more accurate timezone detection
         if (isoCountryCode.isNotEmpty) {
-          // Common timezone mappings (simplified)
           if (isoCountryCode == "PK") {
             timezoneName = "Asia/Karachi";
           } else if (isoCountryCode == "IN") {
@@ -184,13 +188,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
           } else if (isoCountryCode == "AE") {
             timezoneName = "Asia/Dubai";
           } else {
-            // Use a mapping of UTC offsets to valid IANA timezone names
-            // 1 hour = 15 degrees of longitude
             int offsetHours = (position.longitude / 15).round();
             timezoneName = _getTimezoneFromOffset(offsetHours);
           }
         } else {
-          // If no country code, use default timezone based on coordinates
           int offsetHours = (position.longitude / 15).round();
           timezoneName = _getTimezoneFromOffset(offsetHours);
         }
@@ -212,8 +213,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
         });
       }
     } catch (e) {
+      debugPrint('Error getting location name: $e');
       setState(() {
-        locationName = "Unknown location";
+        locationName = "Location Error";
       });
     }
   }
@@ -573,16 +575,20 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ),
                 ),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.location_on, color: rwhite, size: 30),
                     SizedBox(width: 12),
-                    Text(
-                      locationName,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: rwhite,
+                    Expanded(
+                      child: Text(
+                        locationName,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: rwhite,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
