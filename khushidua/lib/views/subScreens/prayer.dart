@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -40,12 +41,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
   String selectedCalculationMethod = "karachi";
   String selectedJuristicMethod = "shafi";
 
-  var fajrVolume = "on";
-  var sunriseVolume = "on";
-  var dhuhrVolume = "on";
-  var asrVolume = "on";
-  var maghribVolume = "on";
   var ishaaVolume = "on";
+
+  Timer? _timer;
+  Duration _timeToNextPrayer = Duration.zero;
+  String _nextPrayerName = "";
+  PrayerTimes? _prayerTimes;
 
   @override
   void initState() {
@@ -62,6 +63,58 @@ class _PrayerScreenState extends State<PrayerScreen> {
     });
     _updateCalculationParams();
     setPosition();
+    _startCountdownTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdownTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _calculateNextPrayer();
+    });
+  }
+
+  void _calculateNextPrayer() {
+    if (_prayerTimes == null) return;
+
+    final now = DateTime.now();
+    DateTime? nextTime;
+    String name = "";
+
+    final prayers = {
+      "Fajr": _prayerTimes!.fajrStartTime,
+      "Sunrise": _prayerTimes!.sunrise,
+      "Dhuhr": _prayerTimes!.dhuhrStartTime,
+      "Asr": _prayerTimes!.asrStartTime,
+      "Maghrib": _prayerTimes!.maghribStartTime,
+      "Ishaa": _prayerTimes!.ishaStartTime,
+    };
+
+    for (var entry in prayers.entries) {
+      if (entry.value != null && entry.value!.isAfter(now)) {
+        nextTime = entry.value;
+        name = entry.key;
+        break;
+      }
+    }
+
+    // If no more prayers today, next is Fajr tomorrow
+    if (nextTime == null) {
+      name = "Fajr";
+      // This is simplified; in a real app you'd calculate tomorrow's prayer times
+      // For UI purposes, we'll just show the name if we can't get exact tomorrow time easily
+    }
+
+    if (nextTime != null) {
+      setState(() {
+        _timeToNextPrayer = nextTime!.difference(now);
+        _nextPrayerName = name;
+      });
+    }
   }
 
   void _updateCalculationParams() {
@@ -316,6 +369,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
         );
       }
 
+      _prayerTimes = prayerTimes;
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
       // Clear existing list before adding new times
@@ -529,255 +584,420 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body: Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              fit: BoxFit.fill,
-              image: AssetImage("assets/images/prayerBg.png"),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Premium Background Gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF1A237E), // Deep Spirit Blue
+                  Color(0xFF3949AB), // Indigo
+                  Color(0xFF5C6BC0), // Soft Indigo
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).padding.bottom + 20,
+
+          // Subtle Islamic Pattern Overlay (using existing bg as overlay)
+          Opacity(
+            opacity: 0.15,
+            child: Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  fit: BoxFit.cover,
+                  image: AssetImage("assets/images/prayerBg.png"),
+                ),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: () {
-                      if (locationAllowed) {
-                        Get.to(
-                          CompassScreen(
-                            latitude: currentPosition?.latitude ?? 0,
-                            longitude: currentPosition?.longitude ?? 0,
-                          ),
-                          transition: Transition.fade,
-                        );
-                      } else {
-                        Get.snackbar(
-                          "Location required",
-                          "Please enable location permissions from your phone settings",
-                          backgroundColor: Colors.red,
-                        );
-                      }
-                    },
-                    child: Image.asset(
-                      "assets/images/prayerLocation.png",
-                      width: 45,
-                      height: 50,
-                    ).marginOnly(top: 12),
+          ),
+
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Minimal Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [_buildLocationHeader(), _buildCompassButton()],
+                    ),
                   ),
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.location_on, color: rwhite, size: 30),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        locationName,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: rwhite,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
 
-                //calender
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Expanded(
-                      flex: 1,
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_back_ios),
-                        onPressed: _decrementDate,
-                        tooltip: 'Previous Day',
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_month_outlined,
-                                  color: Color(0xff2A158F),
-                                ),
-                                Text(
-                                  DateFormat(
-                                    'EEEE',
-                                  ).format(selectedEnglishDate),
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
+                // Date Selector
+                SliverToBoxAdapter(
+                  child: _buildDateSelector().paddingSymmetric(vertical: 20),
+                ),
+
+                // Next Prayer Highlights
+                if (locationAllowed &&
+                    !isLoadingPrayerTimes &&
+                    _nextPrayerName.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: FadeInAnimationTTB(
+                      delay: 0.3,
+                      child: _buildNextPrayerCard(),
+                    ).paddingSymmetric(horizontal: 20, vertical: 10),
+                  ),
+
+                // Prayer Times List
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  sliver: locationAllowed
+                      ? isLoadingPrayerTimes
+                            ? const SliverFillRemaining(
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
                                   ),
                                 ),
-                              ],
+                              )
+                            : _namazList.isEmpty
+                            ? const SliverToBoxAdapter(
+                                child: Center(
+                                  child: Text(
+                                    "Unable to load prayer times",
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                ),
+                              )
+                            : SliverList(
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final namaz = _namazList[index];
+                                  final isNext = namaz.name == _nextPrayerName;
+                                  return FadeInAnimationBTT(
+                                    delay: 0.1 * index,
+                                    child: NamazTile(
+                                      namaz,
+                                      index != _namazList.length - 1,
+                                      isNext: isNext,
+                                    ),
+                                  );
+                                }, childCount: _namazList.length),
+                              )
+                      : const SliverToBoxAdapter(
+                          child: Center(
+                            child: Text(
+                              "Location is not enabled",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
                             ),
-                            Text(
-                              selectedHijriDate.toFormat("dd MMMM yyyy"),
-                              style: TextStyle(fontSize: 18),
+                          ),
+                        ),
+                ),
+
+                // Calculation Methods
+                if (locationAllowed)
+                  SliverToBoxAdapter(
+                    child: FadeInAnimationBTT(
+                      delay: 0.8,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _CalculationMethodDropdown(
+                                selectedValue: selectedCalculationMethod,
+                                onChanged: (String value) async {
+                                  SharedPreferences prefs =
+                                      await SharedPreferences.getInstance();
+                                  await prefs.setString(
+                                    "calculationMethod",
+                                    value,
+                                  );
+                                  setState(() {
+                                    selectedCalculationMethod = value;
+                                  });
+                                  _updateCalculationParams();
+                                  await _calculatePrayerTimes(
+                                    selectedEnglishDate,
+                                  );
+                                },
+                              ),
                             ),
-                            Text(
-                              DateFormat(
-                                'dd MMMM yyy',
-                              ).format(selectedEnglishDate),
-                              style: TextStyle(color: rhint),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _JuristicMethodDropdown(
+                                selectedValue: selectedJuristicMethod,
+                                onChanged: (String value) async {
+                                  SharedPreferences prefs =
+                                      await SharedPreferences.getInstance();
+                                  await prefs.setString(
+                                    "juristicMethod",
+                                    value,
+                                  );
+                                  setState(() {
+                                    selectedJuristicMethod = value;
+                                  });
+                                  _updateCalculationParams();
+                                  await _calculatePrayerTimes(
+                                    selectedEnglishDate,
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 1,
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_forward_ios),
-                        onPressed: _incrementDate,
-                        tooltip: 'Next Day',
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 20),
-                //namaz time
-                locationAllowed
-                    ? isLoadingPrayerTimes
-                          ? Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20.0),
-                                child: CircularProgressIndicator(color: rwhite),
-                              ),
-                            )
-                          : _namazList.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20.0),
-                                child: Text(
-                                  "Unable to load prayer times",
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : FadeInAnimationTTB(
-                              delay: 0.5,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(32),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _namazList.length,
-                                  separatorBuilder: (context, index) => Divider(
-                                    height: 1,
-                                    color: Colors.white.withOpacity(0.1),
-                                  ).marginSymmetric(horizontal: 20),
-                                  itemBuilder: (context, index) {
-                                    return NamazTile(
-                                      _namazList[index],
-                                      index == _namazList.length - 1
-                                          ? false
-                                          : true,
-                                    );
-                                  },
-                                ),
-                              ),
-                            )
-                    : Center(
-                        child: Text(
-                          "Location is not enabled",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-
-                SizedBox(height: 20),
-
-                // Calculation Method and Juristic Method Dropdowns
-                if (locationAllowed)
-                  FadeInAnimationBTT(
-                    delay: 1,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _CalculationMethodDropdown(
-                            selectedValue: selectedCalculationMethod,
-                            onChanged: (String value) async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setString("calculationMethod", value);
-                              setState(() {
-                                selectedCalculationMethod = value;
-                              });
-                              _updateCalculationParams();
-                              await _calculatePrayerTimes(selectedEnglishDate);
-                            },
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: _JuristicMethodDropdown(
-                            selectedValue: selectedJuristicMethod,
-                            onChanged: (String value) async {
-                              SharedPreferences prefs =
-                                  await SharedPreferences.getInstance();
-                              await prefs.setString("juristicMethod", value);
-                              setState(() {
-                                selectedJuristicMethod = value;
-                              });
-                              _updateCalculationParams();
-                              await _calculatePrayerTimes(selectedEnglishDate);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
 
-                SizedBox(height: 15),
+                const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
-            ).marginSymmetric(horizontal: 12),
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationHeader() {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "LOCATION".tr,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            locationName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompassButton() {
+    return InkWell(
+      onTap: () {
+        if (locationAllowed) {
+          Get.to(
+            CompassScreen(
+              latitude: currentPosition?.latitude ?? 0,
+              longitude: currentPosition?.longitude ?? 0,
+            ),
+            transition: Transition.cupertino,
+          );
+        } else {
+          Get.snackbar(
+            "Location required",
+            "Please enable location",
+            backgroundColor: Colors.red,
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: const Icon(Icons.explore_rounded, color: Colors.white, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            onPressed: _decrementDate,
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  selectedHijriDate.toFormat("dd MMMM yyyy"),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  DateFormat('EEEE, dd MMMM yyyy').format(selectedEnglishDate),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            onPressed: _incrementDate,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextPrayerCard() {
+    String formatDuration(Duration d) {
+      String twoDigits(int n) => n.toString().padLeft(2, "0");
+      String hours = twoDigits(d.inHours);
+      String minutes = twoDigits(d.inMinutes.remainder(60));
+      String seconds = twoDigits(d.inSeconds.remainder(60));
+      return "$hours:$minutes:$seconds";
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3F51B5), Color(0xFF283593)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                size: 150,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "NEXT PRAYER".tr,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _nextPrayerName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.access_time_filled_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    formatDuration(_timeToNextPrayer),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w200,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  Text(
+                    "remaining until Adhan".tr,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -787,8 +1007,14 @@ class _PrayerScreenState extends State<PrayerScreen> {
 class NamazTile extends StatefulWidget {
   final NamazModel _namazModel;
   final bool bottomLine;
+  final bool isNext;
 
-  const NamazTile(this._namazModel, this.bottomLine, {super.key});
+  const NamazTile(
+    this._namazModel,
+    this.bottomLine, {
+    super.key,
+    this.isNext = false,
+  });
 
   @override
   State<NamazTile> createState() => _NamazTileState();
@@ -797,15 +1023,31 @@ class NamazTile extends StatefulWidget {
 class _NamazTileState extends State<NamazTile> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: widget.isNext
+            ? Colors.white.withOpacity(0.12)
+            : Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: widget.isNext
+              ? Colors.white.withOpacity(0.3)
+              : Colors.white.withOpacity(0.05),
+          width: widget.isNext ? 1.5 : 1.0,
+        ),
+      ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: widget.isNext
+                  ? rwhite.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
               _getPrayerIcon(widget._namazModel.name),
@@ -818,65 +1060,90 @@ class _NamazTileState extends State<NamazTile> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget._namazModel.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      widget._namazModel.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: widget.isNext
+                            ? FontWeight.w900
+                            : FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (widget.isNext)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          "NEXT",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 Text(
                   widget._namazModel.time,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.6),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ),
           ),
-          InkWell(
-            onTap: () async {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              setState(() {
-                if (widget._namazModel.speakerEnabled == "on") {
-                  widget._namazModel.speakerEnabled = "off";
-                  _saveSpeakerSetting(prefs, widget._namazModel.name, "off");
-                } else if (widget._namazModel.speakerEnabled == "off") {
-                  widget._namazModel.speakerEnabled = "vibrate";
-                  _saveSpeakerSetting(
-                    prefs,
-                    widget._namazModel.name,
-                    "vibrate",
-                  );
-                } else {
-                  widget._namazModel.speakerEnabled = "on";
-                  _saveSpeakerSetting(prefs, widget._namazModel.name, "on");
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                widget._namazModel.speakerEnabled == "on"
-                    ? Icons.notifications_active_rounded
-                    : widget._namazModel.speakerEnabled == "off"
-                    ? Icons.notifications_off_rounded
-                    : Icons.vibration_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
+          _buildVolumeAction(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVolumeAction() {
+    return InkWell(
+      onTap: () async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        setState(() {
+          if (widget._namazModel.speakerEnabled == "on") {
+            widget._namazModel.speakerEnabled = "off";
+            _saveSpeakerSetting(prefs, widget._namazModel.name, "off");
+          } else if (widget._namazModel.speakerEnabled == "off") {
+            widget._namazModel.speakerEnabled = "vibrate";
+            _saveSpeakerSetting(prefs, widget._namazModel.name, "vibrate");
+          } else {
+            widget._namazModel.speakerEnabled = "on";
+            _saveSpeakerSetting(prefs, widget._namazModel.name, "on");
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          widget._namazModel.speakerEnabled == "on"
+              ? Icons.notifications_active_rounded
+              : widget._namazModel.speakerEnabled == "off"
+              ? Icons.notifications_off_rounded
+              : Icons.vibration_rounded,
+          color: Colors.white,
+          size: 18,
+        ),
       ),
     );
   }
