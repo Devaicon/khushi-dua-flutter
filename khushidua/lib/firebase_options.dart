@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAZjNhZjNUW-G_MDZbFNmytvUiMp5KXwYM',
-    appId: '1:29248066052:android:b3669e74ab923f097bdb51',
+    appId: '1:29248066052:android:cb8651bc17188ea17bdb51',
     messagingSenderId: '29248066052',
     projectId: 'khushidua',
     storageBucket: 'khushidua.firebasestorage.app',
@@ -59,11 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD02s3oiP3flkhIf8PjIAmlRyV8_Q8rLoE',
-    appId: '1:29248066052:ios:ef894421fd57c53f7bdb51',
+    appId: '1:29248066052:ios:42331a7e5813662b7bdb51',
     messagingSenderId: '29248066052',
     projectId: 'khushidua',
     storageBucket: 'khushidua.firebasestorage.app',
-    iosBundleId: 'com.khushidua.app',
+    iosBundleId: 'com.khushii.khushiikidzdua',
   );
 
 }
