@@ -24,17 +24,19 @@ class SearchableMultiSelectDropdown extends StatefulWidget {
   final ValueChanged<List<SubCategoryModel>> onChanged;
 
   const SearchableMultiSelectDropdown({
-    Key? key,
+    super.key,
     required this.items,
     required this.initiallySelected,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
-  _SearchableMultiSelectDropdownState createState() => _SearchableMultiSelectDropdownState();
+  _SearchableMultiSelectDropdownState createState() =>
+      _SearchableMultiSelectDropdownState();
 }
 
-class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDropdown> {
+class _SearchableMultiSelectDropdownState
+    extends State<SearchableMultiSelectDropdown> {
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final LayerLink _layerLink = LayerLink();
@@ -59,8 +61,12 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
       if (q.isEmpty) {
         _filtered = widget.items;
       } else {
-        final matches = widget.items.where((e) => e.english.toLowerCase().contains(q)).toList();
-        final nonMatches = widget.items.where((e) => !e.english.toLowerCase().contains(q)).toList();
+        final matches = widget.items
+            .where((e) => e.english.toLowerCase().contains(q))
+            .toList();
+        final nonMatches = widget.items
+            .where((e) => !e.english.toLowerCase().contains(q))
+            .toList();
         _filtered = [...matches, ...nonMatches];
       }
     });
@@ -114,8 +120,10 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
                     decoration: InputDecoration(
                       hintText: 'Search',
                       hintStyle: TextStyle(color: rHint.withOpacity(0.5)),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                     ),
                     style: const TextStyle(color: Colors.white),
                   ),
@@ -130,7 +138,9 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
                         return InkWell(
                           onTap: () {
                             setState(() {
-                              isSel ? _selected.remove(item) : _selected.add(item);
+                              isSel
+                                  ? _selected.remove(item)
+                                  : _selected.add(item);
                               widget.onChanged(_selected);
                             });
                           },
@@ -138,11 +148,16 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
                             padding: const EdgeInsets.symmetric(vertical: 8.0),
                             child: Row(
                               children: [
-                                Icon(isSel ? Icons.check_box : Icons.check_box_outline_blank,
+                                Icon(
+                                    isSel
+                                        ? Icons.check_box
+                                        : Icons.check_box_outline_blank,
                                     color: isSel ? Colors.green : Colors.grey),
                                 const SizedBox(width: 16),
                                 Expanded(
-                                  child: Text(item.english, style: const TextStyle(color: Colors.white)),
+                                  child: Text(item.english,
+                                      style:
+                                          const TextStyle(color: Colors.white)),
                                 ),
                               ],
                             ),
@@ -185,14 +200,22 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
             children: [
               Expanded(
                 child: Text(
-                  _selected.isEmpty ? 'Sub‑categories' : _selected.map((e) => e.english).join(', '),
+                  _selected.isEmpty
+                      ? 'Sub‑categories'
+                      : _selected.map((e) => e.english).join(', '),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: _selected.isEmpty ? rHint.withOpacity(0.5) : Colors.white,
+                    color: _selected.isEmpty
+                        ? rHint.withOpacity(0.5)
+                        : Colors.white,
                   ),
                 ),
               ),
-              Icon(_isMenuOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: rHint),
+              Icon(
+                  _isMenuOpen
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: rHint),
             ],
           ),
         ),
@@ -200,4 +223,3 @@ class _SearchableMultiSelectDropdownState extends State<SearchableMultiSelectDro
     );
   }
 }
-

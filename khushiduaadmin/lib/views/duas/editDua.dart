@@ -2,7 +2,6 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'dart:html' as html;
 
 import '../../constants/colors.dart';
@@ -87,6 +86,8 @@ class _EditDuaState extends State<EditDua> {
 
   @override
   void initState() {
+    super.initState();
+    // Initialize controllers
     arabicTextEditingController.text = widget.duaModel.arabic;
     bengaliTextEditingController.text = widget.duaModel.bengali;
     transliterationTextEditingController.text = widget.duaModel.transliteration;
@@ -110,23 +111,23 @@ class _EditDuaState extends State<EditDua> {
     turkishTextEditingController.text = widget.duaModel.turkish;
     urduTextEditingController.text = widget.duaModel.urdu;
     descriptionTextEditingController.text = widget.duaModel.description ?? '';
+    benefitsTextAreaController.text = widget.duaModel.benefits ?? '';
+
+    // Initialize audio paths
     littleKidsAudio = widget.duaModel.littleKidsAudio;
     olderKidsAudio = widget.duaModel.olderKidsAudio;
     grownUpsKidsAudio = widget.duaModel.grownUpsAudio;
 
+    // Initialize flags
     isLittleKids = widget.duaModel.littleKids;
     isOlderKids = widget.duaModel.olderKids;
     isGrownUps = widget.duaModel.grownUps;
 
+    // Fetch selected subcategories
     selectedSubCategories = Get.find<CategoryController>()
         .allSubCategories
         .where((subCat) => widget.duaModel.subCategoryIds.contains(subCat.id))
         .toList();
-
-    // Initialize benefits text area with saved data
-    benefitsTextAreaController.text = widget.duaModel.benefits ?? '';
-
-    setState(() {});
   }
 
   void pickMp3File(String type) {
@@ -180,8 +181,8 @@ class _EditDuaState extends State<EditDua> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TopBar(title: "Dua"),
-                        Text(
+                        const TopBar(title: "Dua"),
+                        const Text(
                           "Edit Dua",
                           style: TextStyle(color: rWhite, fontSize: 20),
                         ).marginOnly(top: 20),
@@ -189,12 +190,12 @@ class _EditDuaState extends State<EditDua> {
                           children: [
                             InkWell(
                               onTap: () => Get.back(),
-                              child: Text(
+                              child: const Text(
                                 "dua / ",
                                 style: TextStyle(color: rGreen),
                               ),
                             ),
-                            Text(
+                            const Text(
                               "edit dua",
                               style: TextStyle(color: rWhite),
                             ),
@@ -221,7 +222,7 @@ class _EditDuaState extends State<EditDua> {
                                               CrossAxisAlignment.start,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(
+                                            const Text(
                                               "Dua (English)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -251,7 +252,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -260,7 +261,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -268,17 +269,17 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
 
-                                            Text(
+                                            const Text(
                                               "Dua (Transliteration)(English)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -309,7 +310,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -318,7 +319,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -326,17 +327,17 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
 
-                                            Text(
+                                            const Text(
                                               "Description",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -360,7 +361,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -369,7 +370,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -377,17 +378,17 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
 
-                                            Text(
+                                            const Text(
                                               "Benefits",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -411,7 +412,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -420,7 +421,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -428,17 +429,17 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
 
-                                            Text(
+                                            const Text(
                                               "Dua (Arabic)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -468,7 +469,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -477,7 +478,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -485,16 +486,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (Bengali)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -524,7 +525,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -533,7 +534,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -541,16 +542,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (French)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -580,7 +581,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -589,7 +590,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -597,16 +598,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (German)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -636,7 +637,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -645,7 +646,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -653,16 +654,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (Gujrati)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -692,7 +693,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -701,7 +702,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -709,16 +710,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (Hindi)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -748,7 +749,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -757,7 +758,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -765,16 +766,16 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            Text(
+                                            const Text(
                                               "Dua (Indonesian)",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -804,7 +805,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 enabledBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -813,7 +814,7 @@ class _EditDuaState extends State<EditDua> {
                                                 ),
                                                 focusedBorder:
                                                     OutlineInputBorder(
-                                                  borderSide: BorderSide(
+                                                  borderSide: const BorderSide(
                                                     color: rHint,
                                                   ),
                                                   borderRadius:
@@ -821,17 +822,17 @@ class _EditDuaState extends State<EditDua> {
                                                           8.0),
                                                 ),
                                                 contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                    const EdgeInsets.symmetric(
                                                   vertical: 12.0,
                                                   horizontal: 16.0,
                                                 ),
                                               ),
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                               ),
                                             ),
 
-                                            Text(
+                                            const Text(
                                               "Sub Categories",
                                               style: TextStyle(color: rHint),
                                             ).marginOnly(top: 20),
@@ -840,7 +841,8 @@ class _EditDuaState extends State<EditDua> {
                                             if (selectedSubCategories
                                                 .isNotEmpty)
                                               Container(
-                                                padding: EdgeInsets.all(12),
+                                                padding:
+                                                    const EdgeInsets.all(12),
                                                 decoration: BoxDecoration(
                                                   color: rBg,
                                                   borderRadius:
@@ -853,7 +855,7 @@ class _EditDuaState extends State<EditDua> {
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    Text(
+                                                    const Text(
                                                       "Selected Subcategories:",
                                                       style: TextStyle(
                                                         color: rGreen,
@@ -862,7 +864,7 @@ class _EditDuaState extends State<EditDua> {
                                                             FontWeight.bold,
                                                       ),
                                                     ),
-                                                    SizedBox(height: 8),
+                                                    const SizedBox(height: 8),
                                                     ...selectedSubCategories
                                                         .map((subCat) {
                                                       final categoryName =
@@ -870,10 +872,11 @@ class _EditDuaState extends State<EditDua> {
                                                               subCat.categoryId,
                                                               categoryController);
                                                       return Container(
-                                                        margin: EdgeInsets.only(
-                                                            bottom: 8),
+                                                        margin: const EdgeInsets
+                                                            .only(bottom: 8),
                                                         padding:
-                                                            EdgeInsets.all(8),
+                                                            const EdgeInsets
+                                                                .all(8),
                                                         decoration:
                                                             BoxDecoration(
                                                           color: rBlack,
@@ -890,12 +893,13 @@ class _EditDuaState extends State<EditDua> {
                                                               CrossAxisAlignment
                                                                   .start,
                                                           children: [
-                                                            Icon(
+                                                            const Icon(
                                                               Icons.category,
                                                               color: rGreen,
                                                               size: 16,
                                                             ),
-                                                            SizedBox(width: 8),
+                                                            const SizedBox(
+                                                                width: 8),
                                                             Expanded(
                                                               child: Column(
                                                                 crossAxisAlignment:
@@ -905,7 +909,7 @@ class _EditDuaState extends State<EditDua> {
                                                                   Text(
                                                                     "Main Category: $categoryName",
                                                                     style:
-                                                                        TextStyle(
+                                                                        const TextStyle(
                                                                       color:
                                                                           rGreen,
                                                                       fontSize:
@@ -915,13 +919,13 @@ class _EditDuaState extends State<EditDua> {
                                                                               .w600,
                                                                     ),
                                                                   ),
-                                                                  SizedBox(
+                                                                  const SizedBox(
                                                                       height:
                                                                           4),
                                                                   Text(
                                                                     "Subcategory: ${subCat.english.isNotEmpty ? subCat.english : subCat.arabic}",
                                                                     style:
-                                                                        TextStyle(
+                                                                        const TextStyle(
                                                                       color:
                                                                           rWhite,
                                                                       fontSize:
@@ -934,7 +938,7 @@ class _EditDuaState extends State<EditDua> {
                                                           ],
                                                         ),
                                                       );
-                                                    }).toList(),
+                                                    }),
                                                   ],
                                                 ),
                                               ).marginOnly(bottom: 12),
@@ -953,7 +957,7 @@ class _EditDuaState extends State<EditDua> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
+                                                const Text(
                                                   "Little kid audio",
                                                   style:
                                                       TextStyle(color: rHint),
@@ -965,10 +969,11 @@ class _EditDuaState extends State<EditDua> {
                                                   child: DottedBorder(
                                                       color: rHint,
                                                       radius:
-                                                          Radius.circular(8),
+                                                          const Radius.circular(
+                                                              8),
                                                       borderType:
                                                           BorderType.RRect,
-                                                      dashPattern: [8, 4],
+                                                      dashPattern: const [8, 4],
                                                       child: Container(
                                                         // width: 60,
                                                         height: 100,
@@ -982,7 +987,7 @@ class _EditDuaState extends State<EditDua> {
                                                                     null
                                                                 ? SvgPicture.asset(
                                                                     "assets/svgs/upload.svg")
-                                                                : Icon(
+                                                                : const Icon(
                                                                     Icons
                                                                         .file_copy_outlined,
                                                                     color:
@@ -992,8 +997,9 @@ class _EditDuaState extends State<EditDua> {
                                                               littleKidmp3File ==
                                                                       null
                                                                   ? "Upload Audio Sound"
-                                                                  : "${littleKidmp3File!.name}",
-                                                              style: TextStyle(
+                                                                  : littleKidmp3File!
+                                                                      .name,
+                                                              style: const TextStyle(
                                                                   color: rHint,
                                                                   fontWeight:
                                                                       FontWeight
@@ -1010,7 +1016,7 @@ class _EditDuaState extends State<EditDua> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
+                                                const Text(
                                                   "Older kid audio",
                                                   style:
                                                       TextStyle(color: rHint),
@@ -1022,10 +1028,11 @@ class _EditDuaState extends State<EditDua> {
                                                   child: DottedBorder(
                                                       color: rHint,
                                                       radius:
-                                                          Radius.circular(8),
+                                                          const Radius.circular(
+                                                              8),
                                                       borderType:
                                                           BorderType.RRect,
-                                                      dashPattern: [8, 4],
+                                                      dashPattern: const [8, 4],
                                                       child: Container(
                                                         // width: 60,
                                                         height: 100,
@@ -1039,7 +1046,7 @@ class _EditDuaState extends State<EditDua> {
                                                                     null
                                                                 ? SvgPicture.asset(
                                                                     "assets/svgs/upload.svg")
-                                                                : Icon(
+                                                                : const Icon(
                                                                     Icons
                                                                         .file_copy_outlined,
                                                                     color:
@@ -1049,8 +1056,9 @@ class _EditDuaState extends State<EditDua> {
                                                               olderKidmp3File ==
                                                                       null
                                                                   ? "Upload Audio Sound"
-                                                                  : "${olderKidmp3File!.name}",
-                                                              style: TextStyle(
+                                                                  : olderKidmp3File!
+                                                                      .name,
+                                                              style: const TextStyle(
                                                                   color: rHint,
                                                                   fontWeight:
                                                                       FontWeight
@@ -1067,7 +1075,7 @@ class _EditDuaState extends State<EditDua> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
-                                                Text(
+                                                const Text(
                                                   "Grown up audio",
                                                   style:
                                                       TextStyle(color: rHint),
@@ -1079,10 +1087,11 @@ class _EditDuaState extends State<EditDua> {
                                                   child: DottedBorder(
                                                       color: rHint,
                                                       radius:
-                                                          Radius.circular(8),
+                                                          const Radius.circular(
+                                                              8),
                                                       borderType:
                                                           BorderType.RRect,
-                                                      dashPattern: [8, 4],
+                                                      dashPattern: const [8, 4],
                                                       child: Container(
                                                         // width: 60,
                                                         height: 100,
@@ -1096,7 +1105,7 @@ class _EditDuaState extends State<EditDua> {
                                                                     null
                                                                 ? SvgPicture.asset(
                                                                     "assets/svgs/upload.svg")
-                                                                : Icon(
+                                                                : const Icon(
                                                                     Icons
                                                                         .file_copy_outlined,
                                                                     color:
@@ -1106,8 +1115,9 @@ class _EditDuaState extends State<EditDua> {
                                                               grownUpmp3File ==
                                                                       null
                                                                   ? "Upload Audio Sound"
-                                                                  : "${grownUpmp3File!.name}",
-                                                              style: TextStyle(
+                                                                  : grownUpmp3File!
+                                                                      .name,
+                                                              style: const TextStyle(
                                                                   color: rHint,
                                                                   fontWeight:
                                                                       FontWeight
@@ -1139,7 +1149,7 @@ class _EditDuaState extends State<EditDua> {
                                                         });
                                                       },
                                                     ),
-                                                    Text(
+                                                    const Text(
                                                       "Little Kids",
                                                       style: TextStyle(
                                                           color: rWhite),
@@ -1160,7 +1170,7 @@ class _EditDuaState extends State<EditDua> {
                                                         });
                                                       },
                                                     ),
-                                                    Text(
+                                                    const Text(
                                                       "Older Kids",
                                                       style: TextStyle(
                                                           color: rWhite),
@@ -1181,7 +1191,7 @@ class _EditDuaState extends State<EditDua> {
                                                         });
                                                       },
                                                     ),
-                                                    Text(
+                                                    const Text(
                                                       "Grown Ups",
                                                       style: TextStyle(
                                                           color: rWhite),
@@ -1205,7 +1215,7 @@ class _EditDuaState extends State<EditDua> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            const Text(
                                               "English Translation",
                                               style: TextStyle(color: rHint),
                                             ),
@@ -1216,9 +1226,10 @@ class _EditDuaState extends State<EditDua> {
                                               },
                                               child: DottedBorder(
                                                   color: rHint,
-                                                  radius: Radius.circular(8),
+                                                  radius:
+                                                      const Radius.circular(8),
                                                   borderType: BorderType.RRect,
-                                                  dashPattern: [8, 4],
+                                                  dashPattern: const [8, 4],
                                                   child: Container(
                                                     // width: 60,
                                                     height: 100,
@@ -1230,7 +1241,7 @@ class _EditDuaState extends State<EditDua> {
                                                         englishmp3File == null
                                                             ? SvgPicture.asset(
                                                                 "assets/svgs/upload.svg")
-                                                            : Icon(
+                                                            : const Icon(
                                                                 Icons
                                                                     .file_copy_outlined,
                                                                 color: rHint,
@@ -1238,13 +1249,15 @@ class _EditDuaState extends State<EditDua> {
                                                         Text(
                                                           englishmp3File == null
                                                               ? "Upload Audio Sound"
-                                                              : "${englishmp3File!.name}",
-                                                          style: TextStyle(
-                                                              color: rHint,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 14),
+                                                              : englishmp3File!
+                                                                  .name,
+                                                          style:
+                                                              const TextStyle(
+                                                                  color: rHint,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 14),
                                                         ),
                                                       ],
                                                     ),
@@ -1256,7 +1269,7 @@ class _EditDuaState extends State<EditDua> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
+                                            const Text(
                                               "Urdu Translation",
                                               style: TextStyle(color: rHint),
                                             ),
@@ -1266,9 +1279,10 @@ class _EditDuaState extends State<EditDua> {
                                               },
                                               child: DottedBorder(
                                                   color: rHint,
-                                                  radius: Radius.circular(8),
+                                                  radius:
+                                                      const Radius.circular(8),
                                                   borderType: BorderType.RRect,
-                                                  dashPattern: [8, 4],
+                                                  dashPattern: const [8, 4],
                                                   child: Container(
                                                     // width: 60,
                                                     height: 100,
@@ -1280,7 +1294,7 @@ class _EditDuaState extends State<EditDua> {
                                                         urdump3File == null
                                                             ? SvgPicture.asset(
                                                                 "assets/svgs/upload.svg")
-                                                            : Icon(
+                                                            : const Icon(
                                                                 Icons
                                                                     .file_copy_outlined,
                                                                 color: rHint,
@@ -1288,13 +1302,15 @@ class _EditDuaState extends State<EditDua> {
                                                         Text(
                                                           urdump3File == null
                                                               ? "Upload Audio Sound"
-                                                              : "${urdump3File!.name}",
-                                                          style: TextStyle(
-                                                              color: rHint,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 14),
+                                                              : urdump3File!
+                                                                  .name,
+                                                          style:
+                                                              const TextStyle(
+                                                                  color: rHint,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 14),
                                                         ),
                                                       ],
                                                     ),
@@ -1302,7 +1318,7 @@ class _EditDuaState extends State<EditDua> {
                                             ),
                                           ],
                                         ).marginOnly(top: 20),
-                                        Text(
+                                        const Text(
                                           "Dua (Japanese)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1330,30 +1346,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Malay)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1381,30 +1397,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Mandrain)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1432,30 +1448,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Marathi)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1483,30 +1499,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Portugese)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1534,30 +1550,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Punjabi)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1585,30 +1601,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Russian)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1636,30 +1652,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Sindhi)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1687,30 +1703,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Spanish)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1738,30 +1754,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Tamil)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1789,30 +1805,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Telgu)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1840,30 +1856,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Turkish)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1891,30 +1907,30 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
-                                        Text(
+                                        const Text(
                                           "Dua (Urdu)",
                                           style: TextStyle(color: rHint),
                                         ).marginOnly(top: 20),
@@ -1941,26 +1957,26 @@ class _EditDuaState extends State<EditDua> {
                                                   BorderRadius.circular(8.0),
                                             ),
                                             enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
+                                              borderSide: const BorderSide(
                                                 color: rHint,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(8.0),
                                             ),
                                             contentPadding:
-                                                EdgeInsets.symmetric(
+                                                const EdgeInsets.symmetric(
                                               vertical: 12.0,
                                               horizontal: 16.0,
                                             ),
                                           ),
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.white,
                                           ),
                                         ),
@@ -2070,7 +2086,7 @@ class _EditDuaState extends State<EditDua> {
                                         color: rGreen,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Text(
+                                      child: const Text(
                                         "Add",
                                         style: TextStyle(color: rWhite),
                                       ).marginSymmetric(vertical: 12),
@@ -2090,7 +2106,7 @@ class _EditDuaState extends State<EditDua> {
                           width: MediaQuery.of(context).size.width,
                           height: MediaQuery.of(context).size.height,
                           color: rWhite.withOpacity(0.2),
-                          child: CustomLoading()))
+                          child: const CustomLoading()))
                 ],
               );
             },

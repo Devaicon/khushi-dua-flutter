@@ -6,14 +6,14 @@ import 'package:khushiduaadmin/services/duaService.dart';
 import '../models/duaModel.dart';
 
 class DuaController extends GetxController {
-  List<DuaModel> _allDuas = [];
+  final List<DuaModel> _allDuas = [];
   List<DuaModel> get allDuas => _allDuas;
 
-  bool _isLoading=false;
-  bool get isLoading=>_isLoading;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-  setLoading(bool value){
-    _isLoading=value;
+  setLoading(bool value) {
+    _isLoading = value;
     update();
   }
 
@@ -21,7 +21,7 @@ class DuaController extends GetxController {
     DuaService().getAllDuas();
   }
 
-  addDuaToList(DuaModel duaModel) {
+  addDuaToList(DuaModel duaModel, {bool shouldUpdate = true}) {
     int existingIndex = _allDuas.indexWhere((cat) => cat.id == duaModel.id);
 
     if (existingIndex == -1) {
@@ -30,14 +30,18 @@ class DuaController extends GetxController {
       _allDuas[existingIndex] = duaModel;
     }
     _allDuas.sort((a, b) => a.order.compareTo(b.order));
-    update();
+    if (shouldUpdate) update();
   }
 
-  createDua(DuaModel duaModel, File grownUpmp3File, File littleKidmp3File, File olderKidmp3File) {
-    DuaService().createDua(duaModel,grownUpmp3File,littleKidmp3File,olderKidmp3File);
+  createDua(DuaModel duaModel, File grownUpmp3File, File littleKidmp3File,
+      File olderKidmp3File) {
+    DuaService()
+        .createDua(duaModel, grownUpmp3File, littleKidmp3File, olderKidmp3File);
   }
 
-  updateDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File, File? olderKidmp3File,File? englishTrans,File? urduTrans) {
-    DuaService().updateDua(duaModel,grownUpmp3File,littleKidmp3File,olderKidmp3File,englishTrans,urduTrans);
+  updateDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File,
+      File? olderKidmp3File, File? englishTrans, File? urduTrans) {
+    DuaService().updateDua(duaModel, grownUpmp3File, littleKidmp3File,
+        olderKidmp3File, englishTrans, urduTrans);
   }
 }

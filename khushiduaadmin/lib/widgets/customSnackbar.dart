@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class CustomSnackbar {
@@ -11,14 +10,14 @@ class CustomSnackbar {
       backgroundColor: isSuccess ? Colors.green : Colors.red,
       colorText: Colors.white,
       borderRadius: 10,
-      margin: EdgeInsets.all(16),
-      padding: EdgeInsets.all(8),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       icon: Icon(
         isSuccess ? Icons.check_circle : Icons.error,
         color: Colors.white,
       ),
       shouldIconPulse: true,
-      duration: Duration(seconds: 3),
+      duration: const Duration(seconds: 3),
       forwardAnimationCurve: Curves.easeOutBack,
       reverseAnimationCurve: Curves.easeInBack,
       overlayBlur: 1,

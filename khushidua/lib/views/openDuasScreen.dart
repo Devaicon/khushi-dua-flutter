@@ -28,6 +28,7 @@ import '../constants/colors.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
+import '../services/audioDownloadService.dart';
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
@@ -78,7 +79,22 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
       });
     } else {
       await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(path));
+
+      // Check if local file exists
+      final downloadService = Get.find<AudioDownloadService>();
+      final themeController = Get.find<ThemeController>();
+      final localPath = await downloadService.getLocalPath(
+        duaId,
+        themeController.selectedAgeGroup,
+      );
+
+      if (localPath != null) {
+        debugPrint("Playing local audio: $localPath");
+        await _audioPlayer.play(DeviceFileSource(localPath));
+      } else {
+        debugPrint("Playing remote audio: $path");
+        await _audioPlayer.play(UrlSource(path));
+      }
 
       setState(() {
         _currentlyPlayingPath = path;
@@ -211,22 +227,58 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xffF8F9FE),
       appBar: AppBar(
-        actions: [
-          InkWell(
-            onTap: () {
-              showTextOptionsPopup();
-            },
-            child: Icon(
-              Icons.text_fields_outlined,
-              color: rblack,
-            ).marginOnly(right: 20),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          "Duas".tr,
+          style: const TextStyle(
+            color: rblack,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
+        ),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: rblack,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            onPressed: showTextOptionsPopup,
+            icon: const Icon(Icons.text_fields_rounded, color: rblack),
+          ).marginOnly(right: 8),
         ],
       ),
       body: GetBuilder<DuaController>(
         builder: (duaController) {
+          if (duaController.filteredDuas.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 64,
+                    color: Colors.grey.withOpacity(0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No Duas found".tr,
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 24),
+            physics: const BouncingScrollPhysics(),
             itemCount: duaController.filteredDuas.length,
             itemBuilder: (context, index) {
               return DuaTile(
@@ -236,7 +288,6 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                 expandedBenefitsDuaId: _expandedBenefitsDuaId,
                 onToggleBenefits: (duaId) {
                   setState(() {
-                    // If clicking the same dua, collapse it; otherwise expand the new one
                     _expandedBenefitsDuaId = _expandedBenefitsDuaId == duaId
                         ? null
                         : duaId;
@@ -327,19 +378,6 @@ class _DuaTileState extends State<DuaTile> {
             // Initialize recorder for this dialog
             dialogRecorder ??= AudioRecorder();
 
-            void updateRecordingDuration() {
-              Future.delayed(const Duration(seconds: 1), () {
-                if (dialogIsRecording) {
-                  setDialogState(() {
-                    dialogRecordingDuration = Duration(
-                      seconds: dialogRecordingDuration.inSeconds + 1,
-                    );
-                  });
-                  updateRecordingDuration();
-                }
-              });
-            }
-
             Future<void> sendToApi(String audioPath) async {
               if (baseUrl.isEmpty) {
                 await getBaseUrl();
@@ -364,15 +402,15 @@ class _DuaTileState extends State<DuaTile> {
                 // Read the full file as bytes to ensure we send the complete file
                 final fileBytes = await audioFile.readAsBytes();
 
-                print('\n📂 FILE VERIFICATION:');
-                print('   - File exists: ${await audioFile.exists()}');
-                print(
+                debugPrint('\n📂 FILE VERIFICATION:');
+                debugPrint('   - File exists: ${await audioFile.exists()}');
+                debugPrint(
                   '   - File size on disk: ${(fileSize / 1024).toStringAsFixed(2)} KB',
                 );
-                print(
+                debugPrint(
                   '   - Bytes read: ${(fileBytes.length / 1024).toStringAsFixed(2)} KB',
                 );
-                print(
+                debugPrint(
                   '   - Match: ${fileSize == fileBytes.length ? "✅" : "❌"}',
                 );
 
@@ -433,30 +471,32 @@ class _DuaTileState extends State<DuaTile> {
                 }
 
                 // ========== API CALL LOGGING ==========
-                print('\n========== API CALL START ==========');
-                print('📡 BASE URL (from Firebase): $baseUrl');
-                print('🔗 FULL API URL: $apiUrl');
-                print('📝 METHOD: POST');
-                print('📋 ARABIC TEXT (Original): ${widget.dua.arabic}');
-                print('📋 ARABIC TEXT (Encoded): $encodedArabic');
-                print('🎵 AUDIO FILE PATH: $audioPath');
-                print('📁 AUDIO FILE NAME: $fileName');
-                print(
+                debugPrint('\n========== API CALL START ==========');
+                debugPrint('📡 BASE URL (from Firebase): $baseUrl');
+                debugPrint('🔗 FULL API URL: $apiUrl');
+                debugPrint('📝 METHOD: POST');
+                debugPrint('📋 ARABIC TEXT (Original): ${widget.dua.arabic}');
+                debugPrint('📋 ARABIC TEXT (Encoded): $encodedArabic');
+                debugPrint('🎵 AUDIO FILE PATH: $audioPath');
+                debugPrint('📁 AUDIO FILE NAME: $fileName');
+                debugPrint(
                   '📦 AUDIO FILE SIZE: ${(fileSize / 1024).toStringAsFixed(2)} KB',
                 );
-                print('🎚️ CONTENT TYPE: $contentType');
-                print('📤 PAYLOAD: multipart/form-data');
-                print('   - Field: audio_file');
-                print('   - File: $fileName');
-                print('   - Size: ${(fileSize / 1024).toStringAsFixed(2)} KB');
-                print('   - Bytes: ${fileBytes.length} bytes');
-                print('   - Type: $contentType');
-                print('📨 HEADERS:');
-                print(
+                debugPrint('🎚️ CONTENT TYPE: $contentType');
+                debugPrint('📤 PAYLOAD: multipart/form-data');
+                debugPrint('   - Field: audio_file');
+                debugPrint('   - File: $fileName');
+                debugPrint(
+                  '   - Size: ${(fileSize / 1024).toStringAsFixed(2)} KB',
+                );
+                debugPrint('   - Bytes: ${fileBytes.length} bytes');
+                debugPrint('   - Type: $contentType');
+                debugPrint('📨 HEADERS:');
+                debugPrint(
                   '   - Content-Type: multipart/form-data (auto-set by MultipartRequest)',
                 );
-                print('   - No custom headers (matching HTML version)');
-                print('=====================================\n');
+                debugPrint('   - No custom headers (matching HTML version)');
+                debugPrint('=====================================\n');
 
                 var uri = Uri.parse(apiUrl);
                 var request = http.MultipartRequest('POST', uri);
@@ -477,21 +517,21 @@ class _DuaTileState extends State<DuaTile> {
                 // Flutter's MultipartRequest also sets Content-Type automatically
                 // Don't set 'accept' header - let server decide response format
 
-                print(
+                debugPrint(
                   '⏳ Sending request to API with ${fileBytes.length} bytes...\n',
                 );
-                print('🌐 Network Request Details:');
+                debugPrint('🌐 Network Request Details:');
                 final parsedUri = Uri.parse(apiUrl);
-                print('   - Host: ${parsedUri.host}');
-                print('   - Port: ${parsedUri.port}');
-                print('   - Scheme: ${parsedUri.scheme}');
-                print('   - Path: ${parsedUri.path}');
-                print('   - Query: ${parsedUri.query}');
-                print('   - Full URL: $apiUrl');
-                print('');
+                debugPrint('   - Host: ${parsedUri.host}');
+                debugPrint('   - Port: ${parsedUri.port}');
+                debugPrint('   - Scheme: ${parsedUri.scheme}');
+                debugPrint('   - Path: ${parsedUri.path}');
+                debugPrint('   - Query: ${parsedUri.query}');
+                debugPrint('   - Full URL: $apiUrl');
+                debugPrint('');
 
                 // Test connection first (optional - can help diagnose issues)
-                print('🔍 Testing server connectivity...');
+                debugPrint('🔍 Testing server connectivity...');
                 try {
                   final testClient = http.Client();
                   final testResponse = await testClient
@@ -501,22 +541,19 @@ class _DuaTileState extends State<DuaTile> {
                         ),
                       )
                       .timeout(const Duration(seconds: 10));
-                  print(
+                  debugPrint(
                     '   ✅ Server is reachable (HTTP ${testResponse.statusCode})',
                   );
                   testClient.close();
                 } catch (e) {
-                  print('   ⚠️  Server connectivity test failed: $e');
-                  print(
+                  debugPrint('   ⚠️  Server connectivity test failed: $e');
+                  debugPrint(
                     '   ℹ️  This might be normal if server only accepts POST requests',
                   );
                 }
-                print('');
-
-                final stopwatch = Stopwatch()..start();
+                debugPrint('');
 
                 // Send request with timeout (2 minutes for audio processing)
-                print('📤 Sending POST request to API...');
                 var response = await request.send().timeout(
                   const Duration(seconds: 120), // 2 minutes timeout
                   onTimeout: () {
@@ -526,76 +563,35 @@ class _DuaTileState extends State<DuaTile> {
                     );
                   },
                 );
-                stopwatch.stop();
-
-                print(
-                  '✅ Response received in ${stopwatch.elapsedMilliseconds}ms',
-                );
-                print('📊 STATUS CODE: ${response.statusCode}');
-                print('📋 RESPONSE HEADERS:');
-                response.headers.forEach((key, value) {
-                  print('   - $key: $value');
-                });
 
                 var responseBody = await response.stream.bytesToString();
-                final responseLength = responseBody.length;
-
-                print(
-                  '📦 RESPONSE BODY LENGTH: ${(responseLength / 1024).toStringAsFixed(2)} KB',
-                );
-                print(
-                  '📄 RESPONSE BODY (first 500 chars): ${responseBody.length > 500 ? "${responseBody.substring(0, 500)}..." : responseBody}',
-                );
 
                 if (response.statusCode == 200) {
-                  print('✅ SUCCESS: API call completed successfully');
-                  print('========== API CALL END ==========\n');
+                  debugPrint('Transcription API Success');
+                  debugPrint('Transcription API Call End');
                   setDialogState(() {
                     dialogApiResponse = responseBody;
                   });
                 } else {
-                  print(
-                    '❌ ERROR: Server returned status ${response.statusCode}',
+                  debugPrint(
+                    'Transcription API Error: Status ${response.statusCode}',
                   );
-                  print('📄 ERROR RESPONSE BODY: $responseBody');
-                  print('========== API CALL END ==========\n');
+                  debugPrint('Transcription API Error Body: $responseBody');
+                  debugPrint('Transcription API Call End');
                   setDialogState(() {
                     dialogApiResponse =
                         "Error: Server returned status ${response.statusCode}";
                   });
                 }
               } on TimeoutException catch (e) {
-                print('⏱️ TIMEOUT ERROR: Request timed out after 2 minutes');
-                print('   - Message: ${e.message}');
-                print('   - Duration: ${e.duration}');
-                print('========== API CALL END ==========\n');
+                debugPrint('Transcription Timeout: ${e.message}');
+                debugPrint('Transcription API Call End');
                 setDialogState(() {
                   dialogApiResponse =
-                      "Error: Request timed out after 2 minutes. The audio processing is taking longer than expected. Please try again or check your internet connection.";
+                      "Error: Request timed out. The audio processing is taking longer than expected. Please try again.";
                 });
               } on SocketException catch (e) {
-                print('🌐 NETWORK ERROR: Connection failed');
-                print('   - Message: ${e.message}');
-                print('   - Address: ${e.address}');
-                print('   - Port: ${e.port}');
-                print('   - OS Error: ${e.osError}');
-                print('   - OS Error Code: ${e.osError?.errorCode}');
-                print('   - OS Error Message: ${e.osError?.message}');
-                print('\n🔍 TROUBLESHOOTING:');
-                print('   1. Is the server running at $apiUrl?');
-                print(
-                  '   2. If using localhost in HTML, iOS Simulator cannot access it.',
-                );
-                print(
-                  '      → Use your Mac\'s IP address instead (e.g., http://192.168.x.x:3400/transcribe/)',
-                );
-                print('   3. Check if server is accessible: curl $apiUrl');
-                print('   4. Verify firewall settings allow port 3400');
-                print(
-                  '   5. For remote server, ensure it\'s running and accessible',
-                );
-                print('========== API CALL END ==========\n');
-
+                debugPrint('Transcription Network Error: ${e.message}');
                 String errorMessage;
                 if (e.osError?.errorCode == 61) {
                   // Connection refused
@@ -631,23 +627,69 @@ class _DuaTileState extends State<DuaTile> {
                   dialogApiResponse = errorMessage;
                 });
               } on HttpException catch (e) {
-                print('📡 HTTP ERROR: ${e.message}');
-                print('========== API CALL END ==========\n');
+                debugPrint('📡 HTTP ERROR: ${e.message}');
+                debugPrint('========== API CALL END ==========\n');
                 setDialogState(() {
                   dialogApiResponse = "Error: HTTP error - ${e.message}";
                 });
               } catch (e, stackTrace) {
-                print('❌ EXCEPTION: ${e.toString()}');
-                print('   - Type: ${e.runtimeType}');
-                print('📚 STACK TRACE:');
-                print(stackTrace);
-                print('========== API CALL END ==========\n');
+                debugPrint('❌ EXCEPTION: ${e.toString()}');
+                debugPrint('   - Type: ${e.runtimeType}');
+                debugPrint('📚 STACK TRACE:');
+                debugPrint(stackTrace.toString());
+                debugPrint('========== API CALL END ==========\n');
                 setDialogState(() {
                   dialogApiResponse = "Error: ${e.toString()}";
                 });
               } finally {
                 setDialogState(() => dialogIsLoading = false);
               }
+            }
+
+            Future<void> stopRecording() async {
+              if (dialogRecorder != null && dialogIsRecording) {
+                final path = await dialogRecorder!.stop();
+                setDialogState(() {
+                  dialogIsRecording = false;
+                });
+
+                if (path != null) {
+                  // Automatically send to API after recording stops
+                  await sendToApi(path);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Failed to save recording."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+
+            void updateRecordingDuration() {
+              Future.delayed(const Duration(seconds: 1), () async {
+                if (dialogIsRecording) {
+                  if (dialogRecordingDuration.inSeconds >= 29) {
+                    await stopRecording();
+                    Get.snackbar(
+                      "Recording Limit",
+                      "Recording cannot be more than 29 seconds",
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                    );
+                    return;
+                  }
+                  setDialogState(() {
+                    dialogRecordingDuration = Duration(
+                      seconds: dialogRecordingDuration.inSeconds + 1,
+                    );
+                  });
+                  updateRecordingDuration();
+                }
+              });
             }
 
             Future<void> startRecording() async {
@@ -757,29 +799,6 @@ class _DuaTileState extends State<DuaTile> {
               }
             }
 
-            Future<void> stopRecording() async {
-              if (dialogRecorder != null && dialogIsRecording) {
-                final path = await dialogRecorder!.stop();
-                setDialogState(() {
-                  dialogIsRecording = false;
-                });
-
-                if (path != null) {
-                  // Automatically send to API after recording stops
-                  await sendToApi(path);
-                } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Failed to save recording."),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              }
-            }
-
             String formatDuration(Duration duration) {
               String twoDigits(int n) => n.toString().padLeft(2, "0");
               final minutes = twoDigits(duration.inMinutes.remainder(60));
@@ -855,6 +874,22 @@ class _DuaTileState extends State<DuaTile> {
                       ],
                     ),
                     const SizedBox(height: 24),
+
+                    // Recording Limit Info
+                    if (!dialogIsLoading && dialogApiResponse == null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          "Max recording length: 29 seconds",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: dialogIsRecording
+                                ? Colors.red
+                                : Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
 
                     // Recording indicator
                     if (dialogIsRecording) ...[
@@ -1079,115 +1114,8 @@ class _DuaTileState extends State<DuaTile> {
         XFile(file.path),
       ], text: "Check out this beautiful Dua");
     } catch (e) {
-      print("Error sharing: $e");
+      debugPrint("Error sharing: $e");
     }
-  }
-
-  Widget _buildBenefitContainer(
-    String text,
-    bool isRtl,
-    ThemeController themeController,
-    String userLanguage, {
-    int? index,
-  }) {
-    final isLastItem =
-        index != null &&
-        widget.dua.benefits != null &&
-        index == widget.dua.benefits!.length - 1;
-
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      margin: EdgeInsets.only(
-        top: index == null || index == 0 ? 12 : 10,
-        left: 15,
-        right: 15,
-        bottom: isLastItem ? 12 : 8,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Color(0xffF8F6FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Color(0xff2A158F).withValues(alpha: 0.15),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xff2A158F).withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: Colors.white,
-              blurRadius: 1,
-              offset: Offset(0, -1),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Decorative icon in top-right
-            Positioned(
-              top: 12,
-              right: isRtl ? null : 16,
-              left: isRtl ? 16 : null,
-              child: Icon(
-                Icons.auto_awesome,
-                color: Color(0xff2A158F).withValues(alpha: 0.2),
-                size: 20,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Benefits icon
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Color(0xff2A158F).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.favorite,
-                      color: Color(0xff2A158F),
-                      size: 20,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      text,
-                      textAlign: isRtl ? TextAlign.right : TextAlign.left,
-                      style: TextStyle(
-                        color: Color(0xff1A0E5C),
-                        fontSize: userLanguage == 'Urdu'
-                            ? themeController.textSize - 2
-                            : themeController.textSize,
-                        fontFamily: userLanguage == 'Urdu' ? 'arabic' : null,
-                        height: userLanguage == 'Urdu'
-                            ? ((themeController.textSize * 2) - 8) /
-                                  themeController.textSize
-                            : 1.5,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<String?> convertAacToMp3(String inputPath) async {
@@ -1289,13 +1217,10 @@ class _DuaTileState extends State<DuaTile> {
     final themeController = Get.find<ThemeController>();
     final isRtl = userLanguage == 'Urdu' || userLanguage == 'Arabic';
 
-    // Handle String benefits format
-    // Check both benefitsString and also check if we should show even if not parsed yet
     bool hasStringBenefits =
         widget.dua.benefitsString != null &&
         widget.dua.benefitsString!.isNotEmpty;
 
-    // For debugging: if this is the specific dua ID and no benefitsString yet, show placeholder
     if (!widget.dua.hasBenefits() &&
         widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay" &&
         !hasStringBenefits) {
@@ -1308,7 +1233,7 @@ class _DuaTileState extends State<DuaTile> {
     }
 
     if (!widget.dua.hasBenefits() && !hasStringBenefits) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     if (hasStringBenefits) {
@@ -1320,547 +1245,403 @@ class _DuaTileState extends State<DuaTile> {
       );
     }
 
-    // Handle List benefits format
     if (widget.dua.benefits == null || widget.dua.benefits!.isEmpty) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 8),
         ...widget.dua.benefits!.asMap().entries.map((entry) {
-          final index = entry.key;
-          final benefitText = widget.dua.getBenefitText(index, userLanguage);
-
+          final benefitText = widget.dua.getBenefitText(
+            entry.key,
+            userLanguage,
+          );
           if (benefitText == null || benefitText.isEmpty) {
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }
-
           return _buildBenefitContainer(
             benefitText,
             isRtl,
             themeController,
             userLanguage,
-            index: index,
+            index: entry.key,
           );
         }),
       ],
     );
   }
 
+  Widget _buildBenefitContainer(
+    String text,
+    bool isRtl,
+    ThemeController themeController,
+    String userLanguage, {
+    int? index,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xff2A158F).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xff2A158F).withOpacity(0.1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: const BoxDecoration(
+              color: Color(0xff2A158F),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              "${(index ?? 0) + 1}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              textAlign: isRtl ? TextAlign.end : TextAlign.start,
+              style: TextStyle(
+                color: rtext.withOpacity(0.9),
+                fontSize: themeController.textSize * 0.85,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     String audioPath = widget.dua.littleKidsAudio;
-    // Separate isPlaying check for the first button (littleKidsAudio)
     bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
 
     return GetBuilder<UserController>(
       builder: (userController) {
-        var userModel = userController.userModel;
         return GetBuilder<ThemeController>(
           builder: (themeController) {
-            return Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: rpink,
+            Color accentColor = themeController.selectedAgeGroup == 0
+                ? rpink
+                : themeController.selectedAgeGroup == 1
+                ? rblue
+                : rgreen;
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                border: Border.all(
+                  color: accentColor.withOpacity(0.1),
+                  width: 1,
                 ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(28),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            InkWell(
-                              onTap: () =>
-                                  widget.onToggle(audioPath, widget.dua.id),
-                              child: Icon(
-                                isPlayingAudio
-                                    ? Icons.stop_circle
-                                    : Icons.play_circle,
-                                color:
-                                    (userModel != null &&
-                                        userModel.readDuas.contains(
-                                          widget.dua.id,
-                                        ))
-                                    ? Colors.grey
-                                    : Color(0xff2A158F),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-                            InkWell(
-                              onTap: _openRecordingDialog,
-                              child: Icon(Icons.mic, color: Color(0xff2A158F)),
-                            ),
-                          ],
+                    // Focused Header with Metadata & Core Actions
+                    _buildHeader(accentColor, isPlayingAudio, audioPath),
+
+                    // The Sacred Arabic Text
+                    GestureDetector(
+                      onLongPress: () {
+                        // Copy to clipboard or other context action
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width < 360
+                              ? 16
+                              : 24,
+                          vertical: MediaQuery.of(context).size.width < 360
+                              ? 20
+                              : 32,
                         ),
-                        Expanded(
-                          child: Text(
-                            widget.dua.arabic,
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              color: rblack,
-                              fontSize: themeController.textSize,
-                              fontFamily: 'arabic',
-                            ),
+                        width: double.infinity,
+                        color: accentColor.withOpacity(0.02),
+                        child: Text(
+                          widget.dua.arabic,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: MediaQuery.of(context).size.width < 360
+                                ? themeController.textSize
+                                : themeController.textSize * 1.15,
+                            height: 2.0,
+                            fontFamily: 'arabic',
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                      ],
-                    ).marginAll(15),
-                    Divider(height: 2, color: rwhite),
-                    if (themeController.showTransliteration)
-                      Text(
-                        widget.dua.transliteration,
-                        textAlign: TextAlign.start,
-                        style: TextStyle(
-                          color: rblack,
-                          fontSize: themeController.textSize,
-                        ),
-                      ).marginAll(15),
-                    Divider(height: 2, color: rwhite),
-                    if (themeController.showTranslation)
-                      Builder(
-                        builder: (context) {
-                          // Calculate translation audio path and playing state
-                          String? translationAudioPath;
-                          if (Get.find<UserController>().selectedLanguage ==
-                              "Urdu") {
-                            translationAudioPath = widget.dua.urduTranslation;
-                          } else {
-                            translationAudioPath =
-                                widget.dua.englishTranslation;
-                          }
-
-                          // Separate isPlaying check for translation audio
-                          bool isPlayingTranslation =
-                              translationAudioPath != null &&
-                              translationAudioPath.isNotEmpty &&
-                              widget.currentlyPlayingPath ==
-                                  translationAudioPath;
-
-                          return Row(
-                            children: [
-                              if (Get.find<UserController>().selectedLanguage ==
-                                      "English" ||
-                                  Get.find<UserController>().selectedLanguage ==
-                                      "Urdu")
-                                InkWell(
-                                  onTap: () {
-                                    if (Get.find<UserController>()
-                                            .selectedLanguage ==
-                                        "Urdu") {
-                                      if (widget.dua.urduTranslation != null &&
-                                          widget.dua.urduTranslation != "") {
-                                        return widget.onToggle(
-                                          widget.dua.urduTranslation!,
-                                          widget.dua.id,
-                                        );
-                                      }
-                                    } else {
-                                      if (widget.dua.englishTranslation !=
-                                              null &&
-                                          widget.dua.englishTranslation != "") {
-                                        return widget.onToggle(
-                                          widget.dua.englishTranslation!,
-                                          widget.dua.id,
-                                        );
-                                      }
-                                    }
-                                  },
-                                  child: Icon(
-                                    isPlayingTranslation
-                                        ? Icons.stop_circle
-                                        : Icons.play_circle,
-                                    color:
-                                        Get.find<UserController>()
-                                                .selectedLanguage ==
-                                            "Urdu"
-                                        ? widget.dua.urduTranslation != null
-                                              ? Color(0xff2A158F)
-                                              : rpink
-                                        : widget.dua.englishTranslation != null
-                                        ? Color(0xff2A158F)
-                                        : rpink,
-                                  ),
-                                ),
-                              SizedBox(width: 20),
-                              Expanded(
-                                child: Text(
-                                  widget.dua.getName(
-                                    Get.find<UserController>().selectedLanguage,
-                                  ),
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    color: rblack,
-                                    fontSize: themeController.textSize,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ).marginAll(15);
-                        },
                       ),
-                    // Divider before buttons section
-                    if (themeController.showTranslation)
-                      Divider(height: 2, color: rwhite),
-                    // Debug: Print all benefits data
-                    Builder(
-                      builder: (context) {
-                        print('=== DUA BENEFITS DEBUG ===');
-                        print('Dua ID: ${widget.dua.id}');
-                        print('benefitsString: ${widget.dua.benefitsString}');
-                        print(
-                          'benefitsString is null: ${widget.dua.benefitsString == null}',
-                        );
-                        print(
-                          'benefitsString isEmpty: ${widget.dua.benefitsString?.isEmpty ?? "N/A"}',
-                        );
-                        print('benefits: ${widget.dua.benefits}');
-                        print(
-                          'benefits is null: ${widget.dua.benefits == null}',
-                        );
-                        print(
-                          'benefits isEmpty: ${widget.dua.benefits?.isEmpty ?? "N/A"}',
-                        );
-                        print('hasBenefits(): ${widget.dua.hasBenefits()}');
-                        print('==========================');
-                        return SizedBox.shrink();
-                      },
-                    ),
-                    // Benefits Toggle, Check Recitation, and Share Button Row
-                    Builder(
-                      builder: (context) {
-                        final hasBenefits =
-                            widget.dua.hasBenefits() ||
-                            widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay";
-                        final hasShare = widget.dua.arabic.length < 200;
-                        final buttonCount =
-                            (hasBenefits ? 1 : 0) +
-                            1 +
-                            (hasShare
-                                ? 1
-                                : 0); // Benefits + Check Recitation + Share
-
-                        return Row(
-                          children: [
-                            // Benefits Toggle Button (only show if benefits exist)
-                            if (hasBenefits)
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    right: buttonCount > 1 ? 4 : 0,
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        final isExpanded =
-                                            widget.expandedBenefitsDuaId ==
-                                            widget.dua.id;
-                                        widget.onToggleBenefits(
-                                          isExpanded ? null : widget.dua.id,
-                                        );
-                                      },
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors:
-                                                widget.expandedBenefitsDuaId ==
-                                                    widget.dua.id
-                                                ? [
-                                                    Color(
-                                                      0xff2A158F,
-                                                    ).withOpacity(0.2),
-                                                    Color(
-                                                      0xff2A158F,
-                                                    ).withOpacity(0.1),
-                                                  ]
-                                                : [
-                                                    Color(
-                                                      0xff2A158F,
-                                                    ).withOpacity(0.15),
-                                                    Color(
-                                                      0xff5C3FB0,
-                                                    ).withOpacity(0.1),
-                                                  ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color:
-                                                widget.expandedBenefitsDuaId ==
-                                                    widget.dua.id
-                                                ? Color(0xff2A158F)
-                                                : Color(
-                                                    0xff2A158F,
-                                                  ).withOpacity(0.7),
-                                            width:
-                                                widget.expandedBenefitsDuaId ==
-                                                    widget.dua.id
-                                                ? 2
-                                                : 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Color(
-                                                0xff2A158F,
-                                              ).withOpacity(0.15),
-                                              blurRadius: 8,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            AnimatedSwitcher(
-                                              duration: Duration(
-                                                milliseconds: 300,
-                                              ),
-                                              child: Icon(
-                                                widget.expandedBenefitsDuaId ==
-                                                        widget.dua.id
-                                                    ? Icons.expand_less
-                                                    : Icons.expand_more,
-                                                key: ValueKey(
-                                                  widget.expandedBenefitsDuaId ==
-                                                      widget.dua.id,
-                                                ),
-                                                color: Color(0xff2A158F),
-                                                size: 18,
-                                              ),
-                                            ),
-                                            SizedBox(width: 6),
-                                            Flexible(
-                                              child: Text(
-                                                widget.expandedBenefitsDuaId ==
-                                                        widget.dua.id
-                                                    ? "Hide Benefits"
-                                                    : "Show Benefits",
-                                                style: TextStyle(
-                                                  color: Color(0xff2A158F),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.2,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                overflow: TextOverflow.ellipsis,
-                                                maxLines: 1,
-                                              ),
-                                            ),
-                                            SizedBox(width: 4),
-                                            Icon(
-                                              Icons.favorite_border,
-                                              color: Color(
-                                                0xff2A158F,
-                                              ).withOpacity(0.7),
-                                              size: 16,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            // Check Recitation Button (Always shown)
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: buttonCount > 1 ? 4 : 0,
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      _openRecordingDialog();
-                                    },
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xff2A158F).withOpacity(0.15),
-                                            Color(0xff5C3FB0).withOpacity(0.1),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Color(
-                                            0xff2A158F,
-                                          ).withOpacity(0.7),
-                                          width: 1.5,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color(
-                                              0xff2A158F,
-                                            ).withOpacity(0.15),
-                                            blurRadius: 8,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.mic,
-                                            color: Color(0xff2A158F),
-                                            size: 18,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Flexible(
-                                            child: Text(
-                                              "Check Recitation",
-                                              style: TextStyle(
-                                                color: Color(0xff2A158F),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 0.2,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Share Button (only show for short duas)
-                            if (hasShare)
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    left: buttonCount > 1 ? 4 : 0,
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () {
-                                        showShareDialog();
-                                      },
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Color(
-                                                0xff2A158F,
-                                              ).withOpacity(0.15),
-                                              Color(
-                                                0xff5C3FB0,
-                                              ).withOpacity(0.1),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: Color(
-                                              0xff2A158F,
-                                            ).withOpacity(0.7),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Color(
-                                                0xff2A158F,
-                                              ).withOpacity(0.15),
-                                              blurRadius: 8,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.share,
-                                              color: Color(0xff2A158F),
-                                              size: 18,
-                                            ),
-                                            SizedBox(width: 6),
-                                            Flexible(
-                                              child: Text(
-                                                "Share",
-                                                style: TextStyle(
-                                                  color: Color(0xff2A158F),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.2,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                overflow: TextOverflow.ellipsis,
-                                                maxLines: 1,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ).marginSymmetric(horizontal: 15, vertical: 12);
-                      },
                     ),
 
-                    // Expanded Benefits List with smooth animation
-                    AnimatedSize(
-                      duration: Duration(milliseconds: 400),
-                      curve: Curves.easeInOut,
-                      child:
-                          widget.expandedBenefitsDuaId == widget.dua.id &&
-                              (widget.dua.hasBenefits() ||
-                                  widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay")
-                          ? _buildBenefitsList()
-                          : SizedBox.shrink(),
-                    ),
+                    // Transliteration & Translation with selective visibility
+                    _buildContentSections(themeController, accentColor),
+
+                    // Expandable Benefits
+                    _buildBenefitsSection(themeController, accentColor),
+
+                    // Minimal Footer Actions
+                    _buildFooter(accentColor),
                   ],
                 ),
               ),
-            ).marginSymmetric(horizontal: 12, vertical: 8);
+            );
           },
         );
       },
+    );
+  }
+
+  Widget _buildHeader(Color accentColor, bool isPlaying, String audioPath) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _CircleAction(
+            icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+            color: accentColor,
+            onTap: () => widget.onToggle(audioPath, widget.dua.id),
+          ),
+          const SizedBox(width: 8),
+          _CircleAction(
+            icon: Icons.mic_none_rounded,
+            color: const Color(0xff2A158F),
+            onTap: _openRecordingDialog,
+          ),
+          const Spacer(),
+          Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: accentColor.withOpacity(0.2)),
+            ),
+            child: ClipOval(child: Image.asset(randomImage, fit: BoxFit.cover)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentSections(
+    ThemeController themeController,
+    Color accentColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (themeController.showTransliteration) ...[
+            _SectionLabel(label: "TRANSLITERATION", color: accentColor),
+            const SizedBox(height: 8),
+            Text(
+              widget.dua.transliteration,
+              style: TextStyle(
+                color: rtext.withOpacity(0.7),
+                fontSize: themeController.textSize * 0.9,
+                fontStyle: FontStyle.italic,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+          if (themeController.showTranslation) ...[
+            Row(
+              children: [
+                _SectionLabel(label: "TRANSLATION", color: accentColor),
+                const Spacer(),
+                _buildTranslationAudio(accentColor),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.dua.getName(Get.find<UserController>().selectedLanguage),
+              style: TextStyle(
+                color: rtext,
+                fontSize: themeController.textSize * 0.9,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTranslationAudio(Color accentColor) {
+    String? path = Get.find<UserController>().selectedLanguage == "Urdu"
+        ? widget.dua.urduTranslation
+        : widget.dua.englishTranslation;
+
+    if (path == null || path.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    bool isPlaying = widget.currentlyPlayingPath == path;
+
+    return InkWell(
+      onTap: () => widget.onToggle(path, widget.dua.id),
+      child: Icon(
+        isPlaying ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+        size: 18,
+        color: accentColor,
+      ),
+    );
+  }
+
+  Widget _buildBenefitsSection(
+    ThemeController themeController,
+    Color accentColor,
+  ) {
+    bool isExpanded = widget.expandedBenefitsDuaId == widget.dua.id;
+    bool hasBenefits =
+        widget.dua.hasBenefits() || widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay";
+
+    if (!hasBenefits) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () =>
+              widget.onToggleBenefits(isExpanded ? null : widget.dua.id),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Colors.black.withOpacity(0.03)),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome_outlined, size: 18, color: accentColor),
+                const SizedBox(width: 8),
+                Text(
+                  "Benefits & Virtues".tr,
+                  style: TextStyle(
+                    color: rtext,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: Colors.grey,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: isExpanded
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: _buildBenefitsList(),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(Color accentColor) {
+    bool hasShare = widget.dua.arabic.length < 500;
+    if (!hasShare) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: showShareDialog,
+          icon: const Icon(Icons.share_rounded, size: 16),
+          label: Text(
+            "SHARE DUA".tr,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: accentColor,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleAction extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CircleAction({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(50),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 22),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _SectionLabel({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.tr,
+      style: TextStyle(
+        color: color,
+        fontWeight: FontWeight.w900,
+        fontSize: 10,
+        letterSpacing: 1.5,
+      ),
     );
   }
 }

@@ -2,7 +2,6 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'package:khushiduaadmin/models/categoryModel.dart';
 import 'package:khushiduaadmin/models/subCategoryModel.dart';
 import 'dart:html' as html;
@@ -14,9 +13,9 @@ import '../../widgets/topBar.dart';
 
 class CreateSubCategory extends StatefulWidget {
   final CategoryModel categoryModel;
-  final order;
+  final int order;
 
-  const CreateSubCategory(this.categoryModel,this.order, {super.key});
+  const CreateSubCategory(this.categoryModel, this.order, {super.key});
 
   @override
   State<CreateSubCategory> createState() => _CreateSubCategoryState();
@@ -31,12 +30,14 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
   TextEditingController germanTextEditingController = TextEditingController();
   TextEditingController gujratiTextEditingController = TextEditingController();
   TextEditingController hindiTextEditingController = TextEditingController();
-  TextEditingController indonesianTextEditingController = TextEditingController();
+  TextEditingController indonesianTextEditingController =
+      TextEditingController();
   TextEditingController japaneseTextEditingController = TextEditingController();
   TextEditingController malayTextEditingController = TextEditingController();
   TextEditingController mandrainTextEditingController = TextEditingController();
   TextEditingController marathiTextEditingController = TextEditingController();
-  TextEditingController portugeseTextEditingController = TextEditingController();
+  TextEditingController portugeseTextEditingController =
+      TextEditingController();
   TextEditingController punjabiTextEditingController = TextEditingController();
   TextEditingController russianTextEditingController = TextEditingController();
   TextEditingController sindhiTextEditingController = TextEditingController();
@@ -62,23 +63,22 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
 
     input.onChange.listen((event) {
       if (input.files!.isNotEmpty) {
-        if(type=="littleKids"){
+        if (type == "littleKids") {
           littleKidsmp3File = input.files!.first;
           setState(() {
             littleKidsmp3File;
           });
-        }else if(type=="olderKids"){
+        } else if (type == "olderKids") {
           olderKidsmp3File = input.files!.first;
           setState(() {
             olderKidsmp3File;
           });
-        }else{
+        } else {
           grownUpsmp3File = input.files!.first;
           setState(() {
             grownUpsmp3File;
           });
         }
-
       }
     });
   }
@@ -94,8 +94,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
         final objectUrl = html.Url.createObjectUrl(file);
 
         setState(() {
-            catImage = file;
-            catImageUrl = objectUrl;
+          catImage = file;
+          catImageUrl = objectUrl;
         });
       }
     });
@@ -113,8 +113,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TopBar(title: "Sub Category"),
-                    Text(
+                    const TopBar(title: "Sub Category"),
+                    const Text(
                       "Add New Sub Category",
                       style: TextStyle(color: rWhite, fontSize: 20),
                     ).marginOnly(top: 20),
@@ -124,8 +124,9 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                           onTap: () {
                             Get.back();
                             Get.back();
-                          Get.back();} ,
-                          child: Text(
+                            Get.back();
+                          },
+                          child: const Text(
                             "category / ",
                             style: TextStyle(color: rGreen),
                           ),
@@ -134,13 +135,13 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                           onTap: () {
                             Get.back();
                             Get.back();
-                          } ,
-                          child: Text(
+                          },
+                          child: const Text(
                             "edit category / ",
                             style: TextStyle(color: rGreen),
                           ),
                         ),
-                        Text(
+                        const Text(
                           "add new sub category",
                           style: TextStyle(color: rWhite),
                         ),
@@ -161,49 +162,69 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                 //left side
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      Container(
-                                        height: MediaQuery.of(context).size.height * 0.17,
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
                                         child: Row(
                                           children: [
-
                                             SizedBox(
-                                              width: MediaQuery.of(context).size.width * 0.05,
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.05,
                                             ),
                                             Column(
                                               children: [
-                                                Text(
+                                                const Text(
                                                   "Image",
-                                                  style: TextStyle(color: rHint),
+                                                  style:
+                                                      TextStyle(color: rHint),
                                                 ),
                                                 InkWell(
                                                   onTap: () {
                                                     pickImage("Image");
                                                   },
                                                   child: catImage != null
-                                                      ? Container(
+                                                      ? SizedBox(
                                                           width: 60,
                                                           height: 60,
                                                           child: ClipRRect(
-                                                            borderRadius: BorderRadius.circular(10),
-                                                            child: Image.network(catImageUrl!, fit: BoxFit.fill),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        10),
+                                                            child: Image.network(
+                                                                catImageUrl!,
+                                                                fit: BoxFit
+                                                                    .fill),
                                                           ),
                                                         ).marginOnly(top: 20)
                                                       : DottedBorder(
                                                           color: rHint,
-                                                          radius: Radius.circular(8),
-                                                          borderType: BorderType.Rect,
-                                                          dashPattern: [8, 4],
+                                                          radius: const Radius
+                                                              .circular(8),
+                                                          borderType:
+                                                              BorderType.Rect,
+                                                          dashPattern: const [
+                                                            8,
+                                                            4
+                                                          ],
                                                           child: Container(
                                                             width: 60,
                                                             height: 60,
-                                                            alignment: Alignment.center,
+                                                            alignment: Alignment
+                                                                .center,
                                                             child: Column(
-                                                              mainAxisSize: MainAxisSize.min,
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
                                                               children: [
-                                                                SvgPicture.asset("assets/svgs/upload.svg"),
+                                                                SvgPicture.asset(
+                                                                    "assets/svgs/upload.svg"),
                                                               ],
                                                             ),
                                                           )).marginOnly(top: 20),
@@ -213,15 +234,17 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           ],
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (English)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: englishTextEditingController,
+                                        controller:
+                                            englishTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "English name is required";
                                           } else {
                                             return null;
@@ -235,30 +258,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Arabic)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
@@ -266,7 +293,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                         cursorColor: rGreen,
                                         controller: arabicTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Arabic name is required";
                                           } else {
                                             return null;
@@ -280,38 +308,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Bengali)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: bengaliTextEditingController,
+                                        controller:
+                                            bengaliTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Bengali name is required";
                                           } else {
                                             return null;
@@ -325,30 +359,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (French)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
@@ -356,7 +394,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                         cursorColor: rGreen,
                                         controller: frenchTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "French name is required";
                                           } else {
                                             return null;
@@ -370,30 +409,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (German)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
@@ -401,7 +444,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                         cursorColor: rGreen,
                                         controller: germanTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "German name is required";
                                           } else {
                                             return null;
@@ -415,38 +459,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Gujrati)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: gujratiTextEditingController,
+                                        controller:
+                                            gujratiTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Gujrati name is required";
                                           } else {
                                             return null;
@@ -460,30 +510,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Hindi)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
@@ -491,7 +545,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                         cursorColor: rGreen,
                                         controller: hindiTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Hindi name is required";
                                           } else {
                                             return null;
@@ -505,38 +560,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Indonesian)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: indonesianTextEditingController,
+                                        controller:
+                                            indonesianTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Indonesian name is required";
                                           } else {
                                             return null;
@@ -550,38 +611,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Japanese)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: japaneseTextEditingController,
+                                        controller:
+                                            japaneseTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Japanese name is required";
                                           } else {
                                             return null;
@@ -595,30 +662,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Malay)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
@@ -626,7 +697,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                         cursorColor: rGreen,
                                         controller: malayTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Malay name is required";
                                           } else {
                                             return null;
@@ -640,38 +712,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
-                                      Text(
+                                      const Text(
                                         "Sub Category Name (Mandrain)",
                                         style: TextStyle(color: rHint),
                                       ).marginOnly(top: 20),
                                       TextFormField(
                                         cursorColor: rGreen,
-                                        controller: mandrainTextEditingController,
+                                        controller:
+                                            mandrainTextEditingController,
                                         validator: (diameter) {
-                                          if (diameter == null || diameter.isEmpty) {
+                                          if (diameter == null ||
+                                              diameter.isEmpty) {
                                             return "Mandrain name is required";
                                           } else {
                                             return null;
@@ -685,34 +763,40 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                             color: rHint.withOpacity(0.5),
                                           ),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderSide: BorderSide(
+                                            borderSide: const BorderSide(
                                               color: rHint,
                                             ),
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                           ),
-                                          contentPadding: EdgeInsets.symmetric(
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
                                             vertical: 12.0,
                                             horizontal: 16.0,
                                           ),
                                         ),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
                                         ),
                                       ),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
                                             children: [
                                               Checkbox(
                                                 value: isLittleKids,
@@ -724,14 +808,15 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                                   });
                                                 },
                                               ),
-                                              Text(
+                                              const Text(
                                                 "Little Kids",
                                                 style: TextStyle(color: rWhite),
                                               ),
                                             ],
                                           ),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
                                             children: [
                                               Checkbox(
                                                 value: isOlderKids,
@@ -743,14 +828,15 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                                   });
                                                 },
                                               ),
-                                              Text(
+                                              const Text(
                                                 "Older Kids",
                                                 style: TextStyle(color: rWhite),
                                               ),
                                             ],
                                           ),
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
                                             children: [
                                               Checkbox(
                                                 value: isGrownUps,
@@ -762,7 +848,7 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                                   });
                                                 },
                                               ),
-                                              Text(
+                                              const Text(
                                                 "Grown Ups",
                                                 style: TextStyle(color: rWhite),
                                               ),
@@ -780,8 +866,7 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Marathi)",
                                       style: TextStyle(color: rHint),
                                     ),
@@ -789,7 +874,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: marathiTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Marathi name is required";
                                         } else {
                                           return null;
@@ -803,39 +889,44 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Portugese)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
                                     TextFormField(
                                       cursorColor: rGreen,
-                                      controller: portugeseTextEditingController,
+                                      controller:
+                                          portugeseTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Portugese name is required";
                                         } else {
                                           return null;
@@ -849,30 +940,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Punjabi)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -880,7 +975,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: punjabiTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Punjabi name is required";
                                         } else {
                                           return null;
@@ -894,30 +990,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Russian)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -925,7 +1025,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: russianTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Russian name is required";
                                         } else {
                                           return null;
@@ -939,30 +1040,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Sindhi)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -970,7 +1075,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: sindhiTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Sindhi name is required";
                                         } else {
                                           return null;
@@ -984,30 +1090,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Spanish)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -1015,7 +1125,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: spanishTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Spanish name is required";
                                         } else {
                                           return null;
@@ -1029,30 +1140,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Tamil)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -1060,7 +1175,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: tamilTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Tamil name is required";
                                         } else {
                                           return null;
@@ -1074,30 +1190,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Telgu)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -1105,7 +1225,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: telguTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Telgu name is required";
                                         } else {
                                           return null;
@@ -1119,30 +1240,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Turkish)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -1150,7 +1275,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: turkishTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Turkish name is required";
                                         } else {
                                           return null;
@@ -1164,30 +1290,34 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
-                                    Text(
+                                    const Text(
                                       "Sub Category Name (Urdu)",
                                       style: TextStyle(color: rHint),
                                     ).marginOnly(top: 20),
@@ -1195,7 +1325,8 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                       cursorColor: rGreen,
                                       controller: urduTextEditingController,
                                       validator: (diameter) {
-                                        if (diameter == null || diameter.isEmpty) {
+                                        if (diameter == null ||
+                                            diameter.isEmpty) {
                                           return "Urdu name is required";
                                         } else {
                                           return null;
@@ -1209,26 +1340,30 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                                           color: rHint.withOpacity(0.5),
                                         ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: rHint,
                                           ),
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                         ),
-                                        contentPadding: EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           vertical: 12.0,
                                           horizontal: 16.0,
                                         ),
                                       ),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.white,
                                       ),
                                     ),
@@ -1241,61 +1376,96 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                               child: InkWell(
                                 onTap: () async {
                                   if (formKey.currentState!.validate()) {
-
-                                    if(catImage==null){
-                                      CustomSnackbar.show("Error", "Image is required");
+                                    if (catImage == null) {
+                                      CustomSnackbar.show(
+                                          "Error", "Image is required");
                                       return;
-                                    }else{
-                                      SubCategoryModel subCategoryModel = SubCategoryModel(
-                                          id: "",
-                                          image: "",
-                                          createdAt: DateTime.now(),
-                                          arabic: arabicTextEditingController.text,
-                                          bengali: bengaliTextEditingController.text,
-                                          english: englishTextEditingController.text,
-                                          french: frenchTextEditingController.text,
-                                          german: germanTextEditingController.text,
-                                          gujrati: gujratiTextEditingController.text,
-                                          hindi: hindiTextEditingController.text,
-                                          indonesian: indonesianTextEditingController.text,
-                                          isEnabled: true,
-                                          japanese: japaneseTextEditingController.text,
-                                          malay: malayTextEditingController.text,
-                                          mandrain: mandrainTextEditingController.text,
-                                          marathi: marathiTextEditingController.text,
-                                          portugese: portugeseTextEditingController.text,
-                                          punjabi: punjabiTextEditingController.text,
-                                          russian: russianTextEditingController.text,
-                                          sindhi: sindhiTextEditingController.text,
-                                          spanish: spanishTextEditingController.text,
-                                          tamil: tamilTextEditingController.text,
-                                          telgu: telguTextEditingController.text,
-                                          turkish: turkishTextEditingController.text,
-                                          updatedAt: DateTime.now(),
-                                          urdu: urduTextEditingController.text,
-                                          order: widget.order + 1,
-                                          grownUps: isGrownUps,
-                                          littleKids: isLittleKids,
-                                          olderKids: isOlderKids,
-                                          categoryId: widget.categoryModel.id);
+                                    } else {
+                                      SubCategoryModel subCategoryModel =
+                                          SubCategoryModel(
+                                              id: "",
+                                              image: "",
+                                              createdAt: DateTime.now(),
+                                              arabic: arabicTextEditingController
+                                                  .text,
+                                              bengali:
+                                                  bengaliTextEditingController
+                                                      .text,
+                                              english:
+                                                  englishTextEditingController
+                                                      .text,
+                                              french: frenchTextEditingController
+                                                  .text,
+                                              german: germanTextEditingController
+                                                  .text,
+                                              gujrati:
+                                                  gujratiTextEditingController
+                                                      .text,
+                                              hindi: hindiTextEditingController
+                                                  .text,
+                                              indonesian:
+                                                  indonesianTextEditingController
+                                                      .text,
+                                              isEnabled: true,
+                                              japanese:
+                                                  japaneseTextEditingController
+                                                      .text,
+                                              malay: malayTextEditingController
+                                                  .text,
+                                              mandrain:
+                                                  mandrainTextEditingController
+                                                      .text,
+                                              marathi:
+                                                  marathiTextEditingController
+                                                      .text,
+                                              portugese:
+                                                  portugeseTextEditingController
+                                                      .text,
+                                              punjabi:
+                                                  punjabiTextEditingController
+                                                      .text,
+                                              russian:
+                                                  russianTextEditingController
+                                                      .text,
+                                              sindhi:
+                                                  sindhiTextEditingController
+                                                      .text,
+                                              spanish:
+                                                  spanishTextEditingController
+                                                      .text,
+                                              tamil: tamilTextEditingController
+                                                  .text,
+                                              telgu: telguTextEditingController
+                                                  .text,
+                                              turkish:
+                                                  turkishTextEditingController
+                                                      .text,
+                                              updatedAt: DateTime.now(),
+                                              urdu: urduTextEditingController
+                                                  .text,
+                                              order: widget.order + 1,
+                                              grownUps: isGrownUps,
+                                              littleKids: isLittleKids,
+                                              olderKids: isOlderKids,
+                                              categoryId:
+                                                  widget.categoryModel.id);
 
-                                      categoryController.createSubCategory(subCategoryModel,catImage!);
-
+                                      categoryController.createSubCategory(
+                                          subCategoryModel, catImage!);
                                     }
-
-
                                   } else {
                                     return;
                                   }
                                 },
                                 child: Container(
-                                  width: MediaQuery.of(context).size.width * 0.1,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.1,
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     color: rGreen,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text(
+                                  child: const Text(
                                     "Add",
                                     style: TextStyle(color: rWhite),
                                   ).marginSymmetric(vertical: 12),
@@ -1315,7 +1485,7 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                       width: MediaQuery.of(context).size.width,
                       height: MediaQuery.of(context).size.height,
                       color: rWhite.withOpacity(0.2),
-                      child: CustomLoading()))
+                      child: const CustomLoading()))
             ],
           );
         },

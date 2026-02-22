@@ -1,19 +1,17 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../models/userModel.dart';
 import '../services/userService.dart';
 
-class UserController extends GetxController{
+class UserController extends GetxController {
+  final List<UserModel> _allUsers = [];
+  List<UserModel> get allUsers => _allUsers;
 
-  List<UserModel> _allUsers=[];
-  List<UserModel> get allUsers=>_allUsers;
-
-  getAllUsers(){
+  getAllUsers() {
     UserService().getAllUsers();
   }
 
-  void addUserToList(UserModel userModel) {
+  void addUserToList(UserModel userModel, {bool shouldUpdate = true}) {
     int existingIndex = _allUsers.indexWhere((cat) => cat.id == userModel.id);
     if (existingIndex == -1) {
       _allUsers.add(userModel);
@@ -21,9 +19,6 @@ class UserController extends GetxController{
       _allUsers[existingIndex] = userModel;
     }
     _allUsers.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    update();
+    if (shouldUpdate) update();
   }
-
-
-
 }

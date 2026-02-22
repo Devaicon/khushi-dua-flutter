@@ -1,53 +1,80 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:get/get.dart';
 import 'package:khushiduaadmin/controllers/initController.dart';
 import 'package:khushiduaadmin/views/auth/login.dart';
 import 'package:khushiduaadmin/views/dashboard.dart';
-import 'package:khushiduaadmin/views/delayLoading.dart';
 import 'firebase_options.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// We'll use a conditional import or just be careful with dart:html
+// Since this is a web-focused admin panel, direct import is mostly okay for now
+// but wrapping it with kIsWeb is safer.
 import 'dart:html' as html;
 
-void main() async{
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MyApp());
-}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  debugPrint("Starting app initialization...");
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  Widget selectedScreen = DelayLoading();
-  @override
-  void initState() {
-    getSharedPrefs();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint("Firebase initialized");
+  } catch (e) {
+    debugPrint("Firebase error: $e");
   }
 
-  getSharedPrefs() async {
-    String? adminId = html.window.localStorage['adminId'];
-    if (adminId == null) {
-      selectedScreen=LoginScreen();
-    }else{
-      print(adminId);
-      selectedScreen=DashboardScreen();
+  String? adminId;
+  if (kIsWeb) {
+    try {
+      adminId = html.window.localStorage['adminId'];
+    } catch (e) {
+      debugPrint("Storage error: $e");
     }
   }
 
+  String initialRoute = adminId == null ? '/login' : '/dashboard';
+  debugPrint("Initial route determined: $initialRoute");
+
+  runApp(MyApp(initialRoute: initialRoute));
+}
+
+class MyApp extends StatelessWidget {
+  final String initialRoute;
+  const MyApp({super.key, required this.initialRoute});
+
   @override
   Widget build(BuildContext context) {
-
     return GetMaterialApp(
-      title: 'Khushi Dua',
+      title: 'Khushi Dua Admin',
       debugShowCheckedModeBanner: false,
       initialBinding: InitController(),
-      home: selectedScreen,
+      initialRoute: initialRoute,
+      getPages: [
+        GetPage(
+          name: '/',
+          page: () => initialRoute == '/dashboard'
+              ? const DashboardScreen()
+              : const LoginScreen(),
+        ),
+        GetPage(
+          name: '/login',
+          page: () => const LoginScreen(),
+          transition: Transition.fade,
+        ),
+        GetPage(
+          name: '/dashboard',
+          page: () => const DashboardScreen(),
+          transition: Transition.fade,
+        ),
+      ],
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: const Color(0xff1E1E1E),
+        useMaterial3: true,
+      ),
     );
   }
 }
-

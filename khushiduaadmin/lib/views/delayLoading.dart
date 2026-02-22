@@ -19,7 +19,7 @@ class _DelayLoadingState extends State<DelayLoading> {
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           color: rWhite.withOpacity(0.2),
-          child: CustomLoading()),
+          child: const CustomLoading()),
     );
   }
 }

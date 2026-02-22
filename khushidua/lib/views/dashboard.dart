@@ -11,8 +11,10 @@ import 'package:khushidua/views/subScreens/search.dart';
 import 'package:khushidua/views/subScreens/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/colors.dart';
 import '../constants/userData.dart';
 import '../controllers/userController.dart';
+import '../helpers/adHelper.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -23,15 +25,27 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
-  Widget _selectedScreen = Container();
+  final Map<int, bool> _screenInitialized = {0: true};
 
-  final List<Widget> _screens = [
-    HomeScreen(),
-    PrayerScreen(),
-    SettingsScreen(),
-    SearchScreen(),
-    NotificationScreen(),
-  ];
+  Widget _getScreen(int index) {
+    if (_screenInitialized[index] != true) {
+      _screenInitialized[index] = true;
+    }
+    switch (index) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const PrayerScreen();
+      case 2:
+        return const SearchScreen();
+      case 3:
+        return const NotificationScreen();
+      case 4:
+        return const SettingsScreen();
+      default:
+        return const HomeScreen();
+    }
+  }
 
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
@@ -47,7 +61,7 @@ class _DashboardState extends State<Dashboard> {
     super.initState();
     getSharedPrefs();
     setState(() {
-      _selectedScreen = _screens[0];
+      // _selectedScreen = _screens[0]; // Removed for lazy loading
     });
     Get.find<CategoryController>().getAllCategories();
     Get.find<CategoryController>().getAllSubCategories();
@@ -55,9 +69,9 @@ class _DashboardState extends State<Dashboard> {
     Get.find<NotificationController>().getAllNotifications();
 
     _bannerAd = BannerAd(
-      adUnitId: "ca-app-pub-3940256099942544/6300978111",
+      adUnitId: AdHelper.bannerAdUnitId,
       size: AdSize.banner,
-      request: AdRequest(),
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
           setState(() {
@@ -93,10 +107,18 @@ class _DashboardState extends State<Dashboard> {
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      _selectedScreen = _screens[index];
-    });
+    if (_selectedIndex != index) {
+      if (_screenInitialized[index] != true) {
+        setState(() {
+          _screenInitialized[index] = true;
+          _selectedIndex = index;
+        });
+      } else {
+        setState(() {
+          _selectedIndex = index;
+        });
+      }
+    }
   }
 
   @override
@@ -105,86 +127,107 @@ class _DashboardState extends State<Dashboard> {
       backgroundColor: Colors.white,
       body: GetBuilder<UserController>(
         builder: (userController) {
-          return Column(
-            children: [
-              Expanded(child: _selectedScreen),
-              if (userController.userModel == null ||
-                  (!userController.userModel!.isMember) ||
-                  userController.userModel!.isBlocked)
-                if (_isAdLoaded)
-                  Container(
-                    alignment: Alignment.center,
-                    width: _bannerAd!.size.width.toDouble(),
-                    height: 80,
-                    child: AdWidget(ad: _bannerAd!),
+          return SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: List.generate(5, (index) {
+                      return _screenInitialized[index] == true
+                          ? _getScreen(index)
+                          : const SizedBox.shrink();
+                    }),
                   ),
-            ],
+                ),
+                if (userController.userModel == null ||
+                    (!userController.userModel!.isMember) ||
+                    userController.userModel!.isBlocked)
+                  if (_isAdLoaded)
+                    Container(
+                      alignment: Alignment.center,
+                      width: _bannerAd!.size.width.toDouble(),
+                      height: 80,
+                      child: AdWidget(ad: _bannerAd!),
+                    ),
+              ],
+            ),
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: InkWell(
-              onTap: () => _onItemTapped(0),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: Image.asset("assets/images/prayer.png"),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
             ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: InkWell(
-              onTap: () => _onItemTapped(1),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: Image.asset("assets/images/home.png"),
+          ],
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/prayer.png", 0),
+              label: 'Home',
             ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: InkWell(
-              onTap: () => _onItemTapped(2),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: Image.asset("assets/images/settings.png"),
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/home.png", 1),
+              label: 'Prayer',
             ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: InkWell(
-              onTap: () => _onItemTapped(3),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: Image.asset(
-                "assets/images/search.png",
-                width: 30,
-                height: 30,
-              ),
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/search.png", 2),
+              label: 'Search',
             ),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: InkWell(
-              onTap: () => _onItemTapped(4),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: Image.asset(
-                "assets/images/notification.png",
-                width: 30,
-                height: 30,
-              ),
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/notification.png", 3),
+              label: 'Notification',
             ),
-            label: '',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        // onTap: _onItemTapped,
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/settings.png", 4),
+              label: 'Settings',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+        ),
       ),
+    );
+  }
+
+  Widget _buildNavItem(String asset, int index) {
+    bool isSelected = _selectedIndex == index;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected ? rbluedark.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Image.asset(
+            asset,
+            width: isSelected ? 28 : 24,
+            height: isSelected ? 28 : 24,
+            color: isSelected ? rbluedark : Colors.grey,
+          ),
+        ),
+        if (isSelected)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(color: rbluedark, shape: BoxShape.circle),
+          ),
+      ],
     );
   }
 }

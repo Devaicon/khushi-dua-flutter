@@ -15,9 +15,11 @@ class ProfileTab extends StatefulWidget {
 class _ProfileTabState extends State<ProfileTab> {
   // Change Password Controllers
   final GlobalKey<FormState> _changePasswordFormKey = GlobalKey<FormState>();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isCurrentPasswordObscure = true;
   bool _isNewPasswordObscure = true;
   bool _isConfirmPasswordObscure = true;
@@ -25,9 +27,12 @@ class _ProfileTabState extends State<ProfileTab> {
   // Add Admin Controllers
   final GlobalKey<FormState> _addAdminFormKey = GlobalKey<FormState>();
   final TextEditingController _adminEmailController = TextEditingController();
-  final TextEditingController _adminPasswordController = TextEditingController();
-  final TextEditingController _adminFirstNameController = TextEditingController();
-  final TextEditingController _adminLastNameController = TextEditingController();
+  final TextEditingController _adminPasswordController =
+      TextEditingController();
+  final TextEditingController _adminFirstNameController =
+      TextEditingController();
+  final TextEditingController _adminLastNameController =
+      TextEditingController();
   final TextEditingController _adminRoleController = TextEditingController();
   bool _isAdminPasswordObscure = true;
 
@@ -133,10 +138,10 @@ class _ProfileTabState extends State<ProfileTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TopBar(title: "Profile"),
+                  const TopBar(title: "Profile"),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(20),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -148,11 +153,11 @@ class _ProfileTabState extends State<ProfileTab> {
                                 borderRadius: BorderRadius.circular(16),
                                 color: rBg,
                               ),
-                              padding: EdgeInsets.all(24),
+                              padding: const EdgeInsets.all(24),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     "Profile Information",
                                     style: TextStyle(
                                       color: rWhite,
@@ -160,58 +165,68 @@ class _ProfileTabState extends State<ProfileTab> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 24),
+                                  const SizedBox(height: 24),
                                   Row(
                                     children: [
                                       Container(
                                         width: 80,
                                         height: 80,
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: rGreen,
                                         ),
                                         alignment: Alignment.center,
                                         child: Text(
-                                          "${authController.adminModel.firstName.isNotEmpty ? authController.adminModel.firstName[0] : 'A'}",
-                                          style: TextStyle(
+                                          authController.adminModel.firstName
+                                                  .isNotEmpty
+                                              ? authController
+                                                  .adminModel.firstName[0]
+                                              : 'A',
+                                          style: const TextStyle(
                                             color: rWhite,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 32,
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 20),
+                                      const SizedBox(width: 20),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               "${authController.adminModel.firstName} ${authController.adminModel.lastName}",
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: rWhite,
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            SizedBox(height: 8),
+                                            const SizedBox(height: 8),
                                             Text(
                                               authController.adminModel.email,
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: rHint,
                                                 fontSize: 16,
                                               ),
                                             ),
-                                            SizedBox(height: 8),
+                                            const SizedBox(height: 8),
                                             Container(
-                                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 6),
                                               decoration: BoxDecoration(
                                                 color: rGreen.withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(color: rGreen),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border:
+                                                    Border.all(color: rGreen),
                                               ),
                                               child: Text(
                                                 authController.adminModel.role,
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                   color: rGreen,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w600,
@@ -227,7 +242,7 @@ class _ProfileTabState extends State<ProfileTab> {
                               ),
                             ),
                           ),
-                          SizedBox(width: 20),
+                          const SizedBox(width: 20),
                           // Change Password and Add Admin Cards
                           Expanded(
                             flex: 1,
@@ -239,13 +254,14 @@ class _ProfileTabState extends State<ProfileTab> {
                                     borderRadius: BorderRadius.circular(16),
                                     color: rBg,
                                   ),
-                                  padding: EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(24),
                                   child: Form(
                                     key: _changePasswordFormKey,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        const Text(
                                           "Change Password",
                                           style: TextStyle(
                                             color: rWhite,
@@ -253,35 +269,41 @@ class _ProfileTabState extends State<ProfileTab> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        SizedBox(height: 24),
+                                        const SizedBox(height: 24),
                                         _buildPasswordField(
-                                          controller: _currentPasswordController,
+                                          controller:
+                                              _currentPasswordController,
                                           label: "Current Password",
-                                          obscureText: _isCurrentPasswordObscure,
+                                          obscureText:
+                                              _isCurrentPasswordObscure,
                                           onToggle: () {
                                             setState(() {
-                                              _isCurrentPasswordObscure = !_isCurrentPasswordObscure;
+                                              _isCurrentPasswordObscure =
+                                                  !_isCurrentPasswordObscure;
                                             });
                                           },
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return "Current password is required";
                                             }
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         _buildPasswordField(
                                           controller: _newPasswordController,
                                           label: "New Password",
                                           obscureText: _isNewPasswordObscure,
                                           onToggle: () {
                                             setState(() {
-                                              _isNewPasswordObscure = !_isNewPasswordObscure;
+                                              _isNewPasswordObscure =
+                                                  !_isNewPasswordObscure;
                                             });
                                           },
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return "New password is required";
                                             } else if (value.length < 6) {
                                               return "Password must be at least 6 characters";
@@ -289,24 +311,28 @@ class _ProfileTabState extends State<ProfileTab> {
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         _buildPasswordField(
-                                          controller: _confirmPasswordController,
+                                          controller:
+                                              _confirmPasswordController,
                                           label: "Confirm New Password",
-                                          obscureText: _isConfirmPasswordObscure,
+                                          obscureText:
+                                              _isConfirmPasswordObscure,
                                           onToggle: () {
                                             setState(() {
-                                              _isConfirmPasswordObscure = !_isConfirmPasswordObscure;
+                                              _isConfirmPasswordObscure =
+                                                  !_isConfirmPasswordObscure;
                                             });
                                           },
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return "Please confirm your password";
                                             }
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 24),
+                                        const SizedBox(height: 24),
                                         InkWell(
                                           onTap: _changePassword,
                                           child: Container(
@@ -314,10 +340,11 @@ class _ProfileTabState extends State<ProfileTab> {
                                             height: 50,
                                             decoration: BoxDecoration(
                                               color: rGreen,
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             alignment: Alignment.center,
-                                            child: Text(
+                                            child: const Text(
                                               "Change Password",
                                               style: TextStyle(
                                                 color: rWhite,
@@ -331,20 +358,21 @@ class _ProfileTabState extends State<ProfileTab> {
                                     ),
                                   ),
                                 ),
-                                SizedBox(height: 20),
+                                const SizedBox(height: 20),
                                 // Add New Admin Card
                                 Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
                                     color: rBg,
                                   ),
-                                  padding: EdgeInsets.all(24),
+                                  padding: const EdgeInsets.all(24),
                                   child: Form(
                                     key: _addAdminFormKey,
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        const Text(
                                           "Add New Admin",
                                           style: TextStyle(
                                             color: rWhite,
@@ -352,28 +380,32 @@ class _ProfileTabState extends State<ProfileTab> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        SizedBox(height: 24),
+                                        const SizedBox(height: 24),
                                         Row(
                                           children: [
                                             Expanded(
                                               child: _buildTextField(
-                                                controller: _adminFirstNameController,
+                                                controller:
+                                                    _adminFirstNameController,
                                                 label: "First Name",
                                                 validator: (value) {
-                                                  if (value == null || value.isEmpty) {
+                                                  if (value == null ||
+                                                      value.isEmpty) {
                                                     return "First name is required";
                                                   }
                                                   return null;
                                                 },
                                               ),
                                             ),
-                                            SizedBox(width: 16),
+                                            const SizedBox(width: 16),
                                             Expanded(
                                               child: _buildTextField(
-                                                controller: _adminLastNameController,
+                                                controller:
+                                                    _adminLastNameController,
                                                 label: "Last Name",
                                                 validator: (value) {
-                                                  if (value == null || value.isEmpty) {
+                                                  if (value == null ||
+                                                      value.isEmpty) {
                                                     return "Last name is required";
                                                   }
                                                   return null;
@@ -382,32 +414,38 @@ class _ProfileTabState extends State<ProfileTab> {
                                             ),
                                           ],
                                         ),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         _buildTextField(
                                           controller: _adminEmailController,
                                           label: "Email",
-                                          keyboardType: TextInputType.emailAddress,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return "Email is required";
-                                            } else if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(value)) {
+                                            } else if (!RegExp(
+                                                    r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+                                                .hasMatch(value)) {
                                               return "Enter a valid email address";
                                             }
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         _buildPasswordField(
                                           controller: _adminPasswordController,
                                           label: "Password",
                                           obscureText: _isAdminPasswordObscure,
                                           onToggle: () {
                                             setState(() {
-                                              _isAdminPasswordObscure = !_isAdminPasswordObscure;
+                                              _isAdminPasswordObscure =
+                                                  !_isAdminPasswordObscure;
                                             });
                                           },
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return "Password is required";
                                             } else if (value.length < 6) {
                                               return "Password must be at least 6 characters";
@@ -415,13 +453,14 @@ class _ProfileTabState extends State<ProfileTab> {
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         _buildTextField(
                                           controller: _adminRoleController,
-                                          label: "Role (optional, defaults to 'Admin')",
+                                          label:
+                                              "Role (optional, defaults to 'Admin')",
                                           validator: null,
                                         ),
-                                        SizedBox(height: 24),
+                                        const SizedBox(height: 24),
                                         InkWell(
                                           onTap: _createNewAdmin,
                                           child: Container(
@@ -429,10 +468,11 @@ class _ProfileTabState extends State<ProfileTab> {
                                             height: 50,
                                             decoration: BoxDecoration(
                                               color: rGreen,
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             alignment: Alignment.center,
-                                            child: Text(
+                                            child: const Text(
                                               "Create Admin",
                                               style: TextStyle(
                                                 color: rWhite,
@@ -460,7 +500,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height,
                   color: rBlack.withOpacity(0.7),
-                  child: CustomLoading(),
+                  child: const CustomLoading(),
                 ),
             ],
           );
@@ -480,33 +520,34 @@ class _ProfileTabState extends State<ProfileTab> {
       keyboardType: keyboardType,
       validator: validator,
       cursorColor: rGreen,
-      style: TextStyle(color: rWhite),
+      style: const TextStyle(color: rWhite),
       decoration: InputDecoration(
         filled: true,
         fillColor: rBlack,
         labelText: label,
-        labelStyle: TextStyle(color: rHint),
+        labelStyle: const TextStyle(color: rHint),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rHint),
+          borderSide: const BorderSide(color: rHint),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rHint),
+          borderSide: const BorderSide(color: rHint),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rGreen),
+          borderSide: const BorderSide(color: rGreen),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rRed),
+          borderSide: const BorderSide(color: rRed),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rRed),
+          borderSide: const BorderSide(color: rRed),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -523,40 +564,43 @@ class _ProfileTabState extends State<ProfileTab> {
       obscureText: obscureText,
       validator: validator,
       cursorColor: rGreen,
-      style: TextStyle(color: rWhite),
+      style: const TextStyle(color: rWhite),
       decoration: InputDecoration(
         filled: true,
         fillColor: rBlack,
         labelText: label,
-        labelStyle: TextStyle(color: rHint),
+        labelStyle: const TextStyle(color: rHint),
         suffixIcon: InkWell(
           onTap: onToggle,
           child: Icon(
-            obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+            obscureText
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
             color: rHint,
           ),
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rHint),
+          borderSide: const BorderSide(color: rHint),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rHint),
+          borderSide: const BorderSide(color: rHint),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rGreen),
+          borderSide: const BorderSide(color: rGreen),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rRed),
+          borderSide: const BorderSide(color: rRed),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rRed),
+          borderSide: const BorderSide(color: rRed),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }

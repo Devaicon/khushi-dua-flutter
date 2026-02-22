@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.khushidua.app</string>
+	<string>com.khushii.khushiikidzdua</string>
 	<key>PROJECT_ID</key>
 	<string>khushidua</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:29248066052:ios:ef894421fd57c53f7bdb51</string>
+	<string>1:29248066052:ios:42331a7e5813662b7bdb51</string>
 </dict>
 </plist>

@@ -28,317 +28,152 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedTab = 0;
 
-  late Widget selectedView = HomeTab();
+  final List<Widget> _tabs = const [
+    HomeTab(),
+    CategoriesTab(),
+    UsersTab(),
+    DuasTab(),
+    NotificationTab(),
+    ProfileTab(),
+    MLSettingsTab(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    getData();
+    _initData();
   }
 
-  getData()async{
-    await Get.find<AuthController>().getAdminDetails();
-    Get.find<CategoryController>().getAllCategories();
-    Get.find<CategoryController>().getAllSubCategories();
-    Get.find<DuaController>().getAllDuas();
-    Get.find<UserController>().getAllUsers();
-    Get.find<NotificationController>().getAllNotifications();
+  void _initData() async {
+    final authController = Get.find<AuthController>();
+    final categoryController = Get.find<CategoryController>();
+    final duaController = Get.find<DuaController>();
+    final userController = Get.find<UserController>();
+    final notificationController = Get.find<NotificationController>();
+
+    await authController.getAdminDetails();
+    categoryController.getAllCategories();
+    categoryController.getAllSubCategories();
+    duaController.getAllDuas();
+    userController.getAllUsers();
+    notificationController.getAllNotifications();
   }
-  switchView(Widget screen,var tabId,var user){
+
+  void _onTabSelected(int index) {
+    if (index == 8) {
+      // Logout
+      showLogOutPopup();
+      return;
+    }
     setState(() {
-      selectedView=screen;
-      if(tabId!=null){
-        _selectedTab=tabId;
-      }
+      _selectedTab = index;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: rBg,
       body: Row(
         children: [
-          Container(
-            width: MediaQuery.of(context).size.width * 0.16,
-            height: double.infinity,
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text("Khushi Dua Admin",style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold,color: rWhite),),
-                            Image.asset("assets/images/logo.png",width: 40,height: 40,)
-                          ],
-                        ),
-                      ).marginOnly(top: 12),
-                      ListTile(
-                        tileColor: _selectedTab == 0 ? rGreen : rBg,
-                        leading: SvgPicture.asset(
-                          "assets/svgs/dashboard.svg",
-                          color: _selectedTab == 0 ? rWhite : rHint,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Dashboard',
-                              style: TextStyle(
-                                color: _selectedTab == 0 ? rWhite : rHint,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _selectedTab == 0 ? rWhite : rHint,
-                              size: 15,
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedTab = 0;
-                            selectedView = HomeTab();
-                          });
-                        },
-                      ).marginOnly(top: 20),
-                      ListTile(
-                        tileColor: _selectedTab == 1 ? rGreen : rBg,
-                        leading: SvgPicture.asset(
-                          "assets/svgs/coins.svg",
-                          color: _selectedTab == 1 ? rWhite : rHint,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Categories',
-                              style: TextStyle(
-                                color: _selectedTab == 1 ? rWhite : rHint,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _selectedTab == 1 ? rWhite : rHint,
-                              size: 15,
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedTab = 1;
-                            selectedView = CategoriesTab();
-                          });
-                        },
-                      ),
-
-                      ListTile(
-                        tileColor: _selectedTab == 3 ? rGreen : rBg,
-                        leading: SvgPicture.asset(
-                          "assets/svgs/ad.svg",
-                          color: _selectedTab == 3 ? rWhite : rHint,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Duas',
-                              style: TextStyle(
-                                color: _selectedTab == 3 ? rWhite : rHint,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _selectedTab == 3 ? rWhite : rHint,
-                              size: 15,
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedTab = 3;
-                            selectedView = DuasTab();
-                          });
-                        },
-                      ),
-                      ListTile(
-                        tileColor: _selectedTab == 2 ? rGreen : rBg,
-                        leading: SvgPicture.asset(
-                          "assets/svgs/users.svg",
-                          color: _selectedTab == 2 ? rWhite : rHint,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Users',
-                              style: TextStyle(
-                                color: _selectedTab == 2 ? rWhite : rHint,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _selectedTab == 2 ? rWhite : rHint,
-                              size: 15,
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedTab = 2;
-                            selectedView = UsersTab();
-                          });
-                        },
-                      ),
-
-                      ListTile(
-                        tileColor: _selectedTab == 9 ? rGreen : rBg,
-                        leading: Icon(Icons.notifications_active_outlined,color: _selectedTab == 9 ? rWhite : rHint ,) ,
-
-                        // SvgPicture.asset(
-                        //   "assets/svgs/users.svg",
-                        //   color: _selectedTab == 9 ? rWhite : rHint,
-                        // ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Notifications',
-                              style: TextStyle(
-                                color: _selectedTab == 9 ? rWhite : rHint,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _selectedTab == 9 ? rWhite : rHint,
-                              size: 15,
-                            )
-                          ],
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedTab = 9;
-                            selectedView = NotificationTab();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                //profile section
-                Column(
-                  children: [
-                    ListTile(
-                      tileColor: _selectedTab == 5 ? rGreen : rBg,
-                      leading: SvgPicture.asset(
-                        "assets/svgs/user.svg",
-                        color: _selectedTab == 5 ? rWhite : rHint,
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Profile',
-                            style: TextStyle(
-                              color: _selectedTab == 5 ? rWhite : rHint,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: _selectedTab == 5 ? rWhite : rHint,
-                            size: 15,
-                          )
-                        ],
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = 5;
-                          selectedView = ProfileTab();
-                        });
-                      },
-                    ),
-                    ListTile(
-                      tileColor: _selectedTab == 6 ? rGreen : rBg,
-                      leading: Icon(
-                        Icons.settings_applications,
-                        color: _selectedTab == 6 ? rWhite : rHint,
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'ML Settings',
-                            style: TextStyle(
-                              color: _selectedTab == 6 ? rWhite : rHint,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: _selectedTab == 6 ? rWhite : rHint,
-                            size: 15,
-                          )
-                        ],
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = 6;
-                          selectedView = MLSettingsTab();
-                        });
-                      },
-                    ),
-                    ListTile(
-                      tileColor: _selectedTab == 8 ? rGreen : rBg,
-                      leading: SvgPicture.asset(
-                        "assets/svgs/logout.svg",
-                        color: _selectedTab == 8 ? rWhite : rHint,
-                      ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: _selectedTab == 8 ? rWhite : rHint,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: _selectedTab == 8 ? rWhite : rHint,
-                            size: 15,
-                          )
-                        ],
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = 8;
-                          showLogOutPopup();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20,),
-              ],
+          _buildSidebar(),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedTab > 6
+                  ? 0
+                  : _selectedTab, // Fallback for logout tab index
+              children: _tabs,
             ),
           ),
-          Expanded(child: selectedView),
         ],
       ),
     );
   }
-  showLogOutPopup(){
+
+  // Helper for Sidebar build to keep build method clean
+  Widget _buildSidebar() {
+    final sidebarWidth = MediaQuery.of(context).size.width * 0.16;
+    return SizedBox(
+      width: sidebarWidth,
+      height: double.infinity,
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              children: [
+                _buildSidebarHeader(),
+                _buildSidebarItem(0, 'Dashboard', 'assets/svgs/dashboard.svg'),
+                _buildSidebarItem(1, 'Categories', 'assets/svgs/coins.svg'),
+                _buildSidebarItem(3, 'Duas', 'assets/svgs/ad.svg'),
+                _buildSidebarItem(2, 'Users', 'assets/svgs/users.svg'),
+                _buildSidebarItem(4, 'Notifications', null,
+                    iconData: Icons.notifications_active_outlined),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              _buildSidebarItem(5, 'Profile', 'assets/svgs/user.svg'),
+              _buildSidebarItem(6, 'ML Settings', null,
+                  iconData: Icons.settings_applications),
+              _buildSidebarItem(8, 'Logout', 'assets/svgs/logout.svg',
+                  isLogout: true),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarHeader() {
+    return Align(
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            "Khushi Dua Admin",
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.bold, color: rWhite),
+          ),
+          const SizedBox(width: 8),
+          Image.asset("assets/images/logo.png", width: 30, height: 30),
+        ],
+      ),
+    ).marginSymmetric(vertical: 20);
+  }
+
+  Widget _buildSidebarItem(int index, String title, String? svgPath,
+      {IconData? iconData, bool isLogout = false}) {
+    bool isSelected = _selectedTab == index;
+    Color color = isSelected ? rWhite : rHint;
+    Color bgColor = isSelected ? rGreen : Colors.transparent;
+
+    return ListTile(
+      tileColor: bgColor,
+      leading: svgPath != null
+          ? SvgPicture.asset(svgPath, color: color, width: 20)
+          : Icon(iconData, color: color, size: 20),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+          if (!isLogout) Icon(Icons.arrow_forward_ios, color: color, size: 12),
+        ],
+      ),
+      onTap: () => _onTabSelected(index),
+    );
+  }
+
+  showLogOutPopup() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -346,9 +181,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return ElasticIn(
           child: AlertDialog(
             backgroundColor: rBg,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Center(child: Text("Are you sure?", style: TextStyle(fontWeight: FontWeight.bold, color: rWhite))),
-            content: Text(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Center(
+                child: Text("Are you sure?",
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, color: rWhite))),
+            content: const Text(
               "You want to Logout",
               style: TextStyle(fontSize: 16, color: rWhite),
             ),
@@ -374,16 +213,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       alignment: Alignment.center,
-                      child: Text("Cancel", style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text("Cancel",
+                          style: TextStyle(
+                              color: rWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                   ),
                   GestureDetector(
                     onTap: () {
                       html.window.localStorage.remove('adminId');
-                      Get.off(LoginScreen(),transition: Transition.fade);
+                      Get.off(const LoginScreen(), transition: Transition.fade);
                     },
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.15,
@@ -391,7 +234,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(color: rRed),
                         borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           colors: [
                             rRed,
                             rRed,
@@ -401,7 +244,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       alignment: Alignment.center,
-                      child: Text("Logout", style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text("Logout",
+                          style: TextStyle(
+                              color: rWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

@@ -51,14 +51,15 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: rBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Center(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Center(
             child: Text(
               "Delete ML Settings?",
               style: TextStyle(fontWeight: FontWeight.bold, color: rWhite),
             ),
           ),
-          content: Text(
+          content: const Text(
             "Are you sure you want to delete the ML Settings? This action cannot be undone.",
             style: TextStyle(fontSize: 16, color: rWhite),
             textAlign: TextAlign.center,
@@ -85,13 +86,16 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: const Text(
                       "Cancel",
-                      style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: rWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
-                SizedBox(width: 20),
+                const SizedBox(width: 20),
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
@@ -103,16 +107,19 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                     decoration: BoxDecoration(
                       border: Border.all(color: rRed),
                       borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [rRed, rRed],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: const Text(
                       "Delete",
-                      style: TextStyle(color: rWhite, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: rWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -132,9 +139,11 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
       body: GetBuilder<MLSettingsController>(
         builder: (mlSettingsController) {
           // Update text field when settings are loaded
-          if (mlSettingsController.mlSettings != null && _baseUrlController.text.isEmpty) {
+          if (mlSettingsController.mlSettings != null &&
+              _baseUrlController.text.isEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              _baseUrlController.text = mlSettingsController.mlSettings!.baseUrl;
+              _baseUrlController.text =
+                  mlSettingsController.mlSettings!.baseUrl;
             });
           } else if (mlSettingsController.mlSettings == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,10 +156,10 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TopBar(title: "ML Settings"),
+                  const TopBar(title: "ML Settings"),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(20),
                       child: Center(
                         child: Container(
                           width: MediaQuery.of(context).size.width * 0.5,
@@ -158,16 +167,17 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                             borderRadius: BorderRadius.circular(16),
                             color: rBg,
                           ),
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Form(
                             key: _formKey,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    const Text(
                                       "ML Base URL Configuration",
                                       style: TextStyle(
                                         color: rWhite,
@@ -177,16 +187,19 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                     ),
                                     if (mlSettingsController.mlSettings != null)
                                       Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
                                           color: rGreen.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           border: Border.all(color: rGreen),
                                         ),
-                                        child: Row(
+                                        child: const Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.check_circle, color: rGreen, size: 16),
+                                            Icon(Icons.check_circle,
+                                                color: rGreen, size: 16),
                                             SizedBox(width: 6),
                                             Text(
                                               "Saved",
@@ -201,8 +214,8 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                       ),
                                   ],
                                 ),
-                                SizedBox(height: 24),
-                                Text(
+                                const SizedBox(height: 24),
+                                const Text(
                                   "Base URL",
                                   style: TextStyle(
                                     color: rHint,
@@ -210,7 +223,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _baseUrlController,
                                   validator: (value) {
@@ -224,48 +237,56 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                     return null;
                                   },
                                   cursorColor: rGreen,
-                                  style: TextStyle(color: rWhite),
+                                  style: const TextStyle(color: rWhite),
                                   decoration: InputDecoration(
                                     filled: true,
                                     fillColor: rBlack,
-                                    hintText: 'Enter ML Base URL (e.g., https://api.example.com)',
-                                    hintStyle: TextStyle(color: rHint),
+                                    hintText:
+                                        'Enter ML Base URL (e.g., https://api.example.com)',
+                                    hintStyle: const TextStyle(color: rHint),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: rHint),
+                                      borderSide:
+                                          const BorderSide(color: rHint),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: rHint),
+                                      borderSide:
+                                          const BorderSide(color: rHint),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: rGreen),
+                                      borderSide:
+                                          const BorderSide(color: rGreen),
                                     ),
                                     errorBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: rRed),
+                                      borderSide: const BorderSide(color: rRed),
                                     ),
                                     focusedErrorBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: rRed),
+                                      borderSide: const BorderSide(color: rRed),
                                     ),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
                                   ),
                                 ),
-                                SizedBox(height: 24),
-                                if (mlSettingsController.mlSettings != null) ...[
+                                const SizedBox(height: 24),
+                                if (mlSettingsController.mlSettings !=
+                                    null) ...[
                                   Container(
-                                    padding: EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: rBlack,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: rHint.withOpacity(0.3)),
+                                      border: Border.all(
+                                          color: rHint.withOpacity(0.3)),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        const Text(
                                           "Settings Information:",
                                           style: TextStyle(
                                             color: rGreen,
@@ -273,8 +294,11 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        SizedBox(height: 12),
-                                        _buildInfoRow("ID", mlSettingsController.mlSettings!.id),
+                                        const SizedBox(height: 12),
+                                        _buildInfoRow(
+                                            "ID",
+                                            mlSettingsController
+                                                .mlSettings!.id),
                                         _buildInfoRow(
                                           "Created At",
                                           "${mlSettingsController.mlSettings!.createdAt.day}/${mlSettingsController.mlSettings!.createdAt.month}/${mlSettingsController.mlSettings!.createdAt.year} ${mlSettingsController.mlSettings!.createdAt.hour}:${mlSettingsController.mlSettings!.createdAt.minute}",
@@ -286,7 +310,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                       ],
                                     ),
                                   ),
-                                  SizedBox(height: 16),
+                                  const SizedBox(height: 16),
                                 ],
                                 Row(
                                   children: [
@@ -297,12 +321,16 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                           height: 50,
                                           decoration: BoxDecoration(
                                             color: rGreen,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(
-                                            mlSettingsController.mlSettings == null ? "Save" : "Update",
-                                            style: TextStyle(
+                                            mlSettingsController.mlSettings ==
+                                                    null
+                                                ? "Save"
+                                                : "Update",
+                                            style: const TextStyle(
                                               color: rWhite,
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
@@ -311,8 +339,9 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                         ),
                                       ),
                                     ),
-                                    if (mlSettingsController.mlSettings != null) ...[
-                                      SizedBox(width: 16),
+                                    if (mlSettingsController.mlSettings !=
+                                        null) ...[
+                                      const SizedBox(width: 16),
                                       Expanded(
                                         child: InkWell(
                                           onTap: _delete,
@@ -320,10 +349,11 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                                             height: 50,
                                             decoration: BoxDecoration(
                                               color: rRed,
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             alignment: Alignment.center,
-                                            child: Text(
+                                            child: const Text(
                                               "Delete",
                                               style: TextStyle(
                                                 color: rWhite,
@@ -351,7 +381,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height,
                   color: rBlack.withOpacity(0.7),
-                  child: CustomLoading(),
+                  child: const CustomLoading(),
                 ),
             ],
           );
@@ -362,7 +392,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -370,7 +400,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
             width: 120,
             child: Text(
               "$label:",
-              style: TextStyle(
+              style: const TextStyle(
                 color: rHint,
                 fontSize: 13,
               ),
@@ -379,7 +409,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 color: rWhite,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -391,4 +421,3 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
     );
   }
 }
-

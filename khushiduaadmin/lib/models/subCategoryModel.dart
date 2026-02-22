@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-
-class SubCategoryModel{
+class SubCategoryModel {
   String id = '';
   String arabic = '';
   String bengali = '';
@@ -26,12 +24,12 @@ class SubCategoryModel{
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   bool isEnabled = true;
-  int order=0;
-  String categoryId="";
-  bool littleKids=true;
-  bool olderKids=true;
-  bool grownUps=true;
-  String image="";
+  int order = 0;
+  String categoryId = "";
+  bool littleKids = true;
+  bool olderKids = true;
+  bool grownUps = true;
+  String image = "";
 
   SubCategoryModel({
     required this.id,
@@ -69,40 +67,42 @@ class SubCategoryModel{
 
   factory SubCategoryModel.fromMap(Map<String, dynamic> map) {
     return SubCategoryModel(
-      id: map["id"] ?? '',
-      createdAt: map["createdAt"] != null ? map["createdAt"].toDate() : DateTime.now(),
-      updatedAt: map["updatedAt"] != null ? map["updatedAt"].toDate() : DateTime.now(),
-      arabic: map["arabic"] ?? '',
-      bengali: map["bengali"] ?? '',
-      english: map["english"] ?? '',
-      french: map["french"] ?? '',
-      german: map["german"] ?? '',
-      gujrati: map["gujrati"] ?? '',
-      hindi: map["hindi"] ?? '',
-      indonesian: map["indonesian"] ?? '',
-      isEnabled: map["isEnabled"] ?? true,
-      japanese: map["japanese"] ?? '',
-      malay: map["malay"] ?? '',
-      mandrain: map["mandrain"] ?? '',
-      marathi: map["marathi"] ?? '',
-      portugese: map["portugese"] ?? '',
-      punjabi: map["punjabi"] ?? '',
-      russian: map["russian"] ?? '',
-      sindhi: map["sindhi"] ?? '',
-      spanish: map["spanish"] ?? '',
-      tamil: map["tamil"] ?? '',
-      telgu: map["telgu"] ?? '',
-      turkish: map["turkish"] ?? '',
-      urdu: map["urdu"] ?? '',
-      order: map["order"] ?? 0,
-      littleKids: map["littleKids"] ?? true,
-      olderKids: map["olderKids"] ?? true,
-      grownUps: map["grownUps"] ?? true,
-      categoryId: map["categoryId"] ?? '',
-        image: map["image"]
-    );
+        id: map["id"] ?? '',
+        createdAt: map["createdAt"] != null
+            ? map["createdAt"].toDate()
+            : DateTime.now(),
+        updatedAt: map["updatedAt"] != null
+            ? map["updatedAt"].toDate()
+            : DateTime.now(),
+        arabic: map["arabic"] ?? '',
+        bengali: map["bengali"] ?? '',
+        english: map["english"] ?? '',
+        french: map["french"] ?? '',
+        german: map["german"] ?? '',
+        gujrati: map["gujrati"] ?? '',
+        hindi: map["hindi"] ?? '',
+        indonesian: map["indonesian"] ?? '',
+        isEnabled: map["isEnabled"] ?? true,
+        japanese: map["japanese"] ?? '',
+        malay: map["malay"] ?? '',
+        mandrain: map["mandrain"] ?? '',
+        marathi: map["marathi"] ?? '',
+        portugese: map["portugese"] ?? '',
+        punjabi: map["punjabi"] ?? '',
+        russian: map["russian"] ?? '',
+        sindhi: map["sindhi"] ?? '',
+        spanish: map["spanish"] ?? '',
+        tamil: map["tamil"] ?? '',
+        telgu: map["telgu"] ?? '',
+        turkish: map["turkish"] ?? '',
+        urdu: map["urdu"] ?? '',
+        order: map["order"] ?? 0,
+        littleKids: map["littleKids"] ?? true,
+        olderKids: map["olderKids"] ?? true,
+        grownUps: map["grownUps"] ?? true,
+        categoryId: map["categoryId"] ?? '',
+        image: map["image"]);
   }
-
 
   Map<String, dynamic> toMap() {
     return {
@@ -135,9 +135,8 @@ class SubCategoryModel{
       "grownUps": grownUps,
       "olderKids": olderKids,
       "littleKids": littleKids,
-      "categoryId":categoryId,
-      "image":image,
+      "categoryId": categoryId,
+      "image": image,
     };
   }
-
 }

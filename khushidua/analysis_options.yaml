@@ -19,6 +19,7 @@ analyzer:
     prefer_typing_uninitialized_variables: ignore
     no_leading_underscores_for_local_identifiers: ignore
     library_private_types_in_public_api: ignore
+    constant_identifier_names: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
