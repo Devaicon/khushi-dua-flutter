@@ -29,16 +29,32 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _filterSubCategories() {
     String query = _searchController.text.toLowerCase();
-    String selectedLanguage = Get.find<UserController>().selectedLanguage;
+    final categoryController = Get.find<CategoryController>();
+    final userController = Get.find<UserController>();
+    String selectedLanguage = userController.selectedLanguage;
+
     setState(() {
-      filteredSubCategories = Get.find<CategoryController>().allSubCategories
-          .where(
-            (subCategory) => subCategory
-                .getName(selectedLanguage)
-                .toLowerCase()
-                .contains(query),
-          )
-          .toList();
+      filteredSubCategories = categoryController.allSubCategories.where((
+        subCategory,
+      ) {
+        if (!subCategory.isEnabled) return false;
+
+        // Search in subCategory name
+        bool matchesName = subCategory
+            .getName(selectedLanguage)
+            .toLowerCase()
+            .contains(query);
+
+        // Search in category name
+        final category = categoryController.allCategories.firstWhereOrNull(
+          (c) => c.id == subCategory.categoryId,
+        );
+        bool matchesCategory =
+            category?.getName(selectedLanguage).toLowerCase().contains(query) ??
+            false;
+
+        return matchesName || matchesCategory;
+      }).toList();
     });
   }
 
@@ -156,6 +172,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     side: BorderSide.none,
                   ),
+                );
+              },
+            ),
           ),
 
           const SizedBox(height: 10),

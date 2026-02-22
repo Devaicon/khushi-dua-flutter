@@ -1,4 +1,4 @@
-package com.khushiidua.app
+package com.khushidua.app
 
 import io.flutter.embedding.android.FlutterActivity
 
