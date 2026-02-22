@@ -156,9 +156,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     side: BorderSide.none,
                   ),
-                );
-              },
-            ),
           ),
 
           const SizedBox(height: 10),
