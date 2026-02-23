@@ -24,11 +24,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<SettingsModel> settingsList = [
     SettingsModel(
-      title: "Account",
-      subTitle: "Profile settings",
-      icon: Icons.person_2_outlined,
-    ),
-    SettingsModel(
       title: "Downloads",
       subTitle: "Audio Downloads",
       icon: Icons.download,
@@ -43,24 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subTitle: "Share with friends",
       icon: Icons.share,
     ),
-    SettingsModel(
-      title: "Premium",
-      subTitle: "Unlock all features",
-      icon: Icons.workspace_premium,
-    ),
   ];
-
-  void accountSettings() {
-    if (Get.find<UserController>().isLoggedIn) {
-      // Get.to(AccountSettings(), transition: Transition.fade);
-    } else {
-      CustomSnackbar.show(
-        "Not logged in",
-        "Please login to your account.",
-        isSuccess: false,
-      );
-    }
-  }
 
   void downloadSettings() {
     Get.to(const AudioDownloadSettings(), transition: Transition.fade);
@@ -68,10 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void languageSettings() {
     Get.to(const LanguageSettings(), transition: Transition.fade);
-  }
-
-  void premiumSettings() {
-    // Get.to(PremiumSettings(), transition: Transition.fade);
   }
 
   void shareApp() {
@@ -84,11 +58,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     List<VoidCallback> functionsList = [
-      accountSettings,
       downloadSettings,
       languageSettings,
       shareApp,
-      premiumSettings,
     ];
 
     return Scaffold(
@@ -164,42 +136,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   letterSpacing: 0.5,
                                 ),
                               ),
-                              if (userController.isLoggedIn &&
-                                  (userController.userModel?.isMember ?? false))
-                                Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.amber,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.stars_rounded,
-                                        color: Colors.amber,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "PREMIUM MEMBER".tr,
-                                        style: const TextStyle(
-                                          color: rbluedark,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -242,14 +178,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _buildSectionTitle("PREFERENCES".tr),
                       SettingTile(settingsList[0], functionsList[0]),
                       SettingTile(settingsList[1], functionsList[1]),
-                      SettingTile(settingsList[2], functionsList[2]),
 
                       const SizedBox(height: 20),
                       _buildSectionTitle("SUPPORT".tr),
-                      SettingTile(settingsList[3], functionsList[3]),
-                      if (!userController.isLoggedIn ||
-                          !(userController.userModel?.isMember ?? false))
-                        SettingTile(settingsList[4], functionsList[4]),
+                      SettingTile(settingsList[2], functionsList[2]),
 
                       const SizedBox(height: 30),
 
@@ -321,7 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          "Version 1.0.5".tr,
+                          "Version 1.0.6".tr,
                           style: TextStyle(
                             color: Colors.grey.withOpacity(0.5),
                             fontSize: 12,
