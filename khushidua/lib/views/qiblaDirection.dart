@@ -4,12 +4,17 @@ import 'package:get/get.dart';
 import 'dart:math' as math;
 import 'package:prayers_times/prayers_times.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/colors.dart';
 
 class CompassScreen extends StatefulWidget {
   final double latitude, longitude;
-  const CompassScreen({super.key, required this.latitude, required this.longitude});
+  const CompassScreen({
+    super.key,
+    required this.latitude,
+    required this.longitude,
+  });
 
   @override
   _CompassScreenState createState() => _CompassScreenState();
@@ -23,8 +28,22 @@ class _CompassScreenState extends State<CompassScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchQiblaDirection();
-    _listenToCompass();
+    _requestPermissions();
+  }
+
+  Future<void> _requestPermissions() async {
+    // Request location permission for compass
+    var status = await Permission.locationWhenInUse.request();
+    if (status.isGranted) {
+      _fetchQiblaDirection();
+      _listenToCompass();
+    } else {
+      Get.snackbar(
+        'Permission Required',
+        'Location permission is needed for Qibla direction',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   void _fetchQiblaDirection() {
@@ -36,13 +55,25 @@ class _CompassScreenState extends State<CompassScreen> {
   }
 
   void _listenToCompass() {
-    _compassSubscription = FlutterCompass.events?.listen((event) {
-      if (event.heading != null) {
-        setState(() {
-          deviceHeading = event.heading;
-        });
-      }
-    });
+    _compassSubscription = FlutterCompass.events?.listen(
+      (event) {
+        if (event.heading != null) {
+          setState(() {
+            deviceHeading = event.heading;
+          });
+        }
+      },
+      onError: (error) {
+        debugPrint('Compass error: $error');
+        // Show message that compass requires physical device
+        Get.snackbar(
+          'Compass Unavailable',
+          'Compass requires a physical device. This feature may not work on iOS simulator.',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 3),
+        );
+      },
+    );
   }
 
   @override
@@ -60,20 +91,22 @@ class _CompassScreenState extends State<CompassScreen> {
         decoration: BoxDecoration(
           image: DecorationImage(
             fit: BoxFit.fill,
-            image: AssetImage("assets/images/qiblaBg.png")
-          )
+            image: AssetImage("assets/images/qiblaBg.png"),
+          ),
         ),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Align(
-                  alignment: Alignment.topLeft,
-                  child: InkWell(
-                      onTap: (){
-                        Get.back();
-                      },
-                      child: Icon(Icons.close,color: rblack,))).marginSymmetric(horizontal: 20).marginOnly(top: 12),
+                alignment: Alignment.topLeft,
+                child: InkWell(
+                  onTap: () {
+                    Get.back();
+                  },
+                  child: Icon(Icons.close, color: rblack),
+                ),
+              ).marginSymmetric(horizontal: 20).marginOnly(top: 12),
               Image.asset("assets/images/kaaba.png"),
               Expanded(
                 child: Column(
@@ -85,7 +118,10 @@ class _CompassScreenState extends State<CompassScreen> {
                       children: [
                         // Rotating Compass Background (Dial)
                         Transform.rotate(
-                          angle: -((deviceHeading ?? 0) * math.pi / 180), // Rotate dial based on heading
+                          angle:
+                              -((deviceHeading ?? 0) *
+                                  math.pi /
+                                  180), // Rotate dial based on heading
                           child: Container(
                             height: 300,
                             width: 300,
@@ -105,38 +141,75 @@ class _CompassScreenState extends State<CompassScreen> {
                                       child: Container(
                                         height: 10,
                                         width: 2,
-                                        color: i % 90 == 0 ? Colors.white : Colors.grey,
+                                        color: i % 90 == 0
+                                            ? Colors.white
+                                            : Colors.grey,
                                         margin: const EdgeInsets.only(top: 10),
                                       ),
                                     ),
                                   ),
-                
+
                                 // N, E, S, W labels
-                                Positioned(top: 15, child: Text("N", style: _textStyle(Colors.red))),
-                                Positioned(bottom: 15, child: Text("S", style: _textStyle(Colors.white))),
-                                Positioned(left: 15, child: Text("W", style: _textStyle(Colors.white))),
-                                Positioned(right: 15, child: Text("E", style: _textStyle(Colors.white))),
+                                Positioned(
+                                  top: 15,
+                                  child: Text(
+                                    "N",
+                                    style: _textStyle(Colors.red),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 15,
+                                  child: Text(
+                                    "S",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 15,
+                                  child: Text(
+                                    "W",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 15,
+                                  child: Text(
+                                    "E",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                
+
                         // Qibla Direction Needle (Fixed)
                         Transform.rotate(
-                          angle: ((qiblaDirection - (deviceHeading ?? 0)) * math.pi / 180), // Adjusted Qibla needle
-                          child: const Icon(Icons.navigation, size: 100, color: Colors.orange),
+                          angle:
+                              ((qiblaDirection - (deviceHeading ?? 0)) *
+                              math.pi /
+                              180), // Adjusted Qibla needle
+                          child: const Icon(
+                            Icons.navigation,
+                            size: 100,
+                            color: Colors.orange,
+                          ),
                         ),
                       ],
                     ),
-                
+
                     const SizedBox(height: 20),
-                
+
                     // Display Degrees
                     Text(
                       deviceHeading == null
                           ? "Waiting for compass..."
                           : "Qibla: ${qiblaDirection.toStringAsFixed(0)}°",
-                      style:  TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: rwhite),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: rwhite,
+                      ),
                     ),
                   ],
                 ),

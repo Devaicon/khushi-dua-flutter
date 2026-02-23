@@ -19,37 +19,55 @@ class AuthService {
   Future<String> getFCMToken() async {
     final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
 
-    // For iOS, we need to ensure APNS token is available first
-    if (Platform.isIOS) {
-      // Request notification permissions
-      NotificationSettings settings = await firebaseMessaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
+    try {
+      // For iOS, we need to ensure APNS token is available first
+      if (Platform.isIOS) {
+        // Request notification permissions
+        NotificationSettings settings = await firebaseMessaging
+            .requestPermission(alert: true, badge: true, sound: true);
+
+        if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+          debugPrint('User granted permission');
+        } else if (settings.authorizationStatus ==
+            AuthorizationStatus.provisional) {
+          debugPrint('User granted provisional permission');
+        } else {
+          debugPrint('User declined or has not accepted permission');
+        }
+
+        // Wait for APNS token to be available with timeout and retries
+        String? apnsToken;
+        int attempts = 0;
+        while (apnsToken == null && attempts < 5) {
+          apnsToken = await firebaseMessaging.getAPNSToken();
+          if (apnsToken == null) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            attempts++;
+          }
+        }
+
+        if (apnsToken != null) {
+          debugPrint("APNS Token: $apnsToken");
+        } else {
+          debugPrint("APNS Token not available after retries");
+        }
+      }
+
+      // Get FCM token with timeout
+      String? token = await firebaseMessaging.getToken().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint("FCM token request timed out");
+          return null;
+        },
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('User granted permission');
-      } else if (settings.authorizationStatus ==
-          AuthorizationStatus.provisional) {
-        debugPrint('User granted provisional permission');
-      } else {
-        debugPrint('User declined or has not accepted permission');
-      }
-
-      // Wait for APNS token to be available
-      String? apnsToken = await firebaseMessaging.getAPNSToken();
-      if (apnsToken == null) {
-        // Wait a bit and try again
-        await Future.delayed(const Duration(seconds: 1));
-        apnsToken = await firebaseMessaging.getAPNSToken();
-      }
-      debugPrint("APNS Token: $apnsToken");
+      debugPrint("FCM TOKEN: $token");
+      return token ?? '';
+    } catch (e) {
+      debugPrint("Error getting FCM token: $e");
+      return ''; // Return empty string instead of failing
     }
-
-    String? token = await firebaseMessaging.getToken();
-    debugPrint("FCM TOKEN: $token");
-    return token ?? '';
   }
 
   register(String email, String password, String name) async {
@@ -61,6 +79,17 @@ class AuthService {
       );
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
+      // Get FCM token but don't fail registration if it's not available
+      String fcmToken = '';
+      try {
+        fcmToken = await getFCMToken().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => '',
+        );
+      } catch (e) {
+        debugPrint("FCM token error during registration: $e");
+      }
+
       UserModel user = UserModel(
         id: userCredential.user!.uid,
         name: name,
@@ -71,10 +100,11 @@ class AuthService {
         readDuas: [],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        fcmToken: await getFCMToken(),
+        fcmToken: fcmToken,
         isBlocked: false,
       );
-      userRef.doc(user.id).set(user.toMap());
+
+      await userRef.doc(user.id).set(user.toMap());
       _userController.setLoggedIn(true);
       await prefs.setBool("isLoggedIn", true);
       await prefs.setString("userId", user.id);
@@ -83,13 +113,26 @@ class AuthService {
       Get.find<NotificationController>().getAllNotifications();
       Get.offAll(() => const Dashboard());
       CustomSnackbar.show("Success", "Signed up successfully".tr);
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Firebase Auth Error: ${e.code} - ${e.message}");
+      String errorMessage = "Something went wrong. Try again later";
+
+      if (e.code == 'weak-password') {
+        errorMessage = 'The password provided is too weak.';
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = 'An account already exists for that email.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is not valid.';
+      }
+
+      CustomSnackbar.show("Error", errorMessage, isSuccess: false);
+    } catch (e) {
+      debugPrint("Registration error: $e");
       CustomSnackbar.show(
         "Error",
         "Something went wrong. Try again later",
         isSuccess: false,
       );
-      // _authController.setLoading(false);
     }
   }
 

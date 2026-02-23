@@ -1098,23 +1098,44 @@ class _DuaTileState extends State<DuaTile> {
 
   Future<void> _captureAndShare() async {
     try {
+      // Ensure all fonts are loaded before capturing
+      await Future.delayed(const Duration(milliseconds: 300));
+
       RenderRepaintBoundary boundary =
           _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      var image = await boundary.toImage(pixelRatio: 3.0);
+
+      // Use higher pixel ratio for better quality on iOS
+      var image = await boundary.toImage(pixelRatio: 4.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
       Uint8List pngBytes = byteData!.buffer.asUint8List();
 
-      // Save image to temporary file
+      // Save image to temporary file with timestamp
       final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/shared_dua.png').create();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = await File(
+        '${tempDir.path}/shared_dua_$timestamp.png',
+      ).create();
       await file.writeAsBytes(pngBytes);
 
-      // Share using share_plus
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: "Check out this beautiful Dua");
+      // Share using share_plus with proper iOS handling
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: "Check out this beautiful Dua from Khushi Dua App",
+        subject: "Khushi Dua",
+      );
+
+      debugPrint("Share result: ${result.status}");
     } catch (e) {
       debugPrint("Error sharing: $e");
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'Failed to share: ${e.toString()}',
+          backgroundColor: Colors.red.withOpacity(0.7),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
   }
 
@@ -1166,6 +1187,8 @@ class _DuaTileState extends State<DuaTile> {
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          fontFamily:
+                              'arabic', // Use the font family from pubspec
                         ),
                         textAlign: TextAlign.center,
                       ),

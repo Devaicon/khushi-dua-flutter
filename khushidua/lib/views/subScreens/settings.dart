@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -52,13 +53,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void accountSettings() {
     if (Get.find<UserController>().isLoggedIn) {
-      // Get.to(AccountSettings(), transition: Transition.fade);
+      // Show account settings dialog
+      Get.dialog(
+        AlertDialog(
+          title: Text('Account Settings', style: TextStyle(color: rbluedark)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Name: ${Get.find<UserController>().userName}'),
+              SizedBox(height: 8),
+              Text(
+                'Email: ${Get.find<UserController>().userModel?.email ?? "N/A"}',
+              ),
+              SizedBox(height: 8),
+              Text('Points: ${Get.find<UserController>().points}'),
+              SizedBox(height: 8),
+              Text(
+                'Member: ${(Get.find<UserController>().userModel?.isMember ?? false) ? "Yes" : "No"}',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: Text('Close')),
+            TextButton(
+              onPressed: () async {
+                Get.back();
+                // Logout functionality
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('isLoggedIn', false);
+                await prefs.remove('userId');
+                Get.find<UserController>().setLoggedIn(false);
+                CustomSnackbar.show(
+                  "Logged Out",
+                  "You have been logged out successfully",
+                );
+              },
+              child: Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
     } else {
       CustomSnackbar.show(
         "Not logged in",
         "Please login to your account.",
         isSuccess: false,
       );
+      // Navigate to signup
+      Get.to(() => const SignupScreen(), transition: Transition.fade);
     }
   }
 
@@ -74,11 +117,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Get.to(PremiumSettings(), transition: Transition.fade);
   }
 
-  void shareApp() {
-    Share.share(
-      'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp',
-      subject: 'My Islamic Learning App',
-    );
+  void shareApp() async {
+    try {
+      // For iOS, use a placeholder until app is published on App Store
+      String appUrl;
+      if (Platform.isIOS) {
+        // Replace with actual App Store link when published
+        appUrl = 'Coming soon on App Store!';
+      } else {
+        appUrl =
+            'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp';
+      }
+
+      final result = await Share.share(
+        'Check out Khushi Dua - Islamic Learning App\n\n$appUrl',
+        subject: 'My Islamic Learning App',
+      );
+
+      debugPrint('Share result: ${result.status}');
+    } catch (e) {
+      debugPrint('Share error: $e');
+      CustomSnackbar.show('Error', 'Failed to share app', isSuccess: false);
+    }
   }
 
   @override
