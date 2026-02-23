@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -17,9 +18,38 @@ class AuthService {
 
   Future<String> getFCMToken() async {
     final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
+
+    // For iOS, we need to ensure APNS token is available first
+    if (Platform.isIOS) {
+      // Request notification permissions
+      NotificationSettings settings = await firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User granted permission');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
+        debugPrint('User granted provisional permission');
+      } else {
+        debugPrint('User declined or has not accepted permission');
+      }
+
+      // Wait for APNS token to be available
+      String? apnsToken = await firebaseMessaging.getAPNSToken();
+      if (apnsToken == null) {
+        // Wait a bit and try again
+        await Future.delayed(const Duration(seconds: 1));
+        apnsToken = await firebaseMessaging.getAPNSToken();
+      }
+      debugPrint("APNS Token: $apnsToken");
+    }
+
     String? token = await firebaseMessaging.getToken();
-    debugPrint("TOKEN: $token");
-    return token!;
+    debugPrint("FCM TOKEN: $token");
+    return token ?? '';
   }
 
   register(String email, String password, String name) async {
