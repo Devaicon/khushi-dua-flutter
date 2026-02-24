@@ -818,11 +818,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
             transition: Transition.cupertino,
           );
         } else {
-          Get.snackbar(
-            "Location required",
-            "Please enable location",
-            backgroundColor: Colors.red,
-          );
+          if (Get.context != null) {
+            Get.snackbar(
+              "Location required",
+              "Please enable location",
+              backgroundColor: Colors.red,
+            );
+          }
         }
       },
       borderRadius: BorderRadius.circular(15),

@@ -674,12 +674,14 @@ class _DuaTileState extends State<DuaTile> {
                 if (dialogIsRecording) {
                   if (dialogRecordingDuration.inSeconds >= 29) {
                     await stopRecording();
-                    Get.snackbar(
-                      "Recording Limit",
-                      "Recording cannot be more than 29 seconds",
-                      backgroundColor: Colors.red,
-                      colorText: Colors.white,
-                    );
+                    if (Get.context != null) {
+                      Get.snackbar(
+                        "Recording Limit",
+                        "Recording cannot be more than 29 seconds",
+                        backgroundColor: Colors.red,
+                        colorText: Colors.white,
+                      );
+                    }
                     return;
                   }
                   setDialogState(() {
@@ -1127,7 +1129,7 @@ class _DuaTileState extends State<DuaTile> {
       debugPrint("Share result: ${result.status}");
     } catch (e) {
       debugPrint("Error sharing: $e");
-      if (mounted) {
+      if (mounted && Get.context != null) {
         Get.snackbar(
           'Error',
           'Failed to share: ${e.toString()}',

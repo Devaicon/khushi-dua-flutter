@@ -38,11 +38,16 @@ class _CompassScreenState extends State<CompassScreen> {
       _fetchQiblaDirection();
       _listenToCompass();
     } else {
-      Get.snackbar(
-        'Permission Required',
-        'Location permission is needed for Qibla direction',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Use WidgetsBinding to ensure the widget tree is ready
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Get.snackbar(
+            'Permission Required',
+            'Location permission is needed for Qibla direction',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+      });
     }
   }
 
@@ -66,12 +71,16 @@ class _CompassScreenState extends State<CompassScreen> {
       onError: (error) {
         debugPrint('Compass error: $error');
         // Show message that compass requires physical device
-        Get.snackbar(
-          'Compass Unavailable',
-          'Compass requires a physical device. This feature may not work on iOS simulator.',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 3),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Get.snackbar(
+              'Compass Unavailable',
+              'Compass requires a physical device. This feature may not work on iOS simulator.',
+              snackPosition: SnackPosition.BOTTOM,
+              duration: const Duration(seconds: 3),
+            );
+          }
+        });
       },
     );
   }
@@ -102,7 +111,7 @@ class _CompassScreenState extends State<CompassScreen> {
                 alignment: Alignment.topLeft,
                 child: InkWell(
                   onTap: () {
-                    Get.back();
+                    Navigator.of(context).pop();
                   },
                   child: Icon(Icons.close, color: rblack),
                 ),
