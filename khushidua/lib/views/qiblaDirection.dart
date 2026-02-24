@@ -28,8 +28,13 @@ class _CompassScreenState extends State<CompassScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint("QiblaScreen: initState called");
+    debugPrint(
+      "QiblaScreen: Latitude: ${widget.latitude}, Longitude: ${widget.longitude}",
+    );
     // Delay permission request until after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint("QiblaScreen: Requesting permissions...");
       _requestPermissions();
     });
   }
@@ -37,10 +42,15 @@ class _CompassScreenState extends State<CompassScreen> {
   Future<void> _requestPermissions() async {
     // Request location permission for compass
     var status = await Permission.locationWhenInUse.request();
+    debugPrint("QiblaScreen: Permission status: $status");
     if (status.isGranted) {
+      debugPrint(
+        "QiblaScreen: Permission granted, fetching Qibla direction...",
+      );
       _fetchQiblaDirection();
       _listenToCompass();
     } else {
+      debugPrint("QiblaScreen: Permission denied");
       if (mounted) {
         Get.snackbar(
           'Permission Required',
@@ -54,22 +64,29 @@ class _CompassScreenState extends State<CompassScreen> {
   void _fetchQiblaDirection() {
     // Fetch Qibla direction using the Prayer Times library
     Coordinates coordinates = Coordinates(widget.latitude, widget.longitude);
+    double calculatedQibla = Qibla.qibla(coordinates);
+    debugPrint("QiblaScreen: Calculated Qibla direction: $calculatedQibla°");
     setState(() {
-      qiblaDirection = Qibla.qibla(coordinates);
+      qiblaDirection = calculatedQibla;
     });
   }
 
   void _listenToCompass() {
+    debugPrint("QiblaScreen: Starting compass listener...");
     _compassSubscription = FlutterCompass.events?.listen(
       (event) {
         if (event.heading != null) {
           setState(() {
             deviceHeading = event.heading;
           });
+          // Only log occasionally to avoid spam
+          if ((event.heading!.toInt()) % 10 == 0) {
+            debugPrint("QiblaScreen: Device heading: ${event.heading}°");
+          }
         }
       },
       onError: (error) {
-        debugPrint('Compass error: $error');
+        debugPrint('QiblaScreen: Compass error: $error');
         // Show message that compass requires physical device
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {

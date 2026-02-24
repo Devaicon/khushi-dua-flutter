@@ -122,11 +122,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // For iOS, use a placeholder until app is published on App Store
       String appUrl;
       String shareMessage;
-      
+
       if (Platform.isIOS) {
         // Replace with actual App Store link when published
         appUrl = 'https://apps.apple.com/app/khushi-dua';
-        shareMessage = 
+        shareMessage =
             'Check out Khushi Dua - Islamic Learning App\n\n'
             '📿 Read beautiful Islamic Duas\n'
             '🕋 Find Qibla direction\n'
@@ -136,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } else {
         appUrl =
             'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp';
-        shareMessage = 
+        shareMessage =
             'Check out Khushi Dua - Islamic Learning App\n\n'
             '📿 Read beautiful Islamic Duas\n'
             '🕋 Find Qibla direction\n'
@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       debugPrint('Share result: ${result.status}');
-      
+
       if (result.status == ShareResultStatus.success) {
         CustomSnackbar.show(
           'Success',
