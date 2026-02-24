@@ -39,7 +39,11 @@ class AuthService {
         String? apnsToken;
         int attempts = 0;
         while (apnsToken == null && attempts < 5) {
-          apnsToken = await firebaseMessaging.getAPNSToken();
+          try {
+            apnsToken = await firebaseMessaging.getAPNSToken();
+          } catch (e) {
+            debugPrint("Error getting APNS token (attempt $attempts): $e");
+          }
           if (apnsToken == null) {
             await Future.delayed(const Duration(milliseconds: 500));
             attempts++;
@@ -49,20 +53,31 @@ class AuthService {
         if (apnsToken != null) {
           debugPrint("APNS Token: $apnsToken");
         } else {
-          debugPrint("APNS Token not available after retries");
+          debugPrint(
+            "APNS Token not available after retries (expected on iOS Simulator)",
+          );
+          // On simulator, continue anyway - FCM token might still work
         }
       }
 
       // Get FCM token with timeout
-      String? token = await firebaseMessaging.getToken().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint("FCM token request timed out");
-          return null;
-        },
-      );
+      String? token;
+      try {
+        token = await firebaseMessaging.getToken().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            debugPrint("FCM token request timed out");
+            return null;
+          },
+        );
+      } catch (e) {
+        debugPrint("Error getting FCM token (expected on iOS Simulator): $e");
+        token = null;
+      }
 
-      debugPrint("FCM TOKEN: $token");
+      debugPrint(
+        "FCM TOKEN: ${token ?? 'Not available (simulator or no permission)'}",
+      );
       return token ?? '';
     } catch (e) {
       debugPrint("Error getting FCM token: $e");

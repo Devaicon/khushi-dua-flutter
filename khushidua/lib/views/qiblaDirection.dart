@@ -28,7 +28,10 @@ class _CompassScreenState extends State<CompassScreen> {
   @override
   void initState() {
     super.initState();
-    _requestPermissions();
+    // Delay permission request until after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestPermissions();
+    });
   }
 
   Future<void> _requestPermissions() async {
@@ -38,16 +41,13 @@ class _CompassScreenState extends State<CompassScreen> {
       _fetchQiblaDirection();
       _listenToCompass();
     } else {
-      // Use WidgetsBinding to ensure the widget tree is ready
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Get.snackbar(
-            'Permission Required',
-            'Location permission is needed for Qibla direction',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        }
-      });
+      if (mounted) {
+        Get.snackbar(
+          'Permission Required',
+          'Location permission is needed for Qibla direction',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
   }
 

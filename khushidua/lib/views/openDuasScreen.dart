@@ -1103,13 +1103,31 @@ class _DuaTileState extends State<DuaTile> {
       // Ensure all fonts are loaded before capturing
       await Future.delayed(const Duration(milliseconds: 300));
 
-      RenderRepaintBoundary boundary =
-          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      // Check if the context is still valid
+      if (_popupKey.currentContext == null) {
+        debugPrint("Error: Context is null, cannot capture image");
+        return;
+      }
+
+      RenderRepaintBoundary? boundary =
+          _popupKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary?;
+
+      if (boundary == null) {
+        debugPrint("Error: Boundary is null");
+        return;
+      }
 
       // Use higher pixel ratio for better quality on iOS
       var image = await boundary.toImage(pixelRatio: 4.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      if (byteData == null) {
+        debugPrint("Error: Failed to convert image to bytes");
+        return;
+      }
+
+      Uint8List pngBytes = byteData.buffer.asUint8List();
 
       // Save image to temporary file with timestamp
       final tempDir = await getTemporaryDirectory();
@@ -1119,6 +1137,16 @@ class _DuaTileState extends State<DuaTile> {
       ).create();
       await file.writeAsBytes(pngBytes);
 
+      debugPrint("Image saved to: ${file.path}");
+
+      // Close the dialog first, then share
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Small delay to ensure dialog is closed
+      await Future.delayed(const Duration(milliseconds: 100));
+
       // Share using share_plus with proper iOS handling
       final result = await Share.shareXFiles(
         [XFile(file.path)],
@@ -1127,6 +1155,13 @@ class _DuaTileState extends State<DuaTile> {
       );
 
       debugPrint("Share result: ${result.status}");
+
+      // Clean up the temporary file after sharing
+      try {
+        await file.delete();
+      } catch (e) {
+        debugPrint("Error deleting temp file: $e");
+      }
     } catch (e) {
       debugPrint("Error sharing: $e");
       if (mounted && Get.context != null) {

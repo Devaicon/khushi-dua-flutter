@@ -121,23 +121,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // For iOS, use a placeholder until app is published on App Store
       String appUrl;
+      String shareMessage;
+      
       if (Platform.isIOS) {
         // Replace with actual App Store link when published
-        appUrl = 'Coming soon on App Store!';
+        appUrl = 'https://apps.apple.com/app/khushi-dua';
+        shareMessage = 
+            'Check out Khushi Dua - Islamic Learning App\n\n'
+            '📿 Read beautiful Islamic Duas\n'
+            '🕋 Find Qibla direction\n'
+            '⏰ Prayer times\n\n'
+            'Coming soon on App Store!\n'
+            '$appUrl';
       } else {
         appUrl =
             'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp';
+        shareMessage = 
+            'Check out Khushi Dua - Islamic Learning App\n\n'
+            '📿 Read beautiful Islamic Duas\n'
+            '🕋 Find Qibla direction\n'
+            '⏰ Prayer times\n\n'
+            'Download now:\n'
+            '$appUrl';
       }
 
+      debugPrint("Attempting to share app...");
+
       final result = await Share.share(
-        'Check out Khushi Dua - Islamic Learning App\n\n$appUrl',
-        subject: 'My Islamic Learning App',
+        shareMessage,
+        subject: 'Khushi Dua - Islamic Learning App',
       );
 
       debugPrint('Share result: ${result.status}');
+      
+      if (result.status == ShareResultStatus.success) {
+        CustomSnackbar.show(
+          'Success',
+          'Thank you for sharing!',
+          isSuccess: true,
+        );
+      }
     } catch (e) {
       debugPrint('Share error: $e');
-      CustomSnackbar.show('Error', 'Failed to share app', isSuccess: false);
+      CustomSnackbar.show(
+        'Error',
+        'Failed to share app. Please try again.',
+        isSuccess: false,
+      );
     }
   }
 
