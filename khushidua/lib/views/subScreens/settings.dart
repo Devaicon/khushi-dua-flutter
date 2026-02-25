@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -48,11 +50,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Get.to(const LanguageSettings(), transition: Transition.fade);
   }
 
-  void shareApp() {
-    Share.share(
-      'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp',
-      subject: 'My Islamic Learning App',
-    );
+  void shareApp() async {
+    try {
+      debugPrint("📤 Settings: Share App button pressed");
+
+      // For iOS, use a placeholder until app is published on App Store
+      String appUrl;
+      String shareMessage;
+
+      if (Platform.isIOS) {
+        // Replace with actual App Store link when published
+        appUrl = 'https://apps.apple.com/app/khushi-dua';
+        shareMessage =
+            'Check out Khushi Dua - Islamic Learning App\n\n'
+            '📿 Read beautiful Islamic Duas\n'
+            '🕋 Find Qibla direction\n'
+            '⏰ Prayer times\n\n'
+            'Coming soon on App Store!\n'
+            '$appUrl';
+      } else {
+        appUrl =
+            'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp';
+        shareMessage =
+            'Check out Khushi Dua - Islamic Learning App\n\n'
+            '📿 Read beautiful Islamic Duas\n'
+            '🕋 Find Qibla direction\n'
+            '⏰ Prayer times\n\n'
+            'Download now:\n'
+            '$appUrl';
+      }
+
+      debugPrint("📤 Attempting to share app...");
+
+      // Get screen position for iPad compatibility
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100); // Fallback position
+
+      debugPrint("📍 Share position: $sharePositionOrigin");
+
+      final result = await Share.share(
+        shareMessage,
+        subject: 'Khushi Dua - Islamic Learning App',
+        sharePositionOrigin: sharePositionOrigin, // Required for iPad
+      );
+
+      debugPrint('✅ Share result: ${result.status}');
+
+      if (result.status == ShareResultStatus.success) {
+        CustomSnackbar.show(
+          'Success',
+          'Thank you for sharing!',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Share error: $e');
+      CustomSnackbar.show(
+        'Error',
+        'Failed to share app. Please try again.',
+        isSuccess: false,
+      );
+    }
   }
 
   @override
