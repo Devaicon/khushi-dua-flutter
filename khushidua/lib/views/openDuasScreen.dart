@@ -341,8 +341,10 @@ class _DuaTileState extends State<DuaTile> {
     super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
-    
-    debugPrint("OpenDuasScreen: Share feature initialized with random image: $randomImage");
+
+    debugPrint(
+      "OpenDuasScreen: Share feature initialized with random image: $randomImage",
+    );
   }
 
   @override
@@ -1101,7 +1103,7 @@ class _DuaTileState extends State<DuaTile> {
   Future<void> _captureAndShare() async {
     try {
       debugPrint("📸 Starting capture and share process...");
-      
+
       // Ensure all fonts are loaded before capturing
       await Future.delayed(const Duration(milliseconds: 500));
 
@@ -1122,7 +1124,8 @@ class _DuaTileState extends State<DuaTile> {
 
       debugPrint("✅ Context is valid, finding boundary...");
       RenderRepaintBoundary? boundary =
-          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary?;
+          _popupKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary?;
 
       if (boundary == null) {
         debugPrint("❌ Error: Boundary is null");
@@ -1133,12 +1136,12 @@ class _DuaTileState extends State<DuaTile> {
       // Use higher pixel ratio for better quality on iOS
       var image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
-      
+
       if (byteData == null) {
         debugPrint("❌ Error: Failed to convert image to bytes");
         return;
       }
-      
+
       Uint8List pngBytes = byteData.buffer.asUint8List();
       debugPrint("✅ Image captured successfully (${pngBytes.length} bytes)");
 
@@ -1158,19 +1161,29 @@ class _DuaTileState extends State<DuaTile> {
         debugPrint("✅ Dialog closed");
       }
 
-      // Small delay to ensure dialog is closed
+      // Small delay to ensure dialog is closed and get screen size
       await Future.delayed(const Duration(milliseconds: 200));
 
       debugPrint("📤 Opening share sheet...");
+
+      // Get screen size for iPad share sheet positioning
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100); // Fallback position
+
+      debugPrint("📍 Share position: $sharePositionOrigin");
+
       // Share using share_plus with proper iOS handling
       final result = await Share.shareXFiles(
         [XFile(file.path)],
         text: "Check out this beautiful Dua from Khushi Dua App",
         subject: "Khushi Dua",
+        sharePositionOrigin: sharePositionOrigin, // Required for iPad
       );
 
       debugPrint("✅ Share result: ${result.status}");
-      
+
       // Clean up the temporary file after sharing
       try {
         await file.delete();

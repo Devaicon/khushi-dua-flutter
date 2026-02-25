@@ -10,7 +10,11 @@ import '../constants/colors.dart';
 
 class CompassScreen extends StatefulWidget {
   final double latitude, longitude;
-  const CompassScreen({super.key, required this.latitude, required this.longitude});
+  const CompassScreen({
+    super.key,
+    required this.latitude,
+    required this.longitude,
+  });
 
   @override
   _CompassScreenState createState() => _CompassScreenState();
@@ -26,7 +30,9 @@ class _CompassScreenState extends State<CompassScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint("QiblaScreen: initState - Latitude: ${widget.latitude}, Longitude: ${widget.longitude}");
+    debugPrint(
+      "QiblaScreen: initState - Latitude: ${widget.latitude}, Longitude: ${widget.longitude}",
+    );
     _fetchQiblaDirection();
     // Delay permission request until after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -39,7 +45,7 @@ class _CompassScreenState extends State<CompassScreen> {
     // Request location permission for compass
     var status = await Permission.locationWhenInUse.request();
     debugPrint("QiblaScreen: Permission status: $status");
-    
+
     if (status.isGranted) {
       debugPrint("QiblaScreen: Permission granted, starting compass...");
       setState(() {
@@ -51,16 +57,8 @@ class _CompassScreenState extends State<CompassScreen> {
       setState(() {
         _permissionGranted = false;
       });
-      if (mounted && Get.context != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.snackbar(
-            'Permission Required',
-            'Location permission is needed for compass. Showing Qibla direction only.',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 3),
-          );
-        });
-      }
+      // Don't show snackbar - just display message in the UI
+      // This prevents the overlay error
     }
   }
 
@@ -77,25 +75,16 @@ class _CompassScreenState extends State<CompassScreen> {
   void _listenToCompass() {
     debugPrint("QiblaScreen: Starting compass listener...");
     final compassEvents = FlutterCompass.events;
-    
+
     if (compassEvents == null) {
       debugPrint("QiblaScreen: Compass not available on this device");
       setState(() {
         _compassAvailable = false;
       });
-      if (mounted && Get.context != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.snackbar(
-            'Compass Unavailable',
-            'Compass sensor not available. Showing Qibla direction: ${qiblaDirection.toStringAsFixed(0)}°',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 4),
-          );
-        });
-      }
+      // Don't show snackbar - the UI will display the status
       return;
     }
-    
+
     _compassSubscription = compassEvents.listen(
       (event) {
         if (event.heading != null) {
@@ -105,7 +94,9 @@ class _CompassScreenState extends State<CompassScreen> {
           });
           // Log occasionally to avoid spam
           if ((event.heading!.toInt()) % 45 == 0) {
-            debugPrint("QiblaScreen: Device heading: ${event.heading!.toStringAsFixed(0)}°");
+            debugPrint(
+              "QiblaScreen: Device heading: ${event.heading!.toStringAsFixed(0)}°",
+            );
           }
         }
       },
@@ -114,17 +105,7 @@ class _CompassScreenState extends State<CompassScreen> {
         setState(() {
           _compassAvailable = false;
         });
-        // Show message that compass requires physical device
-        if (mounted && Get.context != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Get.snackbar(
-              'Compass Unavailable',
-              'Compass requires a physical device. Showing Qibla direction: ${qiblaDirection.toStringAsFixed(0)}°',
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(seconds: 4),
-            );
-          });
-        }
+        // Don't show snackbar - the UI will display the error state
       },
     );
   }
@@ -144,25 +125,27 @@ class _CompassScreenState extends State<CompassScreen> {
         decoration: BoxDecoration(
           image: DecorationImage(
             fit: BoxFit.fill,
-            image: AssetImage("assets/images/qiblaBg.png")
-          )
+            image: AssetImage("assets/images/qiblaBg.png"),
+          ),
         ),
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Align(
-                  alignment: Alignment.topLeft,
-                  child: InkWell(
-                      onTap: (){
-                        debugPrint("QiblaScreen: Back button pressed");
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        } else {
-                          Get.back();
-                        }
-                      },
-                      child: Icon(Icons.close,color: rblack,))).marginSymmetric(horizontal: 20).marginOnly(top: 12),
+                alignment: Alignment.topLeft,
+                child: InkWell(
+                  onTap: () {
+                    debugPrint("QiblaScreen: Back button pressed");
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      Get.back();
+                    }
+                  },
+                  child: Icon(Icons.close, color: rblack),
+                ),
+              ).marginSymmetric(horizontal: 20).marginOnly(top: 12),
               Image.asset("assets/images/kaaba.png"),
               Expanded(
                 child: Column(
@@ -174,7 +157,10 @@ class _CompassScreenState extends State<CompassScreen> {
                       children: [
                         // Rotating Compass Background (Dial)
                         Transform.rotate(
-                          angle: -((deviceHeading ?? 0) * math.pi / 180), // Rotate dial based on heading
+                          angle:
+                              -((deviceHeading ?? 0) *
+                                  math.pi /
+                                  180), // Rotate dial based on heading
                           child: Container(
                             height: 300,
                             width: 300,
@@ -194,32 +180,65 @@ class _CompassScreenState extends State<CompassScreen> {
                                       child: Container(
                                         height: 10,
                                         width: 2,
-                                        color: i % 90 == 0 ? Colors.white : Colors.grey,
+                                        color: i % 90 == 0
+                                            ? Colors.white
+                                            : Colors.grey,
                                         margin: const EdgeInsets.only(top: 10),
                                       ),
                                     ),
                                   ),
-                
+
                                 // N, E, S, W labels
-                                Positioned(top: 15, child: Text("N", style: _textStyle(Colors.red))),
-                                Positioned(bottom: 15, child: Text("S", style: _textStyle(Colors.white))),
-                                Positioned(left: 15, child: Text("W", style: _textStyle(Colors.white))),
-                                Positioned(right: 15, child: Text("E", style: _textStyle(Colors.white))),
+                                Positioned(
+                                  top: 15,
+                                  child: Text(
+                                    "N",
+                                    style: _textStyle(Colors.red),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 15,
+                                  child: Text(
+                                    "S",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 15,
+                                  child: Text(
+                                    "W",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 15,
+                                  child: Text(
+                                    "E",
+                                    style: _textStyle(Colors.white),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                
+
                         // Qibla Direction Needle (Fixed)
                         Transform.rotate(
-                          angle: ((qiblaDirection - (deviceHeading ?? 0)) * math.pi / 180), // Adjusted Qibla needle
-                          child: const Icon(Icons.navigation, size: 100, color: Colors.orange),
+                          angle:
+                              ((qiblaDirection - (deviceHeading ?? 0)) *
+                              math.pi /
+                              180), // Adjusted Qibla needle
+                          child: const Icon(
+                            Icons.navigation,
+                            size: 100,
+                            color: Colors.orange,
+                          ),
                         ),
                       ],
                     ),
-                
+
                     const SizedBox(height: 20),
-                
+
                     // Display Degrees
                     Text(
                       _getStatusText(),
