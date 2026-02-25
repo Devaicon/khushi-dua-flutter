@@ -341,6 +341,8 @@ class _DuaTileState extends State<DuaTile> {
     super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
+    
+    debugPrint("OpenDuasScreen: Share feature initialized with random image: $randomImage");
   }
 
   @override
@@ -1098,23 +1100,96 @@ class _DuaTileState extends State<DuaTile> {
 
   Future<void> _captureAndShare() async {
     try {
-      RenderRepaintBoundary boundary =
-          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      debugPrint("📸 Starting capture and share process...");
+      
+      // Ensure all fonts are loaded before capturing
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if the context is still valid
+      if (_popupKey.currentContext == null) {
+        debugPrint("❌ Error: Context is null, cannot capture image");
+        if (mounted && Get.context != null) {
+          Get.snackbar(
+            'Error',
+            'Failed to prepare image. Please try again.',
+            backgroundColor: Colors.red.withOpacity(0.7),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
+        return;
+      }
+
+      debugPrint("✅ Context is valid, finding boundary...");
+      RenderRepaintBoundary? boundary =
+          _popupKey.currentContext!.findRenderObject() as RenderRepaintBoundary?;
+
+      if (boundary == null) {
+        debugPrint("❌ Error: Boundary is null");
+        return;
+      }
+
+      debugPrint("✅ Boundary found, capturing image...");
+      // Use higher pixel ratio for better quality on iOS
       var image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
-      Uint8List pngBytes = byteData!.buffer.asUint8List();
+      
+      if (byteData == null) {
+        debugPrint("❌ Error: Failed to convert image to bytes");
+        return;
+      }
+      
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      debugPrint("✅ Image captured successfully (${pngBytes.length} bytes)");
 
-      // Save image to temporary file
+      // Save image to temporary file with timestamp
       final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/shared_dua.png').create();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = await File(
+        '${tempDir.path}/shared_dua_$timestamp.png',
+      ).create();
       await file.writeAsBytes(pngBytes);
 
-      // Share using share_plus
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: "Check out this beautiful Dua");
-    } catch (e) {
-      debugPrint("Error sharing: $e");
+      debugPrint("✅ Image saved to: ${file.path}");
+
+      // Close the dialog first, then share
+      if (mounted) {
+        Navigator.of(context).pop();
+        debugPrint("✅ Dialog closed");
+      }
+
+      // Small delay to ensure dialog is closed
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      debugPrint("📤 Opening share sheet...");
+      // Share using share_plus with proper iOS handling
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: "Check out this beautiful Dua from Khushi Dua App",
+        subject: "Khushi Dua",
+      );
+
+      debugPrint("✅ Share result: ${result.status}");
+      
+      // Clean up the temporary file after sharing
+      try {
+        await file.delete();
+        debugPrint("✅ Temporary file cleaned up");
+      } catch (e) {
+        debugPrint("⚠️ Error deleting temp file: $e");
+      }
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error sharing: $e");
+      debugPrint("Stack trace: $stackTrace");
+      if (mounted && Get.context != null) {
+        Get.snackbar(
+          'Error',
+          'Failed to share: ${e.toString()}',
+          backgroundColor: Colors.red.withOpacity(0.7),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
   }
 

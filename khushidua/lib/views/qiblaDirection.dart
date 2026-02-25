@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'dart:math' as math;
 import 'package:prayers_times/prayers_times.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/colors.dart';
 
@@ -19,30 +20,113 @@ class _CompassScreenState extends State<CompassScreen> {
   double? deviceHeading; // Device's current heading
   double qiblaDirection = 0; // Qibla direction
   StreamSubscription<CompassEvent>? _compassSubscription; // Compass stream
+  bool _permissionGranted = false;
+  bool _compassAvailable = true;
 
   @override
   void initState() {
     super.initState();
+    debugPrint("QiblaScreen: initState - Latitude: ${widget.latitude}, Longitude: ${widget.longitude}");
     _fetchQiblaDirection();
-    _listenToCompass();
+    // Delay permission request until after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestPermissions();
+    });
+  }
+
+  Future<void> _requestPermissions() async {
+    debugPrint("QiblaScreen: Requesting location permission...");
+    // Request location permission for compass
+    var status = await Permission.locationWhenInUse.request();
+    debugPrint("QiblaScreen: Permission status: $status");
+    
+    if (status.isGranted) {
+      debugPrint("QiblaScreen: Permission granted, starting compass...");
+      setState(() {
+        _permissionGranted = true;
+      });
+      _listenToCompass();
+    } else {
+      debugPrint("QiblaScreen: Permission denied");
+      setState(() {
+        _permissionGranted = false;
+      });
+      if (mounted && Get.context != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.snackbar(
+            'Permission Required',
+            'Location permission is needed for compass. Showing Qibla direction only.',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 3),
+          );
+        });
+      }
+    }
   }
 
   void _fetchQiblaDirection() {
     // Fetch Qibla direction using the Prayer Times library
     Coordinates coordinates = Coordinates(widget.latitude, widget.longitude);
+    double calculatedQibla = Qibla.qibla(coordinates);
+    debugPrint("QiblaScreen: Calculated Qibla direction: $calculatedQibla°");
     setState(() {
-      qiblaDirection = Qibla.qibla(coordinates);
+      qiblaDirection = calculatedQibla;
     });
   }
 
   void _listenToCompass() {
-    _compassSubscription = FlutterCompass.events?.listen((event) {
-      if (event.heading != null) {
-        setState(() {
-          deviceHeading = event.heading;
+    debugPrint("QiblaScreen: Starting compass listener...");
+    final compassEvents = FlutterCompass.events;
+    
+    if (compassEvents == null) {
+      debugPrint("QiblaScreen: Compass not available on this device");
+      setState(() {
+        _compassAvailable = false;
+      });
+      if (mounted && Get.context != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.snackbar(
+            'Compass Unavailable',
+            'Compass sensor not available. Showing Qibla direction: ${qiblaDirection.toStringAsFixed(0)}°',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 4),
+          );
         });
       }
-    });
+      return;
+    }
+    
+    _compassSubscription = compassEvents.listen(
+      (event) {
+        if (event.heading != null) {
+          setState(() {
+            deviceHeading = event.heading;
+            _compassAvailable = true;
+          });
+          // Log occasionally to avoid spam
+          if ((event.heading!.toInt()) % 45 == 0) {
+            debugPrint("QiblaScreen: Device heading: ${event.heading!.toStringAsFixed(0)}°");
+          }
+        }
+      },
+      onError: (error) {
+        debugPrint("QiblaScreen: Compass error: $error");
+        setState(() {
+          _compassAvailable = false;
+        });
+        // Show message that compass requires physical device
+        if (mounted && Get.context != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Get.snackbar(
+              'Compass Unavailable',
+              'Compass requires a physical device. Showing Qibla direction: ${qiblaDirection.toStringAsFixed(0)}°',
+              snackPosition: SnackPosition.BOTTOM,
+              duration: const Duration(seconds: 4),
+            );
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -71,7 +155,12 @@ class _CompassScreenState extends State<CompassScreen> {
                   alignment: Alignment.topLeft,
                   child: InkWell(
                       onTap: (){
-                        Get.back();
+                        debugPrint("QiblaScreen: Back button pressed");
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          Get.back();
+                        }
                       },
                       child: Icon(Icons.close,color: rblack,))).marginSymmetric(horizontal: 20).marginOnly(top: 12),
               Image.asset("assets/images/kaaba.png"),
@@ -133,11 +222,26 @@ class _CompassScreenState extends State<CompassScreen> {
                 
                     // Display Degrees
                     Text(
-                      deviceHeading == null
-                          ? "Waiting for compass..."
-                          : "Qibla: ${qiblaDirection.toStringAsFixed(0)}°",
-                      style:  TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: rwhite),
+                      _getStatusText(),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: rwhite,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
+                    if (!_compassAvailable || !_permissionGranted)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          _getHelpText(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: rwhite.withOpacity(0.8),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -146,6 +250,28 @@ class _CompassScreenState extends State<CompassScreen> {
         ),
       ),
     );
+  }
+
+  String _getStatusText() {
+    if (deviceHeading != null) {
+      return "Qibla: ${qiblaDirection.toStringAsFixed(0)}°\nHeading: ${deviceHeading!.toStringAsFixed(0)}°";
+    } else if (!_permissionGranted) {
+      return "Qibla Direction: ${qiblaDirection.toStringAsFixed(0)}°\n(Permission needed for compass)";
+    } else if (!_compassAvailable) {
+      return "Qibla Direction: ${qiblaDirection.toStringAsFixed(0)}°\n(Compass not available)";
+    } else {
+      return "Qibla Direction: ${qiblaDirection.toStringAsFixed(0)}°\nInitializing compass...";
+    }
+  }
+
+  String _getHelpText() {
+    if (!_permissionGranted) {
+      return "Grant location permission to enable compass";
+    } else if (!_compassAvailable) {
+      return "Compass requires a physical device with sensors";
+    } else {
+      return "Point your device toward Qibla direction";
+    }
   }
 
   TextStyle _textStyle(Color color) {
