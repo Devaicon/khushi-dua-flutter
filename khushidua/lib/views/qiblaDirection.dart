@@ -5,8 +5,6 @@ import 'dart:math' as math;
 import 'package:prayers_times/prayers_times.dart';
 import 'dart:async';
 
-import '../constants/colors.dart';
-
 class CompassScreen extends StatefulWidget {
   final double latitude, longitude;
   const CompassScreen({
@@ -21,11 +19,8 @@ class CompassScreen extends StatefulWidget {
 
 class _CompassScreenState extends State<CompassScreen> {
   double? deviceHeading; // Device's current heading (magnetic north)
-  double? headingAccuracy; // Reserved for future use if plugin exposes it
   double qiblaDirection = 0; // Qibla direction from true north
   StreamSubscription<CompassEvent>? _compassSubscription; // Compass stream
-  bool _compassAvailable = true;
-  bool _hasLowAccuracy = false;
 
   @override
   void initState() {
@@ -64,9 +59,6 @@ class _CompassScreenState extends State<CompassScreen> {
 
     if (compassEvents == null) {
       debugPrint("❌ QiblaScreen: Compass not available on this device");
-      setState(() {
-        _compassAvailable = false;
-      });
       return;
     }
 
@@ -75,10 +67,6 @@ class _CompassScreenState extends State<CompassScreen> {
         if (event.heading != null) {
           setState(() {
             deviceHeading = event.heading;
-            // Current flutter_compass does not expose accuracy on all platforms
-            headingAccuracy = null;
-            _hasLowAccuracy = false;
-            _compassAvailable = true;
           });
 
           // Log occasionally to avoid spam
@@ -91,9 +79,6 @@ class _CompassScreenState extends State<CompassScreen> {
       },
       onError: (error) {
         debugPrint("❌ QiblaScreen: Compass error: $error");
-        setState(() {
-          _compassAvailable = false;
-        });
       },
     );
   }
@@ -150,218 +135,108 @@ class _CompassScreenState extends State<CompassScreen> {
                       Get.back();
                     }
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.close, color: rblack),
-                  ),
+                  child: const Icon(Icons.close, color: Colors.black),
                 ),
               ).marginSymmetric(horizontal: 20).marginOnly(top: 12),
 
-              Image.asset("assets/images/kaaba.png", height: 120),
+              const SizedBox(height: 16),
 
-              if (_hasLowAccuracy)
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 16,
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.warning_amber_rounded, color: Colors.white),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "Move your device in a figure-8 pattern to calibrate compass",
-                          style: TextStyle(color: Colors.white, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // Kaaba icon similar to design
+              Image.asset("assets/images/kaaba.png", height: 140),
 
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (_isPointingToQibla())
-                          Container(
-                            height: 320,
-                            width: 320,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.green.withOpacity(0.5),
-                                  blurRadius: 30,
-                                  spreadRadius: 10,
-                                ),
-                              ],
-                            ),
-                          ),
+              const Spacer(),
 
-                        Transform.rotate(
-                          angle: -(deviceHeading ?? 0) * math.pi / 180,
-                          child: Container(
-                            height: 300,
-                            width: 300,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withOpacity(0.7),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                for (var i = 0; i < 360; i += 30)
-                                  Transform.rotate(
-                                    angle: i * math.pi / 180,
-                                    child: Align(
-                                      alignment: Alignment.topCenter,
-                                      child: Container(
-                                        height: i % 90 == 0 ? 15 : 10,
-                                        width: i % 90 == 0 ? 3 : 2,
-                                        color: i % 90 == 0
-                                            ? Colors.white
-                                            : Colors.grey.withOpacity(0.5),
-                                        margin: const EdgeInsets.only(top: 10),
-                                      ),
-                                    ),
-                                  ),
-
-                                Positioned(
-                                  top: 20,
-                                  child: Text(
-                                    "N",
-                                    style: _textStyle(Colors.red),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 20,
-                                  child: Text(
-                                    "S",
-                                    style: _textStyle(Colors.white),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 20,
-                                  child: Text(
-                                    "W",
-                                    style: _textStyle(Colors.white),
-                                  ),
-                                ),
-                                Positioned(
-                                  right: 20,
-                                  child: Text(
-                                    "E",
-                                    style: _textStyle(Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        Transform.rotate(
-                          angle: _getQiblaNeedleAngle() * math.pi / 180,
-                          child: Icon(
-                            Icons.navigation,
-                            size: 100,
-                            color: _isPointingToQibla()
-                                ? Colors.green
-                                : Colors.orange,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withOpacity(0.5),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Container(
-                          height: 20,
-                          width: 20,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.black, width: 2),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 30),
-                      padding: const EdgeInsets.all(16),
+              // Compass dial section
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Rotating compass background (dial)
+                  Transform.rotate(
+                    angle: -(deviceHeading ?? 0) * math.pi / 180,
+                    child: Container(
+                      height: 300,
+                      width: 300,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(16),
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF222743), // deep navy like design
                       ),
-                      child: Column(
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Text(
-                            _getStatusText(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (!_compassAvailable)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Text(
-                                'Compass requires a physical device with sensors.\nCannot test on iOS Simulator.',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.red,
+                          for (var i = 0; i < 360; i += 30)
+                            Transform.rotate(
+                              angle: i * math.pi / 180,
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  height: i % 90 == 0 ? 16 : 10,
+                                  width: 2,
+                                  color: i % 90 == 0
+                                      ? Colors.white
+                                      : Colors.white.withOpacity(0.4),
+                                  margin: const EdgeInsets.only(top: 18),
                                 ),
-                                textAlign: TextAlign.center,
                               ),
                             ),
-                          if (_isPointingToQibla())
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Aligned with Qibla',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+
+                          // Cardinal directions styled per design
+                          Positioned(
+                            top: 24,
+                            child: Text(
+                              "N",
+                              style: _textStyle(Colors.redAccent),
                             ),
+                          ),
+                          Positioned(
+                            bottom: 24,
+                            child: Text(
+                              "S",
+                              style: _textStyle(Colors.white),
+                            ),
+                          ),
+                          Positioned(
+                            left: 24,
+                            child: Text(
+                              "W",
+                              style: _textStyle(Colors.white),
+                            ),
+                          ),
+                          Positioned(
+                            right: 24,
+                            child: Text(
+                              "E",
+                              style: _textStyle(Colors.white),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
+
+                  // Orange Qibla needle (fixed color like design)
+                  Transform.rotate(
+                    angle: _getQiblaNeedleAngle() * math.pi / 180,
+                    child: const Icon(
+                      Icons.navigation,
+                      size: 110,
+                      color: Color(0xFFFFB300), // warm orange
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Bottom Qibla text, centered like design
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32.0),
+                child: Text(
+                  _getStatusText(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -372,24 +247,15 @@ class _CompassScreenState extends State<CompassScreen> {
   }
 
   String _getStatusText() {
-    if (deviceHeading != null) {
-      final diff = _getQiblaNeedleAngle().abs();
-      return 'Qibla: ${qiblaDirection.toStringAsFixed(0)}°\n'
-          'Current: ${deviceHeading!.toStringAsFixed(0)}°\n'
-          'Off by: ${diff.toStringAsFixed(1)}°';
-    } else if (!_compassAvailable) {
-      return 'Qibla Direction: ${qiblaDirection.toStringAsFixed(0)}°\n(Compass not available)';
-    } else {
-      return 'Qibla Direction: ${qiblaDirection.toStringAsFixed(0)}°\nInitializing compass...';
-    }
+    // Match design: only show `Qibla: xxx°` at bottom
+    return 'Qibla: ${qiblaDirection.toStringAsFixed(0)}°';
   }
 
   TextStyle _textStyle(Color color) {
     return TextStyle(
-      fontSize: 22,
+      fontSize: 20,
       fontWeight: FontWeight.bold,
       color: color,
-      shadows: [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 4)],
     );
   }
 }
