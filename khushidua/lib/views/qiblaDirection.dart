@@ -189,24 +189,15 @@ class _CompassScreenState extends State<CompassScreen> {
                           ),
                           Positioned(
                             bottom: 24,
-                            child: Text(
-                              "S",
-                              style: _textStyle(Colors.white),
-                            ),
+                            child: Text("S", style: _textStyle(Colors.white)),
                           ),
                           Positioned(
                             left: 24,
-                            child: Text(
-                              "W",
-                              style: _textStyle(Colors.white),
-                            ),
+                            child: Text("W", style: _textStyle(Colors.white)),
                           ),
                           Positioned(
                             right: 24,
-                            child: Text(
-                              "E",
-                              style: _textStyle(Colors.white),
-                            ),
+                            child: Text("E", style: _textStyle(Colors.white)),
                           ),
                         ],
                       ),
@@ -252,10 +243,6 @@ class _CompassScreenState extends State<CompassScreen> {
   }
 
   TextStyle _textStyle(Color color) {
-    return TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-      color: color,
-    );
+    return TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color);
   }
 }
