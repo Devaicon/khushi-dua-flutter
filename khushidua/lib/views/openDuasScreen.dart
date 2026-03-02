@@ -1476,14 +1476,26 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Widget _buildHeader(Color accentColor, bool isPlaying, String audioPath) {
+    final bool hasAudio = audioPath.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           _CircleAction(
             icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-            color: accentColor,
-            onTap: () => widget.onToggle(audioPath, widget.dua.id),
+            color: hasAudio ? accentColor : Colors.grey,
+            onTap: hasAudio
+                ? () => widget.onToggle(audioPath, widget.dua.id)
+                : () {
+                    Get.snackbar(
+                      'No Audio',
+                      'No audio available for this age group',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.black54,
+                      colorText: Colors.white,
+                      duration: const Duration(seconds: 2),
+                    );
+                  },
           ),
           const SizedBox(width: 8),
           _CircleAction(
