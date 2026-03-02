@@ -136,7 +136,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       Icons.arrow_back_ios_new_rounded,
                       color: rbluedark,
                     ),
-                    onPressed: () => Get.back(),
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Get.back();
+                      }
+                    },
                   ),
                 ),
                 SliverPadding(

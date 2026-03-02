@@ -1076,8 +1076,8 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                   ),
                 ),
-                // Close Button
-                TextButton(
+                // Enhanced Close Button
+                OutlinedButton(
                   onPressed: () async {
                     if (dialogIsRecording) {
                       await stopRecording();
@@ -1087,9 +1087,25 @@ class _DuaTileState extends State<DuaTile> {
                       Navigator.of(context).pop();
                     }
                   },
-                  child: const Text(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: const Color(0xff2A158F).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
                     "Close",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: const Color(0xff2A158F).withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],

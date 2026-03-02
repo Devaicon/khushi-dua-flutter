@@ -50,7 +50,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         top: 10,
                         left: 10,
                         child: IconButton(
-                          onPressed: () => Get.back(),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Get.back();
+                            }
+                          },
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: rblack,
@@ -111,10 +117,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (email) {
                         if (email == null || email.isEmpty) {
                           return "Email is required".tr;
-                        } else {
-                          emailController.text = email;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Email'.tr,
@@ -146,10 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (password) {
                         if (password == null || password.isEmpty) {
                           return "Password is required".tr;
-                        } else {
-                          passwordController.text = password;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Password'.tr,
@@ -221,7 +223,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           InkWell(
                             onTap: () {
-                              Get.back();
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else {
+                                Get.back();
+                              }
                             },
                             child: Text(
                               "Signup now! ".tr,

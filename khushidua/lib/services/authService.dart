@@ -39,6 +39,7 @@ class AuthService {
         isLoggedIn: true,
         isMember: false,
         readDuas: [],
+        avatar: _userController.avatar,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         fcmToken: await getFCMToken(),
@@ -53,13 +54,27 @@ class AuthService {
       Get.find<NotificationController>().getAllNotifications();
       Get.offAll(() => const Dashboard());
       CustomSnackbar.show("Success", "Signed up successfully".tr);
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Firebase Auth Register Error: ${e.code}");
+      String errorMessage = "Something went wrong. Try again later".tr;
+      if (e.code == 'email-already-in-use') {
+        errorMessage = "This email is already registered.".tr;
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "The email address is badly formatted.".tr;
+      } else if (e.code == 'weak-password') {
+        errorMessage = "The password provided is too weak.".tr;
+      } else if (e.code == 'network-request-failed') {
+        errorMessage =
+            "Network error. Please check your internet connection.".tr;
+      }
+      CustomSnackbar.show("Error", errorMessage, isSuccess: false);
+    } catch (e) {
+      debugPrint("Register Error: $e");
       CustomSnackbar.show(
         "Error",
-        "Something went wrong. Try again later",
+        "An unexpected error occurred".tr,
         isSuccess: false,
       );
-      // _authController.setLoading(false);
     }
   }
 
@@ -68,7 +83,7 @@ class AuthService {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     try {
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       prefs.setString("userId", userCredential.user!.uid);
@@ -82,16 +97,25 @@ class AuthService {
       Get.offAll(() => const Dashboard());
       CustomSnackbar.show("Success", "Login successful".tr);
     } on FirebaseAuthException catch (e) {
+      debugPrint("Firebase Auth Login Error: ${e.code}");
       String errorMessage = "Something went wrong. Try again later".tr;
-      if (e.code == 'user-not-found') {
-        errorMessage = "No user found for that email.".tr;
+      if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
+        errorMessage = "Invalid email or password.".tr;
       } else if (e.code == 'wrong-password') {
         errorMessage = "Wrong password provided.".tr;
       } else if (e.code == 'invalid-email') {
         errorMessage = "The email address is badly formatted.".tr;
+      } else if (e.code == 'network-request-failed') {
+        errorMessage =
+            "Network error. Please check your internet connection.".tr;
+      } else if (e.code == 'user-disabled') {
+        errorMessage = "This user has been disabled.".tr;
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = "Too many failed attempts. Please try again later.".tr;
       }
       CustomSnackbar.show("Error", errorMessage, isSuccess: false);
     } catch (e) {
+      debugPrint("Login Error: $e");
       CustomSnackbar.show(
         "Error",
         "An unexpected error occurred".tr,
