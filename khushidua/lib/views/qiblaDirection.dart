@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'dart:math' as math;
 import 'package:prayers_times/prayers_times.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
 
 class CompassScreen extends StatefulWidget {
   final double latitude, longitude;
