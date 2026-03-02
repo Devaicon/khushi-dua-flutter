@@ -1384,9 +1384,6 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   Widget build(BuildContext context) {
-    String audioPath = widget.dua.littleKidsAudio;
-    bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
-
     return GetBuilder<UserController>(
       builder: (userController) {
         return GetBuilder<ThemeController>(
@@ -1396,6 +1393,13 @@ class _DuaTileState extends State<DuaTile> {
                 : themeController.selectedAgeGroup == 1
                 ? rblue
                 : rgreen;
+
+            String audioPath = themeController.selectedAgeGroup == 0
+                ? widget.dua.littleKidsAudio
+                : themeController.selectedAgeGroup == 1
+                ? widget.dua.olderKidsAudio
+                : widget.dua.grownUpsAudio;
+            bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
 
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
