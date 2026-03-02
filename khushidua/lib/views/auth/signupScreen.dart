@@ -53,7 +53,13 @@ class _SignupScreenState extends State<SignupScreen> {
                         top: 10,
                         left: 10,
                         child: IconButton(
-                          onPressed: () => Get.back(),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Get.back();
+                            }
+                          },
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: rblack,
@@ -72,7 +78,33 @@ class _SignupScreenState extends State<SignupScreen> {
                                       delay: 1,
                                       child: InkWell(
                                         onTap: _showAvatarPopup,
-                                        child: const ProfileAvatar(size: 90),
+                                        borderRadius: BorderRadius.circular(50),
+                                        child: Stack(
+                                          alignment: Alignment.bottomRight,
+                                          children: [
+                                            const ProfileAvatar(size: 90),
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.15),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Icon(
+                                                Icons.camera_alt_rounded,
+                                                size: 14,
+                                                color: rbluedark,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     FadeInAnimationBTT(
@@ -114,10 +146,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       validator: (name) {
                         if (name == null || name.isEmpty) {
                           return "Name is required".tr;
-                        } else {
-                          nameController.text = name;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Name'.tr,
@@ -148,10 +178,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       validator: (email) {
                         if (email == null || email.isEmpty) {
                           return "Email is required".tr;
-                        } else {
-                          emailController.text = email;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Email'.tr,
@@ -183,10 +211,8 @@ class _SignupScreenState extends State<SignupScreen> {
                       validator: (password) {
                         if (password == null || password.isEmpty) {
                           return "Password is required".tr;
-                        } else {
-                          passwordController.text = password;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Password'.tr,
@@ -327,14 +353,39 @@ class _SignupScreenState extends State<SignupScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Select Your Avatar"),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _avatarOption(context, "assets/images/male.png"),
-              _avatarOption(context, "assets/images/female.png"),
-            ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
           ),
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              "Select Your Avatar".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _avatarOption(context, "assets/images/male.png"),
+                _avatarOption(context, "assets/images/female.png"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel".tr,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -345,11 +396,31 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _avatarOption(BuildContext context, String imagePath) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context, imagePath); // Return selected image path
-      },
-      child: Image.asset(imagePath, width: 80, height: 80),
+    return InkWell(
+      onTap: () => Navigator.pop(context, imagePath),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(imagePath, width: 80, height: 80),
+            const SizedBox(height: 8),
+            Text(
+              imagePath.contains("male") ? "Boy".tr : "Girl".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

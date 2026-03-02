@@ -97,8 +97,12 @@ class _CompassScreenState extends State<CompassScreen> {
     double angle = qiblaDirection - deviceHeading!; // difference in degrees
 
     // Normalize to -180..180 so we always take the shortest path
-    while (angle > 180) angle -= 360;
-    while (angle < -180) angle += 360;
+    while (angle > 180) {
+      angle -= 360;
+    }
+    while (angle < -180) {
+      angle += 360;
+    }
 
     return angle;
   }

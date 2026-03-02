@@ -151,35 +151,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 40),
                         FadeInAnimationTTB(
                           delay: 1,
-                          child: Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              InkWell(
-                                onTap: _showAvatarPopup,
-                                child: const ProfileAvatar(
+                          child: InkWell(
+                            onTap: _showAvatarPopup,
+                            borderRadius: BorderRadius.circular(50),
+                            child: Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                const ProfileAvatar(
                                   size: 100,
                                   showBorder: true,
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 4,
-                                    ),
-                                  ],
+                                Container(
+                                  margin: const EdgeInsets.only(
+                                    right: 2,
+                                    bottom: 2,
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 16,
+                                    color: rbluedark,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 14,
-                                  color: rbluedark,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -396,16 +402,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
           ),
-          title: Text("Select Your Avatar".tr),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _avatarOption(context, "assets/images/male.png"),
-              _avatarOption(context, "assets/images/female.png"),
-            ],
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              "Select Your Avatar".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
           ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _avatarOption(context, "assets/images/male.png"),
+                _avatarOption(context, "assets/images/female.png"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel".tr,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -416,11 +444,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _avatarOption(BuildContext context, String imagePath) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context, imagePath); // Return selected image path
-      },
-      child: Image.asset(imagePath, width: 80, height: 80),
+    return InkWell(
+      onTap: () => Navigator.pop(context, imagePath),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(imagePath, width: 90, height: 90),
+            const SizedBox(height: 8),
+            Text(
+              imagePath.contains("male") ? "Boy".tr : "Girl".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

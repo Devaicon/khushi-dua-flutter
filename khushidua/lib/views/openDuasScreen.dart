@@ -678,12 +678,14 @@ class _DuaTileState extends State<DuaTile> {
                 if (dialogIsRecording) {
                   if (dialogRecordingDuration.inSeconds >= 29) {
                     await stopRecording();
-                    Get.snackbar(
-                      "Recording Limit",
-                      "Recording cannot be more than 29 seconds",
-                      backgroundColor: Colors.red,
-                      colorText: Colors.white,
-                    );
+                    if (Get.context != null) {
+                      Get.snackbar(
+                        "Recording Limit",
+                        "Recording cannot be more than 29 seconds",
+                        backgroundColor: Colors.red,
+                        colorText: Colors.white,
+                      );
+                    }
                     return;
                   }
                   setDialogState(() {
@@ -1076,8 +1078,8 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                   ),
                 ),
-                // Close Button
-                TextButton(
+                // Enhanced Close Button
+                OutlinedButton(
                   onPressed: () async {
                     if (dialogIsRecording) {
                       await stopRecording();
@@ -1087,9 +1089,25 @@ class _DuaTileState extends State<DuaTile> {
                       Navigator.of(context).pop();
                     }
                   },
-                  child: const Text(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: const Color(0xff2A158F).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
                     "Close",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: const Color(0xff2A158F).withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1254,6 +1272,8 @@ class _DuaTileState extends State<DuaTile> {
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          fontFamily:
+                              'arabic', // Use the font family from pubspec
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -1412,9 +1432,6 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   Widget build(BuildContext context) {
-    String audioPath = widget.dua.littleKidsAudio;
-    bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
-
     return GetBuilder<UserController>(
       builder: (userController) {
         return GetBuilder<ThemeController>(
@@ -1424,6 +1441,13 @@ class _DuaTileState extends State<DuaTile> {
                 : themeController.selectedAgeGroup == 1
                 ? rblue
                 : rgreen;
+
+            String audioPath = themeController.selectedAgeGroup == 0
+                ? widget.dua.littleKidsAudio
+                : themeController.selectedAgeGroup == 1
+                ? widget.dua.olderKidsAudio
+                : widget.dua.grownUpsAudio;
+            bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
 
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

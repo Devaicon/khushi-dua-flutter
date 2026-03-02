@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/services/authService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/userData.dart' as ud;
@@ -52,8 +54,17 @@ class UserController extends GetxController {
 
   setAvatar(String value) async {
     _avatar = value;
+    ud.avatar = value;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString("userAvatar", value);
+
+    if (_isLoggedIn && _userModel != null) {
+      try {
+        await userRef.doc(_userModel!.id).update({"avatar": value});
+      } catch (e) {
+        debugPrint("Error updating avatar in Firestore: $e");
+      }
+    }
     update();
   }
 
@@ -66,6 +77,8 @@ class UserController extends GetxController {
     setUserName(user.name);
     setPoints(user.points);
     setLoggedIn(user.isLoggedIn);
+    _avatar = user.avatar;
+    ud.avatar = user.avatar;
     update();
   }
 }
