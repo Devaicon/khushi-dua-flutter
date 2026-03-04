@@ -117,6 +117,8 @@ class _EditDuaState extends State<EditDua> {
     littleKidsAudio = widget.duaModel.littleKidsAudio;
     olderKidsAudio = widget.duaModel.olderKidsAudio;
     grownUpsKidsAudio = widget.duaModel.grownUpsAudio;
+    englishTranslationAudio = widget.duaModel.englishTranslation ?? "";
+    urduTranslationAudio = widget.duaModel.urduTranslation ?? "";
 
     // Initialize flags
     isLittleKids = widget.duaModel.littleKids;
@@ -165,6 +167,85 @@ class _EditDuaState extends State<EditDua> {
         }
       }
     });
+  }
+
+  Widget buildAudioSection({
+    required String title,
+    required String? currentUrl,
+    required html.File? pickedFile,
+    required String type,
+    required VoidCallback onDelete,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(color: rHint),
+            ),
+            if ((currentUrl != null && currentUrl.isNotEmpty) ||
+                pickedFile != null)
+              Row(
+                children: [
+                  if (currentUrl != null && currentUrl.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.play_circle_fill, color: rGreen),
+                      onPressed: () {
+                        html.window.open(currentUrl, "_blank");
+                      },
+                      tooltip: "Listen to current audio",
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: rRed),
+                    onPressed: onDelete,
+                    tooltip: "Remove audio",
+                  ),
+                ],
+              ),
+          ],
+        ),
+        InkWell(
+          onTap: () {
+            pickMp3File(type);
+          },
+          child: DottedBorder(
+            color: rHint,
+            radius: const Radius.circular(8),
+            borderType: BorderType.RRect,
+            dashPattern: const [8, 4],
+            child: Container(
+              height: 100,
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  pickedFile == null
+                      ? SvgPicture.asset("assets/svgs/upload.svg")
+                      : const Icon(
+                          Icons.file_copy_outlined,
+                          color: rHint,
+                        ),
+                  Text(
+                    pickedFile == null
+                        ? (currentUrl != null && currentUrl.isNotEmpty
+                            ? "Audio linked (Click to change)"
+                            : "Upload Audio Sound")
+                        : pickedFile.name,
+                    style: const TextStyle(
+                        color: rHint,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -953,182 +1034,41 @@ class _EditDuaState extends State<EditDua> {
                                                       list),
                                             ),
 
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  "Little kid audio",
-                                                  style:
-                                                      TextStyle(color: rHint),
-                                                ),
-                                                InkWell(
-                                                  onTap: () {
-                                                    pickMp3File("littleKid");
-                                                  },
-                                                  child: DottedBorder(
-                                                      color: rHint,
-                                                      radius:
-                                                          const Radius.circular(
-                                                              8),
-                                                      borderType:
-                                                          BorderType.RRect,
-                                                      dashPattern: const [8, 4],
-                                                      child: Container(
-                                                        // width: 60,
-                                                        height: 100,
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            littleKidmp3File ==
-                                                                    null
-                                                                ? SvgPicture.asset(
-                                                                    "assets/svgs/upload.svg")
-                                                                : const Icon(
-                                                                    Icons
-                                                                        .file_copy_outlined,
-                                                                    color:
-                                                                        rHint,
-                                                                  ),
-                                                            Text(
-                                                              littleKidmp3File ==
-                                                                      null
-                                                                  ? "Upload Audio Sound"
-                                                                  : littleKidmp3File!
-                                                                      .name,
-                                                              style: const TextStyle(
-                                                                  color: rHint,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 14),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                ),
-                                              ],
+                                            buildAudioSection(
+                                              title: "Little kid audio",
+                                              currentUrl: littleKidsAudio,
+                                              pickedFile: littleKidmp3File,
+                                              type: "littleKid",
+                                              onDelete: () {
+                                                setState(() {
+                                                  littleKidsAudio = "";
+                                                  littleKidmp3File = null;
+                                                });
+                                              },
                                             ).marginOnly(top: 20),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  "Older kid audio",
-                                                  style:
-                                                      TextStyle(color: rHint),
-                                                ),
-                                                InkWell(
-                                                  onTap: () {
-                                                    pickMp3File("olderKid");
-                                                  },
-                                                  child: DottedBorder(
-                                                      color: rHint,
-                                                      radius:
-                                                          const Radius.circular(
-                                                              8),
-                                                      borderType:
-                                                          BorderType.RRect,
-                                                      dashPattern: const [8, 4],
-                                                      child: Container(
-                                                        // width: 60,
-                                                        height: 100,
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            olderKidmp3File ==
-                                                                    null
-                                                                ? SvgPicture.asset(
-                                                                    "assets/svgs/upload.svg")
-                                                                : const Icon(
-                                                                    Icons
-                                                                        .file_copy_outlined,
-                                                                    color:
-                                                                        rHint,
-                                                                  ),
-                                                            Text(
-                                                              olderKidmp3File ==
-                                                                      null
-                                                                  ? "Upload Audio Sound"
-                                                                  : olderKidmp3File!
-                                                                      .name,
-                                                              style: const TextStyle(
-                                                                  color: rHint,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 14),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                ),
-                                              ],
+                                            buildAudioSection(
+                                              title: "Older kid audio",
+                                              currentUrl: olderKidsAudio,
+                                              pickedFile: olderKidmp3File,
+                                              type: "olderKid",
+                                              onDelete: () {
+                                                setState(() {
+                                                  olderKidsAudio = "";
+                                                  olderKidmp3File = null;
+                                                });
+                                              },
                                             ).marginOnly(top: 20),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  "Grown up audio",
-                                                  style:
-                                                      TextStyle(color: rHint),
-                                                ),
-                                                InkWell(
-                                                  onTap: () {
-                                                    pickMp3File("grownUp");
-                                                  },
-                                                  child: DottedBorder(
-                                                      color: rHint,
-                                                      radius:
-                                                          const Radius.circular(
-                                                              8),
-                                                      borderType:
-                                                          BorderType.RRect,
-                                                      dashPattern: const [8, 4],
-                                                      child: Container(
-                                                        // width: 60,
-                                                        height: 100,
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            grownUpmp3File ==
-                                                                    null
-                                                                ? SvgPicture.asset(
-                                                                    "assets/svgs/upload.svg")
-                                                                : const Icon(
-                                                                    Icons
-                                                                        .file_copy_outlined,
-                                                                    color:
-                                                                        rHint,
-                                                                  ),
-                                                            Text(
-                                                              grownUpmp3File ==
-                                                                      null
-                                                                  ? "Upload Audio Sound"
-                                                                  : grownUpmp3File!
-                                                                      .name,
-                                                              style: const TextStyle(
-                                                                  color: rHint,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 14),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      )),
-                                                ),
-                                              ],
+                                            buildAudioSection(
+                                              title: "Grown up audio",
+                                              currentUrl: grownUpsKidsAudio,
+                                              pickedFile: grownUpmp3File,
+                                              type: "grownUp",
+                                              onDelete: () {
+                                                setState(() {
+                                                  grownUpsKidsAudio = "";
+                                                  grownUpmp3File = null;
+                                                });
+                                              },
                                             ).marginOnly(top: 20),
                                             Row(
                                               mainAxisAlignment:
@@ -1211,112 +1151,29 @@ class _EditDuaState extends State<EditDua> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "English Translation",
-                                              style: TextStyle(color: rHint),
-                                            ),
-                                            InkWell(
-                                              onTap: () {
-                                                pickMp3File(
-                                                    "englishTranslation");
-                                              },
-                                              child: DottedBorder(
-                                                  color: rHint,
-                                                  radius:
-                                                      const Radius.circular(8),
-                                                  borderType: BorderType.RRect,
-                                                  dashPattern: const [8, 4],
-                                                  child: Container(
-                                                    // width: 60,
-                                                    height: 100,
-                                                    alignment: Alignment.center,
-                                                    child: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        englishmp3File == null
-                                                            ? SvgPicture.asset(
-                                                                "assets/svgs/upload.svg")
-                                                            : const Icon(
-                                                                Icons
-                                                                    .file_copy_outlined,
-                                                                color: rHint,
-                                                              ),
-                                                        Text(
-                                                          englishmp3File == null
-                                                              ? "Upload Audio Sound"
-                                                              : englishmp3File!
-                                                                  .name,
-                                                          style:
-                                                              const TextStyle(
-                                                                  color: rHint,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 14),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )),
-                                            ),
-                                          ],
+                                        buildAudioSection(
+                                          title: "English Translation",
+                                          currentUrl: englishTranslationAudio,
+                                          pickedFile: englishmp3File,
+                                          type: "englishTranslation",
+                                          onDelete: () {
+                                            setState(() {
+                                              englishTranslationAudio = "";
+                                              englishmp3File = null;
+                                            });
+                                          },
                                         ).marginOnly(top: 20),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Urdu Translation",
-                                              style: TextStyle(color: rHint),
-                                            ),
-                                            InkWell(
-                                              onTap: () {
-                                                pickMp3File("urduTranslation");
-                                              },
-                                              child: DottedBorder(
-                                                  color: rHint,
-                                                  radius:
-                                                      const Radius.circular(8),
-                                                  borderType: BorderType.RRect,
-                                                  dashPattern: const [8, 4],
-                                                  child: Container(
-                                                    // width: 60,
-                                                    height: 100,
-                                                    alignment: Alignment.center,
-                                                    child: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        urdump3File == null
-                                                            ? SvgPicture.asset(
-                                                                "assets/svgs/upload.svg")
-                                                            : const Icon(
-                                                                Icons
-                                                                    .file_copy_outlined,
-                                                                color: rHint,
-                                                              ),
-                                                        Text(
-                                                          urdump3File == null
-                                                              ? "Upload Audio Sound"
-                                                              : urdump3File!
-                                                                  .name,
-                                                          style:
-                                                              const TextStyle(
-                                                                  color: rHint,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 14),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  )),
-                                            ),
-                                          ],
+                                        buildAudioSection(
+                                          title: "Urdu Translation",
+                                          currentUrl: urduTranslationAudio,
+                                          pickedFile: urdump3File,
+                                          type: "urduTranslation",
+                                          onDelete: () {
+                                            setState(() {
+                                              urduTranslationAudio = "";
+                                              urdump3File = null;
+                                            });
+                                          },
                                         ).marginOnly(top: 20),
                                         const Text(
                                           "Dua (Japanese)",
@@ -2026,7 +1883,8 @@ class _EditDuaState extends State<EditDua> {
                                               indonesian:
                                                   indonesianTextEditingController
                                                       .text,
-                                              isEnabled: true,
+                                              isEnabled:
+                                                  widget.duaModel.isEnabled,
                                               japanese:
                                                   japaneseTextEditingController
                                                       .text,
@@ -2044,8 +1902,7 @@ class _EditDuaState extends State<EditDua> {
                                               punjabi:
                                                   punjabiTextEditingController
                                                       .text,
-                                              russian:
-                                                  russianTextEditingController.text,
+                                              russian: russianTextEditingController.text,
                                               sindhi: sindhiTextEditingController.text,
                                               spanish: spanishTextEditingController.text,
                                               tamil: tamilTextEditingController.text,
@@ -2053,7 +1910,7 @@ class _EditDuaState extends State<EditDua> {
                                               turkish: turkishTextEditingController.text,
                                               updatedAt: DateTime.now(),
                                               urdu: urduTextEditingController.text,
-                                              order: duaController.allDuas.length + 1,
+                                              order: widget.duaModel.order,
                                               grownUps: isGrownUps,
                                               littleKids: isLittleKids,
                                               olderKids: isOlderKids,
@@ -2061,8 +1918,8 @@ class _EditDuaState extends State<EditDua> {
                                               grownUpsAudio: grownUpsKidsAudio,
                                               littleKidsAudio: littleKidsAudio,
                                               olderKidsAudio: olderKidsAudio,
-                                              englishTranslation: widget.duaModel.englishTranslation,
-                                              urduTranslation: widget.duaModel.urduTranslation,
+                                              englishTranslation: englishTranslationAudio,
+                                              urduTranslation: urduTranslationAudio,
                                               benefits: benefitsTextAreaController.text.trim().isEmpty ? null : benefitsTextAreaController.text.trim(),
                                               description: descriptionTextEditingController.text.isEmpty ? null : descriptionTextEditingController.text);
 
@@ -2087,7 +1944,7 @@ class _EditDuaState extends State<EditDua> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Text(
-                                        "Add",
+                                        "Update",
                                         style: TextStyle(color: rWhite),
                                       ).marginSymmetric(vertical: 12),
                                     ).marginOnly(top: 12),
