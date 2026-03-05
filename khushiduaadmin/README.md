@@ -1,6 +1,15 @@
 # khushiduaadmin
 
-A new Flutter project.
+A Flutter web application for administering the Khushi Dua platform.
+
+## Hosting
+
+This project is hosted on **Firebase Hosting** under the Firebase project `khushidua`.
+
+- **Primary URL:** https://khushidua.web.app
+- **Alternate URL:** https://khushidua.firebaseapp.com
+
+The hosting configuration is defined in `firebase.json` and the Firebase project is set in `.firebaserc`.
 
 ## Getting Started
 
