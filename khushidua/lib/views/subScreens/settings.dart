@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
@@ -25,11 +26,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   List<SettingsModel> settingsList = [
     SettingsModel(
-      title: "Account",
-      subTitle: "Profile settings",
-      icon: Icons.person_2_outlined,
-    ),
-    SettingsModel(
       title: "Downloads",
       subTitle: "Audio Downloads",
       icon: Icons.download,
@@ -44,66 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subTitle: "Share with friends",
       icon: Icons.share,
     ),
-    SettingsModel(
-      title: "Premium",
-      subTitle: "Unlock all features",
-      icon: Icons.workspace_premium,
-    ),
   ];
-
-  void accountSettings() {
-    if (Get.find<UserController>().isLoggedIn) {
-      // Show account settings dialog
-      Get.dialog(
-        AlertDialog(
-          title: Text('Account Settings', style: TextStyle(color: rbluedark)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Name: ${Get.find<UserController>().userName}'),
-              SizedBox(height: 8),
-              Text(
-                'Email: ${Get.find<UserController>().userModel?.email ?? "N/A"}',
-              ),
-              SizedBox(height: 8),
-              Text('Points: ${Get.find<UserController>().points}'),
-              SizedBox(height: 8),
-              Text(
-                'Member: ${(Get.find<UserController>().userModel?.isMember ?? false) ? "Yes" : "No"}',
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Get.back(), child: Text('Close')),
-            TextButton(
-              onPressed: () async {
-                Get.back();
-                // Logout functionality
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isLoggedIn', false);
-                await prefs.remove('userId');
-                Get.find<UserController>().setLoggedIn(false);
-                CustomSnackbar.show(
-                  "Logged Out",
-                  "You have been logged out successfully",
-                );
-              },
-              child: Text('Logout', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      CustomSnackbar.show(
-        "Not logged in",
-        "Please login to your account.",
-        isSuccess: false,
-      );
-      // Navigate to signup
-      Get.to(() => const SignupScreen(), transition: Transition.fade);
-    }
-  }
 
   void downloadSettings() {
     Get.to(const AudioDownloadSettings(), transition: Transition.fade);
@@ -113,12 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Get.to(const LanguageSettings(), transition: Transition.fade);
   }
 
-  void premiumSettings() {
-    // Get.to(PremiumSettings(), transition: Transition.fade);
-  }
-
   void shareApp() async {
     try {
+      debugPrint("📤 Settings: Share App button pressed");
+
       // For iOS, use a placeholder until app is published on App Store
       String appUrl;
       String shareMessage;
@@ -145,14 +80,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             '$appUrl';
       }
 
-      debugPrint("Attempting to share app...");
+      debugPrint("📤 Attempting to share app...");
+
+      // Get screen position for iPad compatibility
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100); // Fallback position
+
+      debugPrint("📍 Share position: $sharePositionOrigin");
 
       final result = await Share.share(
         shareMessage,
         subject: 'Khushi Dua - Islamic Learning App',
+        sharePositionOrigin: sharePositionOrigin, // Required for iPad
       );
 
-      debugPrint('Share result: ${result.status}');
+      debugPrint('✅ Share result: ${result.status}');
 
       if (result.status == ShareResultStatus.success) {
         CustomSnackbar.show(
@@ -162,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } catch (e) {
-      debugPrint('Share error: $e');
+      debugPrint('❌ Share error: $e');
       CustomSnackbar.show(
         'Error',
         'Failed to share app. Please try again.',
@@ -174,11 +118,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     List<VoidCallback> functionsList = [
-      accountSettings,
       downloadSettings,
       languageSettings,
       shareApp,
-      premiumSettings,
     ];
 
     return Scaffold(
@@ -209,35 +151,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 40),
                         FadeInAnimationTTB(
                           delay: 1,
-                          child: Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              InkWell(
-                                onTap: _showAvatarPopup,
-                                child: const ProfileAvatar(
+                          child: InkWell(
+                            onTap: _showAvatarPopup,
+                            borderRadius: BorderRadius.circular(50),
+                            child: Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                const ProfileAvatar(
                                   size: 100,
                                   showBorder: true,
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 4,
-                                    ),
-                                  ],
+                                Container(
+                                  margin: const EdgeInsets.only(
+                                    right: 2,
+                                    bottom: 2,
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 16,
+                                    color: rbluedark,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 14,
-                                  color: rbluedark,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -254,42 +202,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   letterSpacing: 0.5,
                                 ),
                               ),
-                              if (userController.isLoggedIn &&
-                                  (userController.userModel?.isMember ?? false))
-                                Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.amber,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.stars_rounded,
-                                        color: Colors.amber,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "PREMIUM MEMBER".tr,
-                                        style: const TextStyle(
-                                          color: rbluedark,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -332,14 +244,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _buildSectionTitle("PREFERENCES".tr),
                       SettingTile(settingsList[0], functionsList[0]),
                       SettingTile(settingsList[1], functionsList[1]),
-                      SettingTile(settingsList[2], functionsList[2]),
 
                       const SizedBox(height: 20),
                       _buildSectionTitle("SUPPORT".tr),
-                      SettingTile(settingsList[3], functionsList[3]),
-                      if (!userController.isLoggedIn ||
-                          !(userController.userModel?.isMember ?? false))
-                        SettingTile(settingsList[4], functionsList[4]),
+                      SettingTile(settingsList[2], functionsList[2]),
 
                       const SizedBox(height: 30),
 
@@ -411,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          "Version 1.0.2".tr,
+                          "Version 1.0.6".tr,
                           style: TextStyle(
                             color: Colors.grey.withOpacity(0.5),
                             fontSize: 12,
@@ -494,16 +402,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
           ),
-          title: Text("Select Your Avatar".tr),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _avatarOption(context, "assets/images/male.png"),
-              _avatarOption(context, "assets/images/female.png"),
-            ],
+          backgroundColor: Colors.white,
+          title: Center(
+            child: Text(
+              "Select Your Avatar".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
           ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _avatarOption(context, "assets/images/male.png"),
+                _avatarOption(context, "assets/images/female.png"),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel".tr,
+                style: const TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -514,11 +444,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _avatarOption(BuildContext context, String imagePath) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context, imagePath); // Return selected image path
-      },
-      child: Image.asset(imagePath, width: 80, height: 80),
+    return InkWell(
+      onTap: () => Navigator.pop(context, imagePath),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(imagePath, width: 90, height: 90),
+            const SizedBox(height: 8),
+            Text(
+              imagePath.contains("male") ? "Boy".tr : "Girl".tr,
+              style: const TextStyle(
+                color: rbluedark,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

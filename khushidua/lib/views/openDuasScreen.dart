@@ -341,6 +341,10 @@ class _DuaTileState extends State<DuaTile> {
     super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
+
+    debugPrint(
+      "OpenDuasScreen: Share feature initialized with random image: $randomImage",
+    );
   }
 
   @override
@@ -1074,8 +1078,8 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                   ),
                 ),
-                // Close Button
-                TextButton(
+                // Enhanced Close Button
+                OutlinedButton(
                   onPressed: () async {
                     if (dialogIsRecording) {
                       await stopRecording();
@@ -1085,9 +1089,25 @@ class _DuaTileState extends State<DuaTile> {
                       Navigator.of(context).pop();
                     }
                   },
-                  child: const Text(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: const Color(0xff2A158F).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
                     "Close",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: const Color(0xff2A158F).withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1100,34 +1120,48 @@ class _DuaTileState extends State<DuaTile> {
 
   Future<void> _captureAndShare() async {
     try {
+      debugPrint("📸 Starting capture and share process...");
+
       // Ensure all fonts are loaded before capturing
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       // Check if the context is still valid
       if (_popupKey.currentContext == null) {
-        debugPrint("Error: Context is null, cannot capture image");
+        debugPrint("❌ Error: Context is null, cannot capture image");
+        if (mounted && Get.context != null) {
+          Get.snackbar(
+            'Error',
+            'Failed to prepare image. Please try again.',
+            backgroundColor: Colors.red.withOpacity(0.7),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
         return;
       }
 
+      debugPrint("✅ Context is valid, finding boundary...");
       RenderRepaintBoundary? boundary =
           _popupKey.currentContext!.findRenderObject()
               as RenderRepaintBoundary?;
 
       if (boundary == null) {
-        debugPrint("Error: Boundary is null");
+        debugPrint("❌ Error: Boundary is null");
         return;
       }
 
+      debugPrint("✅ Boundary found, capturing image...");
       // Use higher pixel ratio for better quality on iOS
-      var image = await boundary.toImage(pixelRatio: 4.0);
+      var image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
 
       if (byteData == null) {
-        debugPrint("Error: Failed to convert image to bytes");
+        debugPrint("❌ Error: Failed to convert image to bytes");
         return;
       }
 
       Uint8List pngBytes = byteData.buffer.asUint8List();
+      debugPrint("✅ Image captured successfully (${pngBytes.length} bytes)");
 
       // Save image to temporary file with timestamp
       final tempDir = await getTemporaryDirectory();
@@ -1137,33 +1171,47 @@ class _DuaTileState extends State<DuaTile> {
       ).create();
       await file.writeAsBytes(pngBytes);
 
-      debugPrint("Image saved to: ${file.path}");
+      debugPrint("✅ Image saved to: ${file.path}");
 
       // Close the dialog first, then share
       if (mounted) {
         Navigator.of(context).pop();
+        debugPrint("✅ Dialog closed");
       }
 
-      // Small delay to ensure dialog is closed
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Small delay to ensure dialog is closed and get screen size
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      debugPrint("📤 Opening share sheet...");
+
+      // Get screen size for iPad share sheet positioning
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100); // Fallback position
+
+      debugPrint("📍 Share position: $sharePositionOrigin");
 
       // Share using share_plus with proper iOS handling
       final result = await Share.shareXFiles(
         [XFile(file.path)],
         text: "Check out this beautiful Dua from Khushi Dua App",
         subject: "Khushi Dua",
+        sharePositionOrigin: sharePositionOrigin, // Required for iPad
       );
 
-      debugPrint("Share result: ${result.status}");
+      debugPrint("✅ Share result: ${result.status}");
 
       // Clean up the temporary file after sharing
       try {
         await file.delete();
+        debugPrint("✅ Temporary file cleaned up");
       } catch (e) {
-        debugPrint("Error deleting temp file: $e");
+        debugPrint("⚠️ Error deleting temp file: $e");
       }
-    } catch (e) {
-      debugPrint("Error sharing: $e");
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error sharing: $e");
+      debugPrint("Stack trace: $stackTrace");
       if (mounted && Get.context != null) {
         Get.snackbar(
           'Error',

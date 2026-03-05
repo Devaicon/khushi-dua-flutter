@@ -27,7 +27,15 @@ class _ImageScreenState extends State<ImageScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: rbluedark),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            debugPrint("ImageScreen: Back button pressed");
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              debugPrint("ImageScreen: Cannot pop, using Get.back()");
+              Get.back();
+            }
+          },
         ),
         title: Text(
           widget.subCategoryModel.getName(

@@ -117,6 +117,7 @@ class SubCategoryModel {
   factory SubCategoryModel.fromMap(Map<String, dynamic> map) {
     return SubCategoryModel(
       id: map["id"] ?? '',
+      image: map["image"] ?? '',
       createdAt: map["createdAt"] != null
           ? map["createdAt"].toDate()
           : DateTime.now(),
@@ -128,21 +129,21 @@ class SubCategoryModel {
       english: map["english"] ?? '',
       french: map["french"] ?? '',
       german: map["german"] ?? '',
-      gujrati: map["gujrati"] ?? '',
+      gujrati: map["gujrati"] ?? map["gujarati"] ?? '',
       hindi: map["hindi"] ?? '',
       indonesian: map["indonesian"] ?? '',
       isEnabled: map["isEnabled"] ?? true,
       japanese: map["japanese"] ?? '',
       malay: map["malay"] ?? '',
-      mandrain: map["mandrain"] ?? '',
+      mandrain: map["mandrain"] ?? map["mandarin"] ?? '',
       marathi: map["marathi"] ?? '',
-      portugese: map["portugese"] ?? '',
+      portugese: map["portugese"] ?? map["portuguese"] ?? '',
       punjabi: map["punjabi"] ?? '',
       russian: map["russian"] ?? '',
       sindhi: map["sindhi"] ?? '',
       spanish: map["spanish"] ?? '',
       tamil: map["tamil"] ?? '',
-      telgu: map["telgu"] ?? '',
+      telgu: map["telgu"] ?? map["telugu"] ?? '',
       turkish: map["turkish"] ?? '',
       urdu: map["urdu"] ?? '',
       order: map["order"] ?? 0,
@@ -150,7 +151,6 @@ class SubCategoryModel {
       olderKids: map["olderKids"] ?? true,
       grownUps: map["grownUps"] ?? true,
       categoryId: map["categoryId"] ?? '',
-      image: map["image"],
     );
   }
 
