@@ -33,6 +33,10 @@ class CategoryController extends GetxController {
     CategoryService().getAllSubCategories();
   }
 
+  final List<CategoryModel> _filteredCategories = [];
+
+  List<CategoryModel> get filteredCategories => _filteredCategories;
+
   addCategoryToList(CategoryModel categoryModel) {
     int existingIndex = _allCategories.indexWhere(
       (cat) => cat.id == categoryModel.id,
@@ -44,6 +48,76 @@ class CategoryController extends GetxController {
       _allCategories[existingIndex] = categoryModel;
     }
     _allCategories.sort((a, b) => a.order.compareTo(b.order));
+    _refreshFilteredCategories();
+  }
+
+  void _refreshFilteredCategories() {
+    final themeController = Get.find<ThemeController>();
+    final ageGroup = themeController.selectedAgeGroup;
+
+    _filteredCategories.clear();
+    _filteredCategories.addAll(
+      _allCategories.where((category) {
+        if (!category.isEnabled) return false;
+
+        // Basic age group filtering
+        bool isAllowed = false;
+        if (ageGroup == 0)
+          isAllowed = category.littleKids;
+        else if (ageGroup == 1)
+          isAllowed = category.olderKids;
+        else
+          isAllowed = category.grownUps;
+
+        if (!isAllowed) return false;
+
+        // Special exclusion for little kids
+        if (ageGroup == 0) {
+          final categoryName = category.english.toLowerCase();
+          if (categoryName.contains('family') &&
+              categoryName.contains('wedding')) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
+    );
+
+    update();
+  }
+
+  CategoryModel? _lastCategory;
+
+  getSubCategories(CategoryModel categoryModel) {
+    _lastCategory = categoryModel;
+    _refreshFilteredSubCategories();
+  }
+
+  void refreshAll() {
+    _refreshFilteredCategories();
+    _refreshFilteredSubCategories();
+  }
+
+  void _refreshFilteredSubCategories() {
+    if (_lastCategory == null) return;
+
+    final themeController = Get.find<ThemeController>();
+    final ageGroup = themeController.selectedAgeGroup;
+
+    _filteredSubCategories = _allSubCategories.where((element) {
+      if (element.categoryId != _lastCategory!.id || !element.isEnabled) {
+        return false;
+      }
+
+      // Filter by age group availability
+      if (ageGroup == 0) return element.littleKids;
+      if (ageGroup == 1) return element.olderKids;
+      if (ageGroup == 2) return element.grownUps;
+      return true;
+    }).toList();
+
+    _filteredSubCategories.sort((a, b) => a.order.compareTo(b.order));
     update();
   }
 
@@ -58,29 +132,8 @@ class CategoryController extends GetxController {
       _allSubCategories[existingIndex] = subCategoryModel;
     }
     _allSubCategories.sort((a, b) => a.order.compareTo(b.order));
-    update();
-  }
 
-  getSubCategories(CategoryModel categoryModel) {
-    ThemeController _themeController = Get.find<ThemeController>();
-    // print(categoryModel.id);
-    // print(_allSubCategories.length);
-    _filteredSubCategories.clear();
-    _filteredSubCategories = _allSubCategories
-        .where(
-          (element) =>
-              element.categoryId == categoryModel.id &&
-              element.isEnabled == true,
-        )
-        .toList();
-
-    // for (var item in _allSubCategories) {
-    //   print(item.categoryId);
-    //   if (item.categoryId == categoryModel.id) {
-    //     _filteredSubCategories.add(item);
-    //   }
-    // }
-    // print(_filteredSubCategories.length);
-    update();
+    // Auto-refresh filtered list if the new/updated subcategory belongs to it
+    _refreshFilteredSubCategories();
   }
 }

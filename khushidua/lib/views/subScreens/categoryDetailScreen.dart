@@ -45,24 +45,34 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             final total = subCategories.length;
             final half = (total / 2).ceil();
 
-            List<bool> subCategoryCompleted = List.generate(total, (index) {
-              final subId = subCategories[index].id;
-              final duas = allDuas.where(
-                (d) => d.subCategoryIds.contains(subId),
-              );
-              return duas.isNotEmpty &&
-                  duas.every((d) => readDuas.contains(d.id));
-            });
+            final themeController = Get.find<ThemeController>();
+            final ageGroup = themeController.selectedAgeGroup;
 
-            int completedInFirstHalf = subCategoryCompleted
-                .sublist(0, half)
-                .where((e) => e)
-                .length;
+            // Pre-calculate completed status for better performance
+            Map<String, bool> subStatusMap = {};
+            for (var sub in subCategories) {
+              final subDuas = allDuas.where(
+                (d) => d.subCategoryIds.contains(sub.id),
+              );
+              if (subDuas.isEmpty) {
+                subStatusMap[sub.id] = false;
+              } else {
+                subStatusMap[sub.id] = subDuas.every(
+                  (d) => readDuas.contains(d.id),
+                );
+              }
+            }
 
             bool isEnabled(int index) {
-              if (userModel == null) return index < half;
-              if (userModel.isMember == true) return true;
-              return index < half || completedInFirstHalf == half;
+              if (userModel == null || userModel.isMember == true) return true;
+              if (index < half) return true;
+
+              // Check if first half is complete
+              int completedCount = 0;
+              for (int i = 0; i < half; i++) {
+                if (subStatusMap[subCategories[i].id] == true) completedCount++;
+              }
+              return completedCount >= half;
             }
 
             return CustomScrollView(

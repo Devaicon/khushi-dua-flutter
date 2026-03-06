@@ -4,10 +4,6 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-// import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -18,6 +14,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
+import 'package:khushidua/controllers/audioController.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
@@ -28,7 +25,6 @@ import '../constants/colors.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
-import '../services/audioDownloadService.dart';
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
@@ -40,8 +36,6 @@ class OpenDuasScreen extends StatefulWidget {
 }
 
 class _OpenDuasScreenState extends State<OpenDuasScreen> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  String? _currentlyPlayingPath;
   String? _expandedBenefitsDuaId; // Track which dua has benefits expanded
 
   @override
@@ -54,64 +48,11 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     super.dispose();
   }
 
-  Future<void> markDuaAsDone(String duaId) async {
-    try {
-      if (!Get.find<UserController>().userModel!.readDuas.contains(duaId)) {
-        userRef.doc(Get.find<UserController>().userModel!.id).update({
-          "readDuas": FieldValue.arrayUnion([duaId]),
-          "points": Get.find<UserController>().userModel!.points + 50,
-        });
-      }
-    } catch (e) {
-      debugPrint("Error updating Dua status: $e");
-    }
-  }
-
-  void _toggleAudio(String path, String duaId) async {
-    if (_currentlyPlayingPath == path) {
-      await _audioPlayer.stop();
-      setState(() {
-        _currentlyPlayingPath = null;
-      });
-    } else {
-      await _audioPlayer.stop();
-
-      // Check if local file exists
-      final downloadService = Get.find<AudioDownloadService>();
-      final themeController = Get.find<ThemeController>();
-      final localPath = await downloadService.getLocalPath(
-        duaId,
-        themeController.selectedAgeGroup,
-      );
-
-      if (localPath != null) {
-        debugPrint("Playing local audio: $localPath");
-        await _audioPlayer.play(DeviceFileSource(localPath));
-      } else {
-        debugPrint("Playing remote audio: $path");
-        await _audioPlayer.play(UrlSource(path));
-      }
-
-      setState(() {
-        _currentlyPlayingPath = path;
-      });
-
-      _audioPlayer.onPlayerComplete.listen((event) {
-        setState(() {
-          _currentlyPlayingPath = null;
-        });
-        if (Get.find<UserController>().userModel?.isLoggedIn ?? false) {
-          markDuaAsDone(duaId);
-        }
-      });
-    }
-  }
-
   void showTextOptionsPopup() {
+    // ... (unchanged)
     showDialog(
       context: context,
       builder: (context) {
@@ -283,8 +224,6 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
             itemBuilder: (context, index) {
               return DuaTile(
                 dua: duaController.filteredDuas[index],
-                currentlyPlayingPath: _currentlyPlayingPath,
-                onToggle: _toggleAudio,
                 expandedBenefitsDuaId: _expandedBenefitsDuaId,
                 onToggleBenefits: (duaId) {
                   setState(() {
@@ -304,15 +243,11 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
 class DuaTile extends StatefulWidget {
   final DuaModel dua;
-  final String? currentlyPlayingPath;
-  final Function(String, String) onToggle;
   final String? expandedBenefitsDuaId;
   final Function(String?) onToggleBenefits;
 
   const DuaTile({
     required this.dua,
-    required this.currentlyPlayingPath,
-    required this.onToggle,
     required this.expandedBenefitsDuaId,
     required this.onToggleBenefits,
     super.key,
@@ -325,6 +260,7 @@ class DuaTile extends StatefulWidget {
 class _DuaTileState extends State<DuaTile> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   String baseUrl = "";
+  bool _isSharing = false;
 
   final List<String> imagePaths = [
     'assets/images/1.png',
@@ -1119,6 +1055,9 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Future<void> _captureAndShare() async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
+
     try {
       debugPrint("📸 Starting capture and share process...");
 
@@ -1217,9 +1156,12 @@ class _DuaTileState extends State<DuaTile> {
           'Error',
           'Failed to share: ${e.toString()}',
           backgroundColor: Colors.red.withOpacity(0.7),
-          colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
       }
     }
   }
@@ -1307,10 +1249,19 @@ class _DuaTileState extends State<DuaTile> {
                     color: Color(0xff2A158F),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    "📤 Share",
-                    style: TextStyle(color: rwhite),
-                  ).marginSymmetric(horizontal: 20, vertical: 20),
+                  child: _isSharing
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ).marginSymmetric(vertical: 20)
+                      : Text(
+                          "📤 Share",
+                          style: TextStyle(color: rwhite),
+                        ).marginSymmetric(horizontal: 20, vertical: 20),
                 ),
               ),
             ),
@@ -1432,90 +1383,102 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<UserController>(
-      builder: (userController) {
-        return GetBuilder<ThemeController>(
-          builder: (themeController) {
-            Color accentColor = themeController.selectedAgeGroup == 0
-                ? rpink
-                : themeController.selectedAgeGroup == 1
-                ? rblue
-                : rgreen;
+    return GetBuilder<AudioController>(
+      builder: (audioController) {
+        return GetBuilder<UserController>(
+          builder: (userController) {
+            return GetBuilder<ThemeController>(
+              builder: (themeController) {
+                Color accentColor = themeController.selectedAgeGroup == 0
+                    ? rpink
+                    : themeController.selectedAgeGroup == 1
+                    ? rblue
+                    : rgreen;
 
-            String audioPath = themeController.selectedAgeGroup == 0
-                ? widget.dua.littleKidsAudio
-                : themeController.selectedAgeGroup == 1
-                ? widget.dua.olderKidsAudio
-                : widget.dua.grownUpsAudio;
-            bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
+                String audioPath = themeController.selectedAgeGroup == 0
+                    ? widget.dua.littleKidsAudio
+                    : themeController.selectedAgeGroup == 1
+                    ? widget.dua.olderKidsAudio
+                    : widget.dua.grownUpsAudio;
 
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                bool isPlayingAudio =
+                    audioController.currentlyPlayingPath == audioPath &&
+                    audioController.currentlyPlayingDuaId == widget.dua.id;
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
-                ],
-                border: Border.all(
-                  color: accentColor.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Column(
-                  children: [
-                    // Focused Header with Metadata & Core Actions
-                    _buildHeader(accentColor, isPlayingAudio, audioPath),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: accentColor.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Column(
+                      children: [
+                        // Focused Header with Metadata & Core Actions
+                        _buildHeader(accentColor, isPlayingAudio, audioPath),
 
-                    // The Sacred Arabic Text
-                    GestureDetector(
-                      onLongPress: () {
-                        // Copy to clipboard or other context action
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width < 360
-                              ? 16
-                              : 24,
-                          vertical: MediaQuery.of(context).size.width < 360
-                              ? 20
-                              : 32,
-                        ),
-                        width: double.infinity,
-                        color: accentColor.withOpacity(0.02),
-                        child: Text(
-                          widget.dua.arabic,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: MediaQuery.of(context).size.width < 360
-                                ? themeController.textSize
-                                : themeController.textSize * 1.15,
-                            height: 2.0,
-                            fontFamily: 'arabic',
-                            fontWeight: FontWeight.w400,
+                        // The Sacred Arabic Text
+                        GestureDetector(
+                          onLongPress: () {
+                            // Copy to clipboard or other context action
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width < 360
+                                  ? 16
+                                  : 24,
+                              vertical: MediaQuery.of(context).size.width < 360
+                                  ? 20
+                                  : 32,
+                            ),
+                            width: double.infinity,
+                            color: accentColor.withOpacity(0.02),
+                            child: Text(
+                              widget.dua.arabic,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize:
+                                    MediaQuery.of(context).size.width < 360
+                                    ? themeController.textSize
+                                    : themeController.textSize * 1.15,
+                                height: 2.0,
+                                fontFamily: 'arabic',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+
+                        // Transliteration & Translation with selective visibility
+                        _buildContentSections(themeController, accentColor),
+
+                        // Expandable Benefits
+                        _buildBenefitsSection(themeController, accentColor),
+
+                        // Minimal Footer Actions
+                        _buildFooter(accentColor),
+                      ],
                     ),
-
-                    // Transliteration & Translation with selective visibility
-                    _buildContentSections(themeController, accentColor),
-
-                    // Expandable Benefits
-                    _buildBenefitsSection(themeController, accentColor),
-
-                    // Minimal Footer Actions
-                    _buildFooter(accentColor),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -1531,7 +1494,10 @@ class _DuaTileState extends State<DuaTile> {
           _CircleAction(
             icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
             color: accentColor,
-            onTap: () => widget.onToggle(audioPath, widget.dua.id),
+            onTap: () => Get.find<AudioController>().toggleAudio(
+              audioPath,
+              widget.dua.id,
+            ),
           ),
           const SizedBox(width: 8),
           _CircleAction(
@@ -1610,10 +1576,12 @@ class _DuaTileState extends State<DuaTile> {
       return const SizedBox.shrink();
     }
 
-    bool isPlaying = widget.currentlyPlayingPath == path;
+    bool isPlaying =
+        Get.find<AudioController>().currentlyPlayingPath == path &&
+        Get.find<AudioController>().currentlyPlayingDuaId == widget.dua.id;
 
     return InkWell(
-      onTap: () => widget.onToggle(path, widget.dua.id),
+      onTap: () => Get.find<AudioController>().toggleAudio(path, widget.dua.id),
       child: Icon(
         isPlaying ? Icons.volume_up_rounded : Icons.volume_off_rounded,
         size: 18,
@@ -1690,10 +1658,16 @@ class _DuaTileState extends State<DuaTile> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Center(
         child: TextButton.icon(
-          onPressed: showShareDialog,
-          icon: const Icon(Icons.share_rounded, size: 16),
+          onPressed: _isSharing ? null : showShareDialog,
+          icon: _isSharing
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.share_rounded, size: 16),
           label: Text(
-            "SHARE DUA".tr,
+            (_isSharing ? "PREPARING..." : "SHARE DUA").tr,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
