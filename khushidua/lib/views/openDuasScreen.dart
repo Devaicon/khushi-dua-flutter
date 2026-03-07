@@ -1055,14 +1055,11 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Future<void> _captureAndShare() async {
-    if (_isSharing) return;
-    setState(() => _isSharing = true);
-
     try {
       debugPrint("📸 Starting capture and share process...");
 
-      // Ensure all fonts are loaded before capturing
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Ensure all fonts and images are rendered before capturing
+      await Future.delayed(const Duration(milliseconds: 300));
 
       // Check if the context is still valid
       if (_popupKey.currentContext == null) {
@@ -1112,36 +1109,32 @@ class _DuaTileState extends State<DuaTile> {
 
       debugPrint("✅ Image saved to: ${file.path}");
 
-      // Close the dialog first, then share
+      // Get screen size for iPad share sheet positioning
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100);
+
+      debugPrint("📤 Opening share sheet (keeping dialog for context)...");
+
+      // Share using share_plus with proper iOS handling
+      // We do NOT pop the dialog until AFTER the share sheet is requested
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: "Check out this beautiful Dua from Khushi Dua App".tr,
+        subject: "Khushi Dua".tr,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+
+      debugPrint("✅ Share sheet requested. Result: ${result.status}");
+
+      // Now close the dialog
       if (mounted) {
         Navigator.of(context).pop();
         debugPrint("✅ Dialog closed");
       }
 
-      // Small delay to ensure dialog is closed and get screen size
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      debugPrint("📤 Opening share sheet...");
-
-      // Get screen size for iPad share sheet positioning
-      final RenderBox? box = context.findRenderObject() as RenderBox?;
-      final Rect sharePositionOrigin = box != null
-          ? box.localToGlobal(Offset.zero) & box.size
-          : Rect.fromLTWH(0, 0, 100, 100); // Fallback position
-
-      debugPrint("📍 Share position: $sharePositionOrigin");
-
-      // Share using share_plus with proper iOS handling
-      final result = await Share.shareXFiles(
-        [XFile(file.path)],
-        text: "Check out this beautiful Dua from Khushi Dua App",
-        subject: "Khushi Dua",
-        sharePositionOrigin: sharePositionOrigin, // Required for iPad
-      );
-
-      debugPrint("✅ Share result: ${result.status}");
-
-      // Clean up the temporary file after sharing
+      // Clean up the temporary file
       try {
         await file.delete();
         debugPrint("✅ Temporary file cleaned up");
@@ -1184,89 +1177,218 @@ class _DuaTileState extends State<DuaTile> {
   void showShareDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(20),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            RepaintBoundary(
-              key: _popupKey, // This is what we'll capture as image
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Background Image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      randomImage,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Arabic and English Text
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.dua.arabic,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily:
-                              'arabic', // Use the font family from pubspec
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      Divider(
-                        height: 2,
-                        color: rwhite,
-                      ).marginSymmetric(vertical: 12),
-                      Text(
-                        widget.dua.english,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ).marginSymmetric(horizontal: 12),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            child: Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
-            ),
-            // Share button - not inside RepaintBoundary
-            Positioned(
-              bottom: 20,
-              child: GestureDetector(
-                onTap: _captureAndShare, // sharing function
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Color(0xff2A158F),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _isSharing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Scrollable content area
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: RepaintBoundary(
+                          key: _popupKey,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Background Image
+                              Image.asset(
+                                randomImage,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                              // Overlay
+                              Container(
+                                color: Colors.black.withOpacity(0.3),
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      widget.dua.arabic,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'arabic',
+                                        height: 1.8,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 20,
+                                      ),
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    Text(
+                                      widget.dua.english,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    // App Branding in the shared image
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.auto_awesome,
+                                          color: Colors.white70,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "Khushi Dua App".tr,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ).marginSymmetric(vertical: 20)
-                      : Text(
-                          "📤 Share",
-                          style: TextStyle(color: rwhite),
-                        ).marginSymmetric(horizontal: 20, vertical: 20),
+                        ),
+                      ),
+                    ),
+                    // Action Footer
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(top: BorderSide(color: Colors.black12)),
+                      ),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () async {
+                          debugPrint("🖱️ Share button tapped in dialog");
+                          if (_isSharing) {
+                            debugPrint("⚠️ Already sharing, ignoring tap");
+                            return;
+                          }
+
+                          // Update both states to be safe
+                          setState(() => _isSharing = true);
+                          setDialogState(() => _isSharing = true);
+
+                          try {
+                            debugPrint("🏃 Calling _captureAndShare...");
+                            await _captureAndShare();
+                          } catch (e) {
+                            debugPrint("❌ Exception in onTap sharing: $e");
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isSharing = false);
+                              try {
+                                setDialogState(() => _isSharing = false);
+                              } catch (_) {}
+                            }
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: double.infinity,
+                          height: 56,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _isSharing
+                                  ? [Colors.grey, Colors.grey.shade400]
+                                  : [
+                                      const Color(0xff4A3AFF),
+                                      const Color(0xff2A158F),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              if (!_isSharing)
+                                BoxShadow(
+                                  color: const Color(
+                                    0xff2A158F,
+                                  ).withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                            ],
+                          ),
+                          child: _isSharing
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "PREPARING SHARE...".tr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.share_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "Share This Dua".tr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1651,11 +1773,11 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Widget _buildFooter(Color accentColor) {
-    bool hasShare = widget.dua.arabic.length < 500;
+    bool hasShare = widget.dua.arabic.length < 2500;
     if (!hasShare) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Center(
         child: TextButton.icon(
           onPressed: _isSharing ? null : showShareDialog,
@@ -1665,18 +1787,22 @@ class _DuaTileState extends State<DuaTile> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.share_rounded, size: 16),
+              : const Icon(Icons.share_rounded, size: 18),
           label: Text(
             (_isSharing ? "PREPARING..." : "SHARE DUA").tr,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
             ),
           ),
           style: TextButton.styleFrom(
             foregroundColor: accentColor,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            backgroundColor: accentColor.withOpacity(0.05),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
       ),

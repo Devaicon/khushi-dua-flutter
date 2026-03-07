@@ -1,7 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
@@ -66,12 +65,8 @@ class AudioController extends GetxController {
 
     try {
       final downloadService = Get.find<AudioDownloadService>();
-      final themeController = Get.find<ThemeController>();
 
-      final localPath = await downloadService.getLocalPath(
-        duaId,
-        themeController.selectedAgeGroup,
-      );
+      final localPath = await downloadService.getLocalPathFromUrl(path);
 
       if (localPath != null) {
         debugPrint("AudioController: Playing local: $localPath");

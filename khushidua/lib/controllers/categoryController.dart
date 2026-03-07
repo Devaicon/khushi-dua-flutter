@@ -62,12 +62,13 @@ class CategoryController extends GetxController {
 
         // Basic age group filtering
         bool isAllowed = false;
-        if (ageGroup == 0)
+        if (ageGroup == 0) {
           isAllowed = category.littleKids;
-        else if (ageGroup == 1)
+        } else if (ageGroup == 1) {
           isAllowed = category.olderKids;
-        else
+        } else {
           isAllowed = category.grownUps;
+        }
 
         if (!isAllowed) return false;
 
