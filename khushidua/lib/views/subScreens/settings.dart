@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 40),
                       Center(
                         child: Text(
-                          "Version 1.0.6".tr,
+                          "Version 2.0.0".tr,
                           style: TextStyle(
                             color: Colors.grey.withOpacity(0.5),
                             fontSize: 12,
