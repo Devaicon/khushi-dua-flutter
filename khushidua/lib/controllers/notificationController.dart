@@ -24,4 +24,9 @@ class NotificationController extends GetxController {
   getAllNotifications() {
     NotificationService().getAllNotifications();
   }
+
+  clearNotifications() {
+    _allNotifications.clear();
+    update();
+  }
 }
