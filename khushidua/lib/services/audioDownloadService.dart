@@ -125,71 +125,95 @@ class AudioDownloadService extends GetxService {
     final ageGroup = themeController.selectedAgeGroup;
 
     final List<DownloadTask> newTasks = [];
+    final directory = await getApplicationDocumentsDirectory();
+
     for (var dua in duaController.allDuas) {
-      AudioType type;
-      String url = "";
+      // 1. Current age group selection
+      AudioType ageType;
+      String ageUrl;
       if (ageGroup == 0) {
-        url = dua.littleKidsAudio;
-        type = AudioType.littleKids;
+        ageUrl = dua.littleKidsAudio;
+        ageType = AudioType.littleKids;
       } else if (ageGroup == 1) {
-        url = dua.olderKidsAudio;
-        type = AudioType.olderKids;
+        ageUrl = dua.olderKidsAudio;
+        ageType = AudioType.olderKids;
       } else {
-        url = dua.grownUpsAudio;
-        type = AudioType.grownUps;
+        ageUrl = dua.grownUpsAudio;
+        ageType = AudioType.grownUps;
       }
 
-      if (url.isNotEmpty) {
-        final task = await _createTask(dua, url, type);
-        newTasks.add(task);
+      if (ageUrl.isNotEmpty) {
+        final task = await _createTask(dua, ageUrl, ageType, directory);
+        if (task.status != DownloadStatus.completed) {
+          newTasks.add(task);
+        }
+      }
+
+      // 2. ALWAYS add GrownUps (Urdu Translations) if not already added
+      if (ageType != AudioType.grownUps && dua.grownUpsAudio.isNotEmpty) {
+        final task = await _createTask(dua, dua.grownUpsAudio, AudioType.grownUps, directory);
+        if (task.status != DownloadStatus.completed) {
+          newTasks.add(task);
+        }
       }
     }
 
-    // Merge or replace tasks
+    // Assign tasks and start processing
     tasks.assignAll(newTasks);
     _updateCounts();
+    _processQueue();
   }
 
   Future<DownloadTask> _createTask(
     DuaModel dua,
     String url,
-    AudioType type,
-  ) async {
-    final suffix = type.name;
-    final fileName = "dua_${dua.id}_$suffix.mp3";
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/$fileName";
-    final file = File(filePath);
-    final fileExists = await file.exists();
-
-    int? size;
-    if (fileExists) {
-      size = await file.length();
-    }
+    AudioType type, [
+    Directory? directory,
+  ]) async {
+    final dir = directory ?? await getApplicationDocumentsDirectory();
+    final fileName = "${dua.id}_${type.name}.mp3";
+    final file = File("${dir.path}/$fileName");
+    final exists = await file.exists();
 
     return DownloadTask(
-      id: dua.id,
+      id: "${dua.id}_${type.name}",
       url: url,
       fileName: fileName,
-      title: dua.english,
+      title: "${dua.english} (${_getTypeLabel(type)})",
       type: type,
-      status: fileExists ? DownloadStatus.completed : DownloadStatus.pending,
-      progress: fileExists ? 1.0 : 0.0,
-      sizeInBytes: size,
+      status: exists ? DownloadStatus.completed : DownloadStatus.pending,
+      progress: exists ? 1.0 : 0.0,
+      sizeInBytes: exists ? await file.length() : null,
     );
   }
+
+  String _getTypeLabel(AudioType type) {
+    switch (type) {
+      case AudioType.littleKids:
+        return "Little Kids".tr;
+      case AudioType.olderKids:
+        return "Older Kids".tr;
+      case AudioType.grownUps:
+        return "Grown-Up's".tr;
+      case AudioType.english:
+        return "English Translation".tr;
+      case AudioType.urdu:
+        return "Urdu Translation".tr;
+    }
+  }
+
 
   Future<void> addToQueue(DuaModel dua, AudioType type, String url) async {
     if (url.isEmpty) return;
 
-    final existing = tasks.firstWhereOrNull(
-      (t) => t.id == dua.id && t.type == type,
-    );
-    if (existing != null && existing.status == DownloadStatus.completed) return;
+    final taskId = "${dua.id}_${type.name}";
+    final existingIndex = tasks.indexWhere((t) => t.id == taskId);
+    
+    if (existingIndex != -1 && tasks[existingIndex].status == DownloadStatus.completed) return;
 
     final task = await _createTask(dua, url, type);
-    if (existing != null) {
-      tasks[tasks.indexOf(existing)] = task;
+    if (existingIndex != -1) {
+      tasks[existingIndex] = task;
     } else {
       tasks.add(task);
     }
@@ -205,31 +229,15 @@ class AudioDownloadService extends GetxService {
     List<DuaModel> duas,
     List<AudioType> types,
   ) async {
+    final directory = await getApplicationDocumentsDirectory();
     for (var dua in duas) {
       for (var type in types) {
-        String url = "";
-        switch (type) {
-          case AudioType.littleKids:
-            url = dua.littleKidsAudio;
-            break;
-          case AudioType.olderKids:
-            url = dua.olderKidsAudio;
-            break;
-          case AudioType.grownUps:
-            url = dua.grownUpsAudio;
-            break;
-          case AudioType.english:
-            url = dua.englishTranslation ?? "";
-            break;
-          case AudioType.urdu:
-            url = dua.urduTranslation ?? "";
-            break;
-        }
+        String url = _getUrlForType(dua, type);
         if (url.isNotEmpty) {
-          final task = await _createTask(dua, url, type);
-          final existingIndex = tasks.indexWhere(
-            (t) => t.id == dua.id && t.type == type,
-          );
+          final taskId = "${dua.id}_${type.name}";
+          final task = await _createTask(dua, url, type, directory);
+          final existingIndex = tasks.indexWhere((t) => t.id == taskId);
+          
           if (existingIndex != -1) {
             if (tasks[existingIndex].status != DownloadStatus.completed) {
               tasks[existingIndex] = task;
@@ -240,11 +248,8 @@ class AudioDownloadService extends GetxService {
         }
       }
     }
-
-    if (!_isDownloading) {
-      _isDownloading = true;
-      _processQueue();
-    }
+    _isDownloading = true;
+    _processQueue();
     _updateCounts();
   }
 
@@ -431,9 +436,11 @@ class AudioDownloadService extends GetxService {
     if (_remoteSizeCache.containsKey(url)) return _remoteSizeCache[url];
 
     try {
+      // First try HEAD request with longer timeout
       final response = await http
           .head(Uri.parse(url))
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10)); // Increased from 3s
+      
       if (response.statusCode == 200) {
         final contentLength = response.headers['content-length'];
         if (contentLength != null) {
@@ -446,9 +453,11 @@ class AudioDownloadService extends GetxService {
         }
       }
 
+      // Fallback to GET with Range header if HEAD fails or doesn't return content-length
       final getResponse = await http
           .get(Uri.parse(url), headers: {'Range': 'bytes=0-0'})
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 10)); // Increased from 3s
+          
       final rangeHeader = getResponse.headers['content-range'];
       if (rangeHeader != null) {
         final total = rangeHeader.split('/').last;
@@ -459,6 +468,9 @@ class AudioDownloadService extends GetxService {
           return size;
         }
       }
+    } on TimeoutException {
+      debugPrint("Timeout fetching size for: $url");
+      return null;
     } catch (e) {
       debugPrint("Error getting remote file size: $e");
     }
@@ -488,8 +500,8 @@ class AudioDownloadService extends GetxService {
 
     if (urlsToFetch.isEmpty) return total;
 
-    // Fetch in parallel chunks
-    const chunkSize = 20;
+    // Fetch in parallel chunks - reduced size to prevent congestion
+    const chunkSize = 12;
     for (var i = 0; i < urlsToFetch.length; i += chunkSize) {
       final end = (i + chunkSize < urlsToFetch.length)
           ? i + chunkSize

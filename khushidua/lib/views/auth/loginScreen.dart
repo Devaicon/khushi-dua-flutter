@@ -9,6 +9,7 @@ import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../services/authService.dart';
 import '../../widgets/profileAvatar.dart';
+import 'forgotPasswordScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -115,8 +116,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: emailController,
                       validator: (email) {
-                        if (email == null || email.isEmpty) {
+                        if (email == null || email.trim().isEmpty) {
                           return "Email is required".tr;
+                        }
+                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (!emailRegex.hasMatch(email.trim())) {
+                          return "Please enter a valid email address".tr;
                         }
                         return null;
                       },
@@ -169,7 +174,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ).marginOnly(top: 12),
-                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Get.to(() => const ForgotPasswordScreen()),
+                        child: Text(
+                          "Forgot Password?".tr,
+                          style: const TextStyle(
+                            color: rbluedark,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     InkWell(
                       onTap: _isLoading
                           ? null

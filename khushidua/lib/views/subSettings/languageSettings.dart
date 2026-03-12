@@ -30,7 +30,6 @@ class _LanguageSettingsState extends State<LanguageSettings> {
     {"name": "Portuguese", "flag": "🇵🇹"},
     {"name": "Punjabi", "flag": "🇮🇳"},
     {"name": "Russian", "flag": "🇷🇺"},
-    {"name": "Sindhi", "flag": "🇵🇰"},
     {"name": "Spanish", "flag": "🇪🇸"},
     {"name": "Tamil", "flag": "🇮🇳"},
     {"name": "Telugu", "flag": "🇮🇳"},

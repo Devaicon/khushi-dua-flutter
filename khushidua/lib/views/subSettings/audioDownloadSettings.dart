@@ -34,7 +34,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
     final types = [
       AudioType.littleKids,
       AudioType.olderKids,
-      AudioType.grownUps,
+      AudioType.grownUps, // This will be labeled as Urdu Translations
       AudioType.english,
     ];
 
@@ -125,69 +125,33 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
                           const SizedBox(height: 24),
                           _buildBulkDownloadSection(),
                           const SizedBox(height: 32),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Individual Duas",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: rblack,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Customize your offline collection",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  if (_isLoadingSizes)
-                                    const SizedBox(
-                                      height: 16,
-                                      width: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                  const SizedBox(width: 12),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.refresh_rounded,
-                                      size: 22,
-                                      color: Color(0xff4A3AFF),
-                                    ),
-                                    onPressed: () {
-                                      _downloadService.refreshTasks();
-                                      _loadInitialData();
-                                    },
-                                    tooltip: "Refresh sizes and status",
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final dua = _filteredDuas[index];
-                        return _buildDuaDownloadTile(dua);
-                      }, childCount: _filteredDuas.length),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Download duas to play offline".tr,
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -358,7 +322,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Bulk Selection",
+            "Bulk Download",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -479,149 +443,6 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
     );
   }
 
-  Widget _buildDuaDownloadTile(DuaModel dua) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ExpansionTile(
-        shape: const RoundedRectangleBorder(side: BorderSide.none),
-        collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
-        iconColor: const Color(0xff4A3AFF),
-        title: Text(
-          dua.english,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: rblack,
-          ),
-        ),
-        subtitle: Text(
-          dua.arabic,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-            fontFamily: 'arabic',
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              children: [
-                const Divider(),
-                _buildIndividualTypeRow(
-                  dua,
-                  AudioType.littleKids,
-                  dua.littleKidsAudio,
-                ),
-                _buildIndividualTypeRow(
-                  dua,
-                  AudioType.olderKids,
-                  dua.olderKidsAudio,
-                ),
-                _buildIndividualTypeRow(
-                  dua,
-                  AudioType.grownUps,
-                  dua.grownUpsAudio,
-                ),
-                _buildIndividualTypeRow(
-                  dua,
-                  AudioType.english,
-                  dua.englishTranslation ?? "",
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIndividualTypeRow(DuaModel dua, AudioType type, String url) {
-    if (url.isEmpty) return const SizedBox.shrink();
-
-    return StreamBuilder<bool>(
-      stream: Stream.fromFuture(_downloadService.isDownloaded(dua.id, type)),
-      builder: (context, snapshot) {
-        final isDownloaded = snapshot.data ?? false;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            children: [
-              Icon(
-                isDownloaded
-                    ? Icons.check_circle_rounded
-                    : Icons.download_for_offline_outlined,
-                color: isDownloaded ? Colors.green : Colors.grey.shade400,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getTypeLabel(type),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    _buildSizeLabel(url),
-                  ],
-                ),
-              ),
-              if (!isDownloaded)
-                InkWell(
-                  onTap: () => _downloadService.addToQueue(dua, type, url),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff4A3AFF).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      "Download",
-                      style: TextStyle(
-                        color: Color(0xff4A3AFF),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                const Text(
-                  "Saved",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   String _getTypeLabel(AudioType type) {
     switch (type) {
@@ -630,40 +451,12 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       case AudioType.olderKids:
         return "Older Kids".tr;
       case AudioType.grownUps:
-        return "Grown Ups".tr;
+        return "Grown-Up's".tr;
       case AudioType.english:
         return "English Translation".tr;
       case AudioType.urdu:
         return "Urdu Translation".tr;
     }
-  }
-
-  Widget _buildSizeLabel(String url) {
-    // Optimized: Check service cache directly first to avoid flickering
-    final cachedSize = _downloadService.getRemoteFileSizeCached(url);
-    if (cachedSize != null) {
-      return Text(
-        _downloadService.formatSize(cachedSize),
-        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-      );
-    }
-
-    return FutureBuilder<int?>(
-      future: _downloadService.getRemoteFileSize(url),
-      builder: (context, snapshot) {
-        final size = snapshot.data;
-        if (size == null) {
-          return const Text(
-            "Calculating...",
-            style: TextStyle(fontSize: 11, color: Colors.grey),
-          );
-        }
-        return Text(
-          _downloadService.formatSize(size),
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-        );
-      },
-    );
   }
 
   Widget? _buildBottomActionBar() {
