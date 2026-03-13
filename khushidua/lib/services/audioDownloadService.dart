@@ -41,7 +41,7 @@ class DownloadTask {
       case AudioType.olderKids:
         return "Older Kids";
       case AudioType.grownUps:
-        return "Grown Ups";
+        return "Grown-Up's";
       case AudioType.english:
         return "English Translation";
       case AudioType.urdu:
@@ -60,6 +60,7 @@ class AudioDownloadService extends GetxService {
   final RxString currentlyDownloadingTitle = "".obs;
 
   static const String DOWNLOADS_ENABLED_KEY = "audio_downloads_enabled";
+  static const String DOWNLOADS_FIRST_RUN_KEY = "audio_downloads_first_run";
 
   @override
   void onInit() {
@@ -68,6 +69,15 @@ class AudioDownloadService extends GetxService {
   }
 
   void _checkAndStartDownloads() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstRun = prefs.getBool(DOWNLOADS_FIRST_RUN_KEY) ?? true;
+    // On first install, enable downloads by default so the prioritized (Grown-Up's)
+    // background download starts automatically.
+    if (isFirstRun) {
+      await prefs.setBool(DOWNLOADS_FIRST_RUN_KEY, false);
+      await prefs.setBool(DOWNLOADS_ENABLED_KEY, true);
+    }
+
     if (await isDownloadsEnabled()) {
       // Small delay to ensure other controllers are ready
       Future.delayed(const Duration(seconds: 2), () {
@@ -142,16 +152,23 @@ class AudioDownloadService extends GetxService {
         ageType = AudioType.grownUps;
       }
 
-      if (ageUrl.isNotEmpty) {
-        final task = await _createTask(dua, ageUrl, ageType, directory);
-        if (task.status != DownloadStatus.completed) {
-          newTasks.add(task);
+      // 1) ALWAYS prioritize Grown-Up's (Urdu Translations)
+      if (dua.grownUpsAudio.isNotEmpty) {
+        final grownTask = await _createTask(
+          dua,
+          dua.grownUpsAudio,
+          AudioType.grownUps,
+          directory,
+        );
+        if (grownTask.status != DownloadStatus.completed) {
+          newTasks.add(grownTask);
         }
       }
 
-      // 2. ALWAYS add GrownUps (Urdu Translations) if not already added
-      if (ageType != AudioType.grownUps && dua.grownUpsAudio.isNotEmpty) {
-        final task = await _createTask(dua, dua.grownUpsAudio, AudioType.grownUps, directory);
+      // 2) Then queue the currently selected age-group audio
+      // (skip if it is already Grown-Up's)
+      if (ageType != AudioType.grownUps && ageUrl.isNotEmpty) {
+        final task = await _createTask(dua, ageUrl, ageType, directory);
         if (task.status != DownloadStatus.completed) {
           newTasks.add(task);
         }
@@ -202,14 +219,16 @@ class AudioDownloadService extends GetxService {
     }
   }
 
-
   Future<void> addToQueue(DuaModel dua, AudioType type, String url) async {
     if (url.isEmpty) return;
 
     final taskId = "${dua.id}_${type.name}";
     final existingIndex = tasks.indexWhere((t) => t.id == taskId);
-    
-    if (existingIndex != -1 && tasks[existingIndex].status == DownloadStatus.completed) return;
+
+    if (existingIndex != -1 &&
+        tasks[existingIndex].status == DownloadStatus.completed) {
+      return;
+    }
 
     final task = await _createTask(dua, url, type);
     if (existingIndex != -1) {
@@ -237,7 +256,7 @@ class AudioDownloadService extends GetxService {
           final taskId = "${dua.id}_${type.name}";
           final task = await _createTask(dua, url, type, directory);
           final existingIndex = tasks.indexWhere((t) => t.id == taskId);
-          
+
           if (existingIndex != -1) {
             if (tasks[existingIndex].status != DownloadStatus.completed) {
               tasks[existingIndex] = task;
@@ -440,7 +459,7 @@ class AudioDownloadService extends GetxService {
       final response = await http
           .head(Uri.parse(url))
           .timeout(const Duration(seconds: 10)); // Increased from 3s
-      
+
       if (response.statusCode == 200) {
         final contentLength = response.headers['content-length'];
         if (contentLength != null) {
@@ -457,7 +476,7 @@ class AudioDownloadService extends GetxService {
       final getResponse = await http
           .get(Uri.parse(url), headers: {'Range': 'bytes=0-0'})
           .timeout(const Duration(seconds: 10)); // Increased from 3s
-          
+
       final rangeHeader = getResponse.headers['content-range'];
       if (rangeHeader != null) {
         final total = rangeHeader.split('/').last;

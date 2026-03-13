@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/constants/colors.dart';
 import 'package:khushidua/controllers/duaController.dart';
-import 'package:khushidua/models/duaModel.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
 
 class AudioDownloadSettings extends StatefulWidget {
@@ -17,7 +16,8 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       Get.find<AudioDownloadService>();
   final DuaController _duaController = Get.find<DuaController>();
 
-  String _searchQuery = "";
+  // Simplified UI: removing the "Individual Duas" search experience.
+  // (Keeping state minimal to avoid unused UI sections.)
   final List<AudioType> _bulkSelectedGroups = [];
   final Map<AudioType, int> _categorySizes = {};
   bool _isLoadingSizes = true;
@@ -57,17 +57,6 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
     return total;
   }
 
-  List<DuaModel> get _filteredDuas {
-    if (_searchQuery.isEmpty) return _duaController.allDuas;
-    return _duaController.allDuas
-        .where(
-          (d) =>
-              d.english.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              d.arabic.contains(_searchQuery),
-        )
-        .toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,7 +84,6 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
           Expanded(
             child: Obx(() {
               final tasks = _downloadService.tasks;
@@ -162,29 +150,6 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
         ],
       ),
       bottomNavigationBar: _buildBottomActionBar(),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xffF1F4FF),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: TextField(
-          onChanged: (val) => setState(() => _searchQuery = val),
-          decoration: const InputDecoration(
-            icon: Icon(Icons.search, color: Color(0xff4A3AFF)),
-            border: InputBorder.none,
-            hintText: "Search duas...",
-            hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ),
-      ),
     );
   }
 
@@ -376,7 +341,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
                   elevation: 0,
                 ),
                 child: const Text(
-                  "Download Group",
+                  "Bulk Download",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -442,7 +407,6 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       ),
     );
   }
-
 
   String _getTypeLabel(AudioType type) {
     switch (type) {
