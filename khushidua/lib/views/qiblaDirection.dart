@@ -18,9 +18,20 @@ class CompassScreen extends StatefulWidget {
 }
 
 class _CompassScreenState extends State<CompassScreen> {
-  double? deviceHeading; // Device's current heading (magnetic north)
-  double qiblaDirection = 0; // Qibla direction from true north
-  StreamSubscription<CompassEvent>? _compassSubscription; // Compass stream
+  // Device's current heading (magnetic north)
+  double? _deviceHeading;
+  // Qibla direction from true north
+  double _qiblaDirection = 0;
+  // Compass stream subscription
+  StreamSubscription<CompassEvent>? _compassSubscription;
+
+  // Error state
+  bool _isError = false;
+  String _errorMsg = '';
+
+  // Turns for smooth animated rotation (unwrapped to avoid spin-back)
+  double _headingTurns = 0;
+  double _qiblaTurns = 0;
 
   @override
   void initState() {
@@ -38,78 +49,101 @@ class _CompassScreenState extends State<CompassScreen> {
 
   void _fetchQiblaDirection() {
     try {
-      // Fetch Qibla direction using the Prayer Times library
       Coordinates coordinates = Coordinates(widget.latitude, widget.longitude);
-      // Bearing from true north to Qibla
       double calculatedQibla = Qibla.qibla(coordinates);
-      debugPrint(
-        "🧭 QiblaScreen: Calculated Qibla direction: ${calculatedQibla.toStringAsFixed(2)}°",
-      );
-      setState(() {
-        qiblaDirection = calculatedQibla;
-      });
+      debugPrint("🧭 QiblaScreen: Calculated Qibla direction: ${calculatedQibla.toStringAsFixed(2)}°");
+      
+      if (mounted) {
+        setState(() {
+          _qiblaDirection = calculatedQibla;
+        });
+      }
     } catch (e) {
       debugPrint('❌ QiblaScreen: Error calculating Qibla direction: $e');
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _errorMsg = "Ensure location permissions are granted to calculate Qibla.";
+        });
+      }
     }
   }
 
   void _listenToCompass() {
     debugPrint("🧭 QiblaScreen: Starting compass listener...");
-    final compassEvents = FlutterCompass.events;
+    try {
+      final Stream<CompassEvent>? compassEvents = FlutterCompass.events;
 
-    if (compassEvents == null) {
-      debugPrint("❌ QiblaScreen: Compass not available on this device");
-      return;
-    }
-
-    _compassSubscription = compassEvents.listen(
-      (event) {
-        if (event.heading != null) {
+      if (compassEvents == null) {
+        debugPrint("❌ QiblaScreen: Compass not available on this device");
+        if (mounted) {
           setState(() {
-            deviceHeading = event.heading;
+            _isError = true;
+            _errorMsg = "Your device does not have a compass sensor.";
           });
-
-          // Log occasionally to avoid spam
-          if ((event.heading!.toInt()) % 45 == 0) {
-            debugPrint(
-              "🧭 QiblaScreen: Heading ${event.heading!.toStringAsFixed(1)}°",
-            );
-          }
         }
-      },
-      onError: (error) {
-        debugPrint("❌ QiblaScreen: Compass error: $error");
-      },
-    );
+        return;
+      }
+
+      _compassSubscription = compassEvents.listen(
+        (CompassEvent event) {
+          if (!mounted) return;
+
+          if (event.heading != null) {
+            setState(() {
+              double heading = event.heading!;
+              _deviceHeading = heading;
+
+              // Unwrap heading turns to prevent sudden spins when crossing north
+              double newHeadingTurns = -heading / 360.0;
+              double diffHeading = newHeadingTurns - (_headingTurns % 1.0);
+              if (diffHeading > 0.5) diffHeading -= 1.0;
+              if (diffHeading < -0.5) diffHeading += 1.0;
+              _headingTurns += diffHeading;
+
+              // Unwrap Qibla needle turns
+              double angle = _qiblaDirection - heading;
+              double newQiblaTurns = angle / 360.0;
+              double diffQibla = newQiblaTurns - (_qiblaTurns % 1.0);
+              if (diffQibla > 0.5) diffQibla -= 1.0;
+              if (diffQibla < -0.5) diffQibla += 1.0;
+              _qiblaTurns += diffQibla;
+            });
+          }
+        },
+        onError: (error) {
+          debugPrint("❌ QiblaScreen: Compass error: $error");
+          if (mounted) {
+            setState(() {
+              _isError = true;
+              _errorMsg = "Compass sensor error. Please try restarting your app or check location permissions.";
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _errorMsg = "Compass Init Error: $e";
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-    _compassSubscription?.cancel(); // Cancel the subscription to prevent errors
+    _compassSubscription?.cancel(); // Critical to avoid setState bleeding out
     debugPrint('🧭 QiblaScreen: disposed');
     super.dispose();
   }
 
-  // Angle the Qibla needle must rotate relative to device heading
-  double _getQiblaNeedleAngle() {
-    if (deviceHeading == null) return 0;
-
-    double angle = qiblaDirection - deviceHeading!; // difference in degrees
-
-    // Normalize to -180..180 so we always take the shortest path
-    while (angle > 180) {
-      angle -= 360;
-    }
-    while (angle < -180) {
-      angle += 360;
-    }
-
-    return angle;
-  }
-
   bool _isPointingToQibla() {
-    if (deviceHeading == null) return false;
-    return _getQiblaNeedleAngle().abs() < 5; // within 5° treated as aligned
+    if (_deviceHeading == null) return false;
+    double diff = (_qiblaDirection - _deviceHeading!).remainder(360.0);
+    if (diff > 180) diff -= 360.0;
+    if (diff < -180) diff += 360.0;
+    return diff.abs() < 5; // within 5° treated as perfectly aligned
   }
 
   @override
@@ -145,84 +179,17 @@ class _CompassScreenState extends State<CompassScreen> {
 
               const SizedBox(height: 16),
 
-              // Kaaba icon similar to design
+              // Top Kaaba icon
               Image.asset("assets/images/kaaba.png", height: 140),
 
               const Spacer(),
 
-              // Compass dial section
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Rotating compass background (dial)
-                  Transform.rotate(
-                    angle: -(deviceHeading ?? 0) * math.pi / 180,
-                    child: Container(
-                      height: 300,
-                      width: 300,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFF222743), // deep navy like design
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          for (var i = 0; i < 360; i += 30)
-                            Transform.rotate(
-                              angle: i * math.pi / 180,
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                child: Container(
-                                  height: i % 90 == 0 ? 16 : 10,
-                                  width: 2,
-                                  color: i % 90 == 0
-                                      ? Colors.white
-                                      : Colors.white.withOpacity(0.4),
-                                  margin: const EdgeInsets.only(top: 18),
-                                ),
-                              ),
-                            ),
-
-                          // Cardinal directions styled per design
-                          Positioned(
-                            top: 24,
-                            child: Text(
-                              "N",
-                              style: _textStyle(Colors.redAccent),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 24,
-                            child: Text("S", style: _textStyle(Colors.white)),
-                          ),
-                          Positioned(
-                            left: 24,
-                            child: Text("W", style: _textStyle(Colors.white)),
-                          ),
-                          Positioned(
-                            right: 24,
-                            child: Text("E", style: _textStyle(Colors.white)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Orange Qibla needle (fixed color like design)
-                  Transform.rotate(
-                    angle: _getQiblaNeedleAngle() * math.pi / 180,
-                    child: const Icon(
-                      Icons.navigation,
-                      size: 110,
-                      color: Color(0xFFFFB300), // warm orange
-                    ),
-                  ),
-                ],
-              ),
+              // Core compass builder handling states gracefully
+              _buildCompassContent(),
 
               const SizedBox(height: 24),
 
-              // Bottom Qibla text, centered like design
+              // Bottom Qibla text showing degrees
               Padding(
                 padding: const EdgeInsets.only(bottom: 32.0),
                 child: Text(
@@ -241,12 +208,150 @@ class _CompassScreenState extends State<CompassScreen> {
     );
   }
 
+  Widget _buildCompassContent() {
+    if (_isError) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(horizontal: 40),
+        decoration: BoxDecoration(
+          color: Colors.black87,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 50),
+            const SizedBox(height: 12),
+            Text(
+              _errorMsg,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_deviceHeading == null) {
+      return Container(
+        height: 300,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    // Main Compass view
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Background Rotating Dial
+        AnimatedRotation(
+          turns: _headingTurns,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          child: Container(
+            height: 300,
+            width: 300,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF222743), // Deep Navy background
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                for (var i = 0; i < 360; i += 30)
+                  Transform.rotate(
+                    angle: i * math.pi / 180,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        height: i % 90 == 0 ? 16 : 10,
+                        width: 2,
+                        color: i % 90 == 0
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.4),
+                        margin: const EdgeInsets.only(top: 18),
+                      ),
+                    ),
+                  ),
+
+                // Map Markers correctly positioned statically, rotation handles direction handling
+                Positioned(top: 24, child: Text("N", style: _textStyle(Colors.redAccent))),
+                Positioned(bottom: 24, child: Text("S", style: _textStyle(Colors.white))),
+                Positioned(left: 24, child: Text("W", style: _textStyle(Colors.white))),
+                Positioned(right: 24, child: Text("E", style: _textStyle(Colors.white))),
+              ],
+            ),
+          ),
+        ),
+
+        // Independent Needle Rotation for Qibla
+        AnimatedRotation(
+          turns: _qiblaTurns,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          child: SizedBox(
+            width: 110,
+            height: 110,
+            child: CustomPaint(
+              painter: QiblaNeedlePainter(color: const Color(0xFFFFB300)), // Warm orange
+            ),
+          ),
+        ),
+
+        // Optional Glow when Perfectly Aligned (Within a margin scale factor)
+        if (_isPointingToQibla())
+          AnimatedOpacity(
+            opacity: 1.0, 
+            duration: const Duration(milliseconds: 300),
+            child: Container(
+              height: 320,
+              width: 320,
+              decoration: BoxDecoration(
+                 shape: BoxShape.circle,
+                 border: Border.all(color: const Color(0xFFFFB300), width: 3),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   String _getStatusText() {
-    // Match design: only show `Qibla: xxx°` at bottom
-    return 'Qibla: ${qiblaDirection.toStringAsFixed(0)}°';
+    return 'Qibla: ${_qiblaDirection.toStringAsFixed(0)}°';
   }
 
   TextStyle _textStyle(Color color) {
     return TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color);
   }
+}
+
+class QiblaNeedlePainter extends CustomPainter {
+  final Color color;
+
+  QiblaNeedlePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    
+    var path = Path();
+    // 1. Center Top (Pointy Tip pointing exactly UP)
+    path.moveTo(size.width / 2, 0);
+    // 2. Bottom Right
+    path.lineTo(size.width * 0.8, size.height * 0.9);
+    // 3. Bottom Center Notch
+    path.lineTo(size.width / 2, size.height * 0.65);
+    // 4. Bottom Left
+    path.lineTo(size.width * 0.2, size.height * 0.9);
+    path.close();
+
+    // Adds a tiny bit of shadow underneath the needle
+    canvas.drawShadow(path, Colors.black, 4.0, false);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
