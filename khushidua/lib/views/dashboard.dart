@@ -178,16 +178,16 @@ class _DashboardState extends State<Dashboard> {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/prayer.png", 1),
-              label: 'Prayer',
-            ),
-            BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/search.png", 2),
               label: 'Search',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/notification.png", 3),
+              icon: _buildNavItem("assets/images/notification.png", 1),
               label: 'Notification',
+            ),
+            BottomNavigationBarItem(
+              icon: _buildNavItem("assets/images/prayer.png", 3),
+              label: 'Prayer',
             ),
             BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/settings.png", 4),
