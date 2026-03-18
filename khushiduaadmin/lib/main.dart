@@ -6,9 +6,6 @@ import 'package:khushiduaadmin/views/auth/login.dart';
 import 'package:khushiduaadmin/views/dashboard.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// We'll use a conditional import or just be careful with dart:html
-// Since this is a web-focused admin panel, direct import is mostly okay for now
-// but wrapping it with kIsWeb is safer.
 import 'dart:html' as html;
 
 void main() async {
