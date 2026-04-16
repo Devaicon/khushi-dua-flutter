@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -33,6 +34,17 @@ class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const TopBar(title: "Duas"),
+                InkWell(
+                  onTap: () => Get.back(),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back_ios, color: rWhite, size: 16),
+                      SizedBox(width: 4),
+                      Text("Back", style: TextStyle(color: rWhite)),
+                    ],
+                  ),
+                ).marginOnly(top: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -44,7 +56,7 @@ class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
                           fontSize: 20),
                     ),
                   ],
-                ).marginOnly(top: 12),
+                ).marginOnly(top: 6),
                 const SizedBox(
                   height: 20,
                 ),
@@ -147,6 +159,148 @@ class DuaTile extends StatefulWidget {
 }
 
 class _DuaTileState extends State<DuaTile> {
+  void _showDeleteDialog(BuildContext context) {
+    bool deleteLittleKids = widget.duaModel.littleKids;
+    bool deleteOlderKids = widget.duaModel.olderKids;
+    bool deleteGrownUps = widget.duaModel.grownUps;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return ElasticIn(
+          child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                backgroundColor: rBg,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: const Text(
+                  "Delete Dua",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: rWhite,
+                      fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Remove from which sections?",
+                      style: TextStyle(color: rHint, fontSize: 14),
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.duaModel.littleKids)
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: deleteLittleKids,
+                            activeColor: rRed,
+                            checkColor: Colors.white,
+                            onChanged: (val) =>
+                                setDialogState(() => deleteLittleKids = val!),
+                          ),
+                          const Text("Little Kids",
+                              style: TextStyle(color: rWhite)),
+                        ],
+                      ),
+                    if (widget.duaModel.olderKids)
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: deleteOlderKids,
+                            activeColor: rRed,
+                            checkColor: Colors.white,
+                            onChanged: (val) =>
+                                setDialogState(() => deleteOlderKids = val!),
+                          ),
+                          const Text("Older Kids",
+                              style: TextStyle(color: rWhite)),
+                        ],
+                      ),
+                    if (widget.duaModel.grownUps)
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: deleteGrownUps,
+                            activeColor: rRed,
+                            checkColor: Colors.white,
+                            onChanged: (val) =>
+                                setDialogState(() => deleteGrownUps = val!),
+                          ),
+                          const Text("Grown Ups",
+                              style: TextStyle(color: rWhite)),
+                        ],
+                      ),
+                  ],
+                ),
+                actions: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.1,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: rGreen),
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              colors: [
+                                rGreen.withOpacity(0.22),
+                                rGreen.withOpacity(0.02),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text("Cancel",
+                              style: TextStyle(
+                                  color: rWhite, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (!deleteLittleKids &&
+                              !deleteOlderKids &&
+                              !deleteGrownUps) {
+                            return;
+                          }
+                          Get.find<DuaController>().deleteDua(
+                            widget.duaModel,
+                            deleteLittleKids: deleteLittleKids,
+                            deleteOlderKids: deleteOlderKids,
+                            deleteGrownUps: deleteGrownUps,
+                          );
+                        },
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.1,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: rRed,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text("Delete",
+                              style: TextStyle(
+                                  color: rWhite, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -175,13 +329,21 @@ class _DuaTileState extends State<DuaTile> {
             )),
         Expanded(
             flex: 1,
-            child: InkWell(
-              onTap: () {
-                Get.to(EditDua(duaModel: widget.duaModel));
-              },
-              child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SvgPicture.asset("assets/svgs/eye.svg")),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () {
+                    Get.to(EditDua(duaModel: widget.duaModel));
+                  },
+                  child: SvgPicture.asset("assets/svgs/eye.svg"),
+                ),
+                const SizedBox(width: 16),
+                InkWell(
+                  onTap: () => _showDeleteDialog(context),
+                  child: const Icon(Icons.delete_outline,
+                      color: rRed, size: 20),
+                ),
+              ],
             )),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);

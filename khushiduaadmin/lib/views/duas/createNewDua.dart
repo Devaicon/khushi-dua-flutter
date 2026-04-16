@@ -126,9 +126,16 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                           children: [
                             InkWell(
                               onTap: () => Get.back(),
-                              child: const Text(
-                                "dua / ",
-                                style: TextStyle(color: rGreen),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.arrow_back_ios,
+                                      color: rGreen, size: 14),
+                                  Text(
+                                    "dua / ",
+                                    style: TextStyle(color: rGreen),
+                                  ),
+                                ],
                               ),
                             ),
                             const Text(
@@ -1821,11 +1828,14 @@ class _CreateNewDuaState extends State<CreateNewDua> {
                                         // if (duaImage == null) {
                                         //   CustomSnackbar.show("Error", "Dua image is required", isSuccess: false);
                                         // }else
-                                        if (littleKidmp3File == null ||
-                                            olderKidmp3File == null ||
-                                            grownUpmp3File == null) {
+                                        if ((isLittleKids &&
+                                                littleKidmp3File == null) ||
+                                            (isOlderKids &&
+                                                olderKidmp3File == null) ||
+                                            (isGrownUps &&
+                                                grownUpmp3File == null)) {
                                           CustomSnackbar.show("Error",
-                                              "Audio files are required",
+                                              "Audio files are required for selected sections",
                                               isSuccess: false);
                                         } else if (selectedSubCategories
                                             .isEmpty) {
@@ -1914,10 +1924,9 @@ class _CreateNewDuaState extends State<CreateNewDua> {
 
                                           duaController.createDua(
                                               duaModel,
-                                              // duaImage!,
-                                              grownUpmp3File!,
-                                              littleKidmp3File!,
-                                              olderKidmp3File!);
+                                              isGrownUps ? grownUpmp3File : null,
+                                              isLittleKids ? littleKidmp3File : null,
+                                              isOlderKids ? olderKidmp3File : null);
                                         }
                                       } else {
                                         return;

@@ -271,9 +271,16 @@ class _EditDuaState extends State<EditDua> {
                           children: [
                             InkWell(
                               onTap: () => Get.back(),
-                              child: const Text(
-                                "dua / ",
-                                style: TextStyle(color: rGreen),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.arrow_back_ios,
+                                      color: rGreen, size: 14),
+                                  Text(
+                                    "dua / ",
+                                    style: TextStyle(color: rGreen),
+                                  ),
+                                ],
                               ),
                             ),
                             const Text(
