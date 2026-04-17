@@ -174,12 +174,12 @@ class _DashboardState extends State<Dashboard> {
           showUnselectedLabels: false,
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/home.png", 0),
-              label: 'Home',
+              icon: _buildNavItem("assets/images/prayer.png", 0),
+              label: 'Prayer',
             ),
             BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/prayer.png", 1),
-              label: 'Prayer',
+              icon: _buildNavItem("assets/images/home.png", 1),
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/search.png", 2),

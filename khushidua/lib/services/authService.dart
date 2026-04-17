@@ -89,7 +89,7 @@ class AuthService {
     final FirebaseAuth auth = FirebaseAuth.instance;
     try {
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -208,5 +208,29 @@ class AuthService {
         Get.offAll(() => BlockedScreen());
       }
     });
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
+      CustomSnackbar.show(
+        "Success",
+        "Password reset email sent. Please check your inbox.".tr,
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Failed to send reset email.".tr;
+      if (e.code == 'user-not-found') {
+        errorMessage = "No user found with this email.".tr;
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "Invalid email address.".tr;
+      }
+      CustomSnackbar.show("Error", errorMessage, isSuccess: false);
+    } catch (e) {
+      CustomSnackbar.show(
+        "Error",
+        "An unexpected error occurred".tr,
+        isSuccess: false,
+      );
+    }
   }
 }

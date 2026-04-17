@@ -176,8 +176,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextFormField(
                       controller: emailController,
                       validator: (email) {
-                        if (email == null || email.isEmpty) {
+                        if (email == null || email.trim().isEmpty) {
                           return "Email is required".tr;
+                        }
+                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (!emailRegex.hasMatch(email.trim())) {
+                          return "Please enter a valid email address".tr;
                         }
                         return null;
                       },

@@ -27,7 +27,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: () => Get.find<NotificationController>().clearNotifications(),
             child: Text(
               "Clear All".tr,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -38,17 +38,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: GetBuilder<NotificationController>(
         builder: (notificationController) {
-          if (notificationController.allNotifications.isEmpty) {
+          // Filter out "test" notifications to satisfy user request
+          final activeNotifications =
+              notificationController.allNotifications.where((n) {
+                final title = n.title.toLowerCase();
+                final msg = n.message.toLowerCase();
+                return !title.contains("test") && !msg.contains("test");
+              }).toList();
+
+          if (activeNotifications.isEmpty) {
             return _buildEmptyState();
           }
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            itemCount: notificationController.allNotifications.length,
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+            itemCount: activeNotifications.length,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               return NotificationTile(
-                notificationModel:
-                    notificationController.allNotifications[index],
+                notificationModel: activeNotifications[index],
                 index: index,
               );
             },
@@ -107,7 +114,7 @@ class NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FadeInAnimationBTT(
-      delay: 1,
+      delay: index * 0.5, // 0.5 staggered delay
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(

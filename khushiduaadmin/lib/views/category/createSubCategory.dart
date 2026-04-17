@@ -121,24 +121,17 @@ class _CreateSubCategoryState extends State<CreateSubCategory> {
                     Row(
                       children: [
                         InkWell(
-                          onTap: () {
-                            Get.back();
-                            Get.back();
-                            Get.back();
-                          },
-                          child: const Text(
-                            "category / ",
-                            style: TextStyle(color: rGreen),
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () {
-                            Get.back();
-                            Get.back();
-                          },
-                          child: const Text(
-                            "edit category / ",
-                            style: TextStyle(color: rGreen),
+                          onTap: () => Get.back(),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back_ios,
+                                  color: rGreen, size: 14),
+                              Text(
+                                "back / ",
+                                style: TextStyle(color: rGreen),
+                              ),
+                            ],
                           ),
                         ),
                         const Text(
