@@ -35,12 +35,16 @@ dependencies:
   http_parser:
   path:
   flutter_html:
-  permission_handler:
+  # 13.x pulls permission_handler_android 14.x, which requires compileSdk 37; Google only
+  # publishes android-37.0/37.1, whose hash AGP 8.x cannot resolve. 12.x targets 35.
+  permission_handler: ^12.0.1
   path_provider:
   google_mobile_ads:
 
 dependency_overrides:
   record_linux: ^1.2.1
+  # html 0.15.7 removed the top-level `matches`, which flutter_html 3.0.0 uses.
+  html: 0.15.6
 
 dev_dependencies:
   flutter_test:

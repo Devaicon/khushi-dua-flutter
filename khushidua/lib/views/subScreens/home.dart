@@ -91,11 +91,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     sliver: SliverGrid(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount:
-                                3, // Converted to 3x3 grid as requested
-                            crossAxisSpacing: 15, // Slightly reduced spacing
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
                             mainAxisSpacing: 15,
-                            childAspectRatio: 0.85, // Taller to fit text
+                            childAspectRatio: 1.05,
                           ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final category = filteredCategories[index];
@@ -309,9 +308,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     bool isSelected = themeController.selectedAgeGroup == index;
     double screenWidth = MediaQuery.of(context).size.width;
-    double horizontalPadding = screenWidth < 360 ? 4 : 8;
-    double verticalPadding = screenWidth < 360 ? 6 : 10;
-    double fontSize = screenWidth < 360 ? 11 : 13;
+    double horizontalPadding = screenWidth < 360 ? 6 : 10;
+    double verticalPadding = screenWidth < 360 ? 10 : 14;
+    double fontSize = screenWidth < 360 ? 13 : 16;
 
     return InkWell(
       onTap: () => themeController.setSelectedAgeGroup(index),
@@ -397,10 +396,10 @@ class _CategoryTileState extends State<CategoryTile>
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double iconSize = screenWidth < 360 ? 28 : 36;
-    double fontSize = screenWidth < 360 ? 10 : 12;
+    double iconSize = screenWidth < 360 ? 40 : 52;
+    double fontSize = screenWidth < 360 ? 12 : 14;
     double circlePadding = screenWidth < 360 ? 10 : 16;
-    double spacing = screenWidth < 360 ? 8 : 16;
+    double spacing = screenWidth < 360 ? 8 : 12;
 
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),

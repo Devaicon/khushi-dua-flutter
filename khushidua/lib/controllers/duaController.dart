@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
 import 'package:khushidua/services/duaService.dart';
 
@@ -71,10 +72,24 @@ class DuaController extends GetxController {
   void refreshFilteredDuas() {
     if (_lastSubCategoryId == null) return;
 
+    final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
+
     _filteredDuas = _allDuas.where((dua) {
-      return dua.subCategoryIds.contains(_lastSubCategoryId);
+      if (!dua.subCategoryIds.contains(_lastSubCategoryId)) return false;
+      if (!dua.isEnabled) return false;
+
+      // Honour the per-dua age flags. These exist on every Dua document but
+      // were never consulted, so a dua restricted to one book still showed
+      // up in all three.
+      if (ageGroup == 0) return dua.littleKids;
+      if (ageGroup == 1) return dua.olderKids;
+      return dua.grownUps;
     }).toList();
 
     _sortDuas(_filteredDuas);
+
+    // Without this, switching book left the list showing the previous
+    // selection until the screen was rebuilt for some other reason.
+    update();
   }
 }

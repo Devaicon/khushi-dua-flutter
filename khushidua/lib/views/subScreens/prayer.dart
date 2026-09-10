@@ -213,7 +213,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<void> _getLocationName(Position position) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
+      List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );

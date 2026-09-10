@@ -16,6 +16,9 @@ analyzer:
     must_be_immutable: ignore
     non_constant_identifier_names: ignore
     prefer_typing_uninitialized_variables: ignore
+  exclude:
+    - build/**
+    - web/**
 include: package:flutter_lints/flutter.yaml
 
 linter:

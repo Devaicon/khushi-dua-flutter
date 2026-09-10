@@ -53,6 +53,7 @@ class DownloadTask {
 class AudioDownloadService extends GetxService {
   final RxList<DownloadTask> tasks = <DownloadTask>[].obs;
   bool _isDownloading = false;
+  bool _queueRunning = false;
   final RxDouble totalProgress = 0.0.obs;
   final RxInt completedCount = 0.obs;
   final RxInt failedCount = 0.obs;
@@ -61,6 +62,9 @@ class AudioDownloadService extends GetxService {
 
   static const String DOWNLOADS_ENABLED_KEY = "audio_downloads_enabled";
   static const String DOWNLOADS_FIRST_RUN_KEY = "audio_downloads_first_run";
+  // Bumped once so installs that were silently opted in by the old first-run
+  // behaviour get switched back off exactly one time.
+  static const String DOWNLOADS_OPT_IN_RESET_KEY = "audio_downloads_optin_reset_v1";
 
   @override
   void onInit() {
@@ -69,17 +73,25 @@ class AudioDownloadService extends GetxService {
   }
 
   void _checkAndStartDownloads() async {
+    // Downloads are opt-in. Nothing is ever fetched until the user explicitly
+    // turns background downloading on or taps a download button, so opening
+    // the Download Manager no longer starts pulling hundreds of megabytes.
     final prefs = await SharedPreferences.getInstance();
     final isFirstRun = prefs.getBool(DOWNLOADS_FIRST_RUN_KEY) ?? true;
-    // On first install, enable downloads by default so the prioritized (Grown-Up's)
-    // background download starts automatically.
     if (isFirstRun) {
       await prefs.setBool(DOWNLOADS_FIRST_RUN_KEY, false);
-      await prefs.setBool(DOWNLOADS_ENABLED_KEY, true);
+      await prefs.setBool(DOWNLOADS_ENABLED_KEY, false);
     }
 
+    // Existing installs were opted in without being asked. Clear that once so
+    // upgrading users are not still downloading in the background.
+    if (!(prefs.getBool(DOWNLOADS_OPT_IN_RESET_KEY) ?? false)) {
+      await prefs.setBool(DOWNLOADS_OPT_IN_RESET_KEY, true);
+      await prefs.setBool(DOWNLOADS_ENABLED_KEY, false);
+    }
+
+    // Resume only what the user previously opted into.
     if (await isDownloadsEnabled()) {
-      // Small delay to ensure other controllers are ready
       Future.delayed(const Duration(seconds: 2), () {
         startAutoDownload();
       });
@@ -175,10 +187,17 @@ class AudioDownloadService extends GetxService {
       }
     }
 
-    // Assign tasks and start processing
-    tasks.assignAll(newTasks);
+    // Merge, never assignAll: a bulk or per-dua selection may already be
+    // queued, and replacing the list used to silently discard it.
+    for (final task in newTasks) {
+      final existing = tasks.indexWhere((t) => t.id == task.id);
+      if (existing == -1) {
+        tasks.add(task);
+      } else if (tasks[existing].status != DownloadStatus.completed) {
+        tasks[existing] = task;
+      }
+    }
     _updateCounts();
-    _processQueue();
   }
 
   Future<DownloadTask> _createTask(
@@ -188,7 +207,7 @@ class AudioDownloadService extends GetxService {
     Directory? directory,
   ]) async {
     final dir = directory ?? await getApplicationDocumentsDirectory();
-    final fileName = "${dua.id}_${type.name}.mp3";
+    final fileName = fileNameFor(dua.id, type);
     final file = File("${dir.path}/$fileName");
     final exists = await file.exists();
 
@@ -273,6 +292,12 @@ class AudioDownloadService extends GetxService {
   }
 
   Future<void> _processQueue() async {
+    // Only one worker may drain the queue. Bulk download used to call this
+    // while auto-download was already looping, so two workers raced for the
+    // same task and downloaded it twice.
+    if (_queueRunning) return;
+    _queueRunning = true;
+
     while (_isDownloading) {
       DownloadTask? nextTask;
       try {
@@ -291,6 +316,38 @@ class AudioDownloadService extends GetxService {
       // Small delay between downloads to be "slow" and non-hindering
       await Future.delayed(const Duration(milliseconds: 300));
     }
+
+    _queueRunning = false;
+  }
+
+  /// url -> local file name, persisted so playback can find a file that was
+  /// downloaded in an earlier session (the in-memory task list starts empty).
+  static const String URL_INDEX_KEY = "audio_url_index";
+  Map<String, String>? _urlIndex;
+
+  Future<Map<String, String>> _loadUrlIndex() async {
+    if (_urlIndex != null) return _urlIndex!;
+    final prefs = await SharedPreferences.getInstance();
+    final entries = prefs.getStringList(URL_INDEX_KEY) ?? [];
+    _urlIndex = {};
+    for (final entry in entries) {
+      final split = entry.indexOf('|');
+      if (split > 0) {
+        _urlIndex![entry.substring(0, split)] = entry.substring(split + 1);
+      }
+    }
+    return _urlIndex!;
+  }
+
+  Future<void> _rememberUrl(String url, String fileName) async {
+    final index = await _loadUrlIndex();
+    if (index[url] == fileName) return;
+    index[url] = fileName;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      URL_INDEX_KEY,
+      index.entries.map((e) => "${e.key}|${e.value}").toList(),
+    );
   }
 
   Future<void> _downloadFile(DownloadTask task) async {
@@ -302,6 +359,7 @@ class AudioDownloadService extends GetxService {
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
       task.sizeInBytes = await file.length();
+      await _rememberUrl(task.url, task.fileName);
       return;
     }
 
@@ -316,6 +374,7 @@ class AudioDownloadService extends GetxService {
         task.status = DownloadStatus.completed;
         task.progress = 1.0;
         task.sizeInBytes = response.bodyBytes.length;
+        await _rememberUrl(task.url, task.fileName);
       } else {
         task.status = DownloadStatus.failed;
       }
@@ -338,19 +397,21 @@ class AudioDownloadService extends GetxService {
     }
   }
 
+  /// The single source of truth for on-disk naming. Everything that writes or
+  /// looks up a cached file must go through this — the two used to disagree
+  /// (`dua_<id>_<type>.mp3` was looked up, `<id>_<type>.mp3` was written), so
+  /// no cached file was ever found and audio always re-streamed.
+  String fileNameFor(String duaId, AudioType type) => "${duaId}_${type.name}.mp3";
+
   Future<bool> isDownloaded(String duaId, AudioType type) async {
-    final suffix = type.name;
-    final fileName = "dua_${duaId}_$suffix.mp3";
     final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/$fileName";
+    final filePath = "${directory.path}/${fileNameFor(duaId, type)}";
     return await File(filePath).exists();
   }
 
   Future<String?> getLocalPathForType(String duaId, AudioType type) async {
-    final suffix = type.name;
-    final fileName = "dua_${duaId}_$suffix.mp3";
     final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/$fileName";
+    final filePath = "${directory.path}/${fileNameFor(duaId, type)}";
     if (await File(filePath).exists()) {
       return filePath;
     }
@@ -359,28 +420,25 @@ class AudioDownloadService extends GetxService {
 
   Future<String?> getLocalPathFromUrl(String url) async {
     if (url.isEmpty) return null;
+    final directory = await getApplicationDocumentsDirectory();
+
+    // Fast path: a task from this session.
     final task = tasks.firstWhereOrNull(
       (t) => t.url == url && t.status == DownloadStatus.completed,
     );
     if (task != null) {
-      final directory = await getApplicationDocumentsDirectory();
       final filePath = "${directory.path}/${task.fileName}";
-      if (await File(filePath).exists()) {
-        return filePath;
-      }
+      if (await File(filePath).exists()) return filePath;
     }
 
-    // Fallback: check if any file in the directory matches the expected pattern for this URL
-    // This is useful if the tasks list was cleared or restarted.
-    final directory = await getApplicationDocumentsDirectory();
-    final List<FileSystemEntity> files = directory.listSync();
-    for (var file in files) {
-      if (file is File && file.path.endsWith(".mp3")) {
-        // We don't easily know which URL matches which file without the tasks list
-        // unless we store a mapping.
-        // For now, the task list is populated on init for auto-downloads.
-      }
+    // Persisted path: downloaded in an earlier session, so `tasks` is empty.
+    final index = await _loadUrlIndex();
+    final fileName = index[url];
+    if (fileName != null) {
+      final filePath = "${directory.path}/$fileName";
+      if (await File(filePath).exists()) return filePath;
     }
+
     return null;
   }
 
@@ -398,9 +456,7 @@ class AudioDownloadService extends GetxService {
     final List<FileSystemEntity> files = directory.listSync();
     int totalSize = 0;
     for (var file in files) {
-      if (file is File &&
-          file.path.contains("dua_") &&
-          file.path.endsWith(".mp3")) {
+      if (file is File && file.path.endsWith(".mp3")) {
         totalSize += await file.length();
       }
     }

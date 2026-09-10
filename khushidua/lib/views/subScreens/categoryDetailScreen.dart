@@ -32,14 +32,19 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userController = Get.find<UserController>();
-
     return SafeArea(
       child: Scaffold(
-        body: GetBuilder<CategoryController>(
+        // Listening to a dua writes readDuas on the user document, which the
+        // live snapshot pushes into UserController. Without a
+        // GetBuilder<UserController> here, this screen never rebuilt on that
+        // change, so newly unlocked sections only appeared after navigating
+        // away and back.
+        body: GetBuilder<UserController>(
+          builder: (userController) => GetBuilder<DuaController>(
+            builder: (duaController) => GetBuilder<CategoryController>(
           builder: (categoryController) {
             final subCategories = categoryController.filteredSubCategories;
-            final allDuas = Get.find<DuaController>().allDuas;
+            final allDuas = duaController.allDuas;
             final userModel = userController.userModel;
             final readDuas = userModel?.readDuas ?? [];
             final total = subCategories.length;
@@ -175,6 +180,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               ],
             );
           },
+            ),
+          ),
         ),
       ),
     );
