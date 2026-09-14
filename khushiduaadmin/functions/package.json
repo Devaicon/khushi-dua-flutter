@@ -1,9 +1,9 @@
 {
   "name": "khushidua-functions",
-  "description": "Cloud Functions for Khushi Dua — admin-gated FCM sending",
+  "description": "Cloud Functions for Khushi Dua \u2014 admin-gated FCM sending",
   "main": "index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "serve": "firebase emulators:start --only functions",
@@ -11,8 +11,8 @@
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^5.1.1"
+    "firebase-admin": "^14.3.0",
+    "firebase-functions": "^7.3.2"
   },
   "private": true
 }

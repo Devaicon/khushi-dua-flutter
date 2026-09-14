@@ -12,13 +12,15 @@
 
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {setGlobalOptions} = require("firebase-functions/v2");
-const admin = require("firebase-admin");
+const {initializeApp} = require("firebase-admin/app");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
+const {getMessaging} = require("firebase-admin/messaging");
 
-admin.initializeApp();
+initializeApp();
 setGlobalOptions({region: "us-central1", maxInstances: 10});
 
-const db = admin.firestore();
-const messaging = admin.messaging();
+const db = getFirestore();
+const messaging = getMessaging();
 
 /** Throws unless the caller is signed in and listed in /Management. */
 async function assertAdmin(request) {
@@ -99,7 +101,7 @@ exports.sendGlobalNotification = onCall(async (request) => {
     id: notificationId,
     title,
     message,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     sentTo: null,
   });
 
@@ -162,7 +164,7 @@ exports.sendIndividualNotification = onCall(async (request) => {
     id: notificationId,
     title,
     message,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     sentTo: userId,
   });
 

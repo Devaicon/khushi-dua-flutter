@@ -20,6 +20,9 @@ android {
     ndkVersion = "29.0.14206865"
 
     compileOptions {
+        // Required by flutter_local_notifications, which uses java.time APIs
+        // that are not available on older Android API levels.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -65,6 +68,10 @@ android {
             )
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

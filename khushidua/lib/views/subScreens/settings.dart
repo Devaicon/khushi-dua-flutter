@@ -13,6 +13,8 @@ import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
 import '../subSettings/languageSettings.dart';
 import '../subSettings/audioDownloadSettings.dart';
+import '../subSettings/azkarReminderSettings.dart';
+import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/profileAvatar.dart';
 import '../../widgets/customSnackbar.dart';
 
@@ -36,6 +38,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       icon: Icons.language,
     ),
     SettingsModel(
+      title: "Azkar Reminders",
+      subTitle: "Morning and evening Azkar",
+      icon: Icons.notifications_active_outlined,
+    ),
+    SettingsModel(
+      title: "Salah Reminders",
+      subTitle: "Get notified at prayer times",
+      icon: Icons.mosque_outlined,
+    ),
+    SettingsModel(
       title: "Share",
       subTitle: "Share with friends",
       icon: Icons.share,
@@ -48,6 +60,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void languageSettings() {
     Get.to(const LanguageSettings(), transition: Transition.fade);
+  }
+
+  void azkarReminderSettings() {
+    Get.to(const AzkarReminderSettings(), transition: Transition.fade);
+  }
+
+  void salahReminderSettings() {
+    Get.to(const SalahReminderSettings(), transition: Transition.fade);
   }
 
   void shareApp() async {
@@ -120,6 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     List<VoidCallback> functionsList = [
       downloadSettings,
       languageSettings,
+      azkarReminderSettings,
+      salahReminderSettings,
       shareApp,
     ];
 
@@ -246,8 +268,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SettingTile(settingsList[1], functionsList[1]),
 
                       const SizedBox(height: 20),
-                      _buildSectionTitle("SUPPORT".tr),
+                      _buildSectionTitle("REMINDERS".tr),
                       SettingTile(settingsList[2], functionsList[2]),
+                      SettingTile(settingsList[3], functionsList[3]),
+
+                      const SizedBox(height: 20),
+                      _buildSectionTitle("SUPPORT".tr),
+                      SettingTile(settingsList[4], functionsList[4]),
 
                       const SizedBox(height: 30),
 

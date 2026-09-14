@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:khushidua/views/dashboard.dart';
 
 import 'controllers/initController.dart';
+import 'services/reminderService.dart';
 import 'controllers/localization.dart';
 import 'firebase_options.dart';
 
@@ -23,6 +24,10 @@ void main() async {
 
   // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // Local notifications for the Azkar and Salah reminders. Awaited so a
+  // notification that launched the app is captured before the first frame.
+  await ReminderService.instance.init();
 
   MobileAds.instance
       .initialize()
