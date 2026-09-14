@@ -131,37 +131,35 @@ class DuaModel {
   }
 
   factory DuaModel.fromMap(Map<String, dynamic> map) {
-    return DuaModel(
+    final dua = DuaModel(
       id: map["id"] ?? '',
-      createdAt: map["createdAt"] != null
-          ? map["createdAt"].toDate()
-          : DateTime.now(),
+      createdAt:
+          map["createdAt"] != null ? map["createdAt"].toDate() : DateTime.now(),
       arabic: map["arabic"] ?? '',
       transliteration: map["transliteration"] ?? '',
       bengali: map["bengali"] ?? '',
       english: map["english"] ?? '',
       french: map["french"] ?? '',
       german: map["german"] ?? '',
-      gujrati: map["gujrati"] ?? map["gujarati"] ?? '',
+      gujrati: map["gujrati"] ?? '',
       hindi: map["hindi"] ?? '',
       indonesian: map["indonesian"] ?? '',
       isEnabled: map["isEnabled"] ?? true,
       japanese: map["japanese"] ?? '',
       subCategoryIds: List<String>.from(map["subCategoryIds"] ?? []),
       malay: map["malay"] ?? '',
-      mandrain: map["mandrain"] ?? map["mandarin"] ?? '',
+      mandrain: map["mandrain"] ?? '',
       marathi: map["marathi"] ?? '',
-      portugese: map["portugese"] ?? map["portuguese"] ?? '',
+      portugese: map["portugese"] ?? '',
       punjabi: map["punjabi"] ?? '',
       russian: map["russian"] ?? '',
       sindhi: map["sindhi"] ?? '',
       spanish: map["spanish"] ?? '',
       tamil: map["tamil"] ?? '',
-      telgu: map["telgu"] ?? map["telugu"] ?? '',
+      telgu: map["telgu"] ?? '',
       turkish: map["turkish"] ?? '',
-      updatedAt: map["updatedAt"] != null
-          ? map["updatedAt"].toDate()
-          : DateTime.now(),
+      updatedAt:
+          map["updatedAt"] != null ? map["updatedAt"].toDate() : DateTime.now(),
       urdu: map["urdu"] ?? '',
       order: map["order"] ?? 0,
       littleKids: map["littleKids"] ?? true,

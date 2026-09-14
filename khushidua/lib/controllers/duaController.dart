@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
 import 'package:khushidua/services/duaService.dart';
 
+import '../controllers/themeController.dart';
 import '../models/duaModel.dart';
 
 class DuaController extends GetxController {
@@ -63,16 +64,12 @@ class DuaController extends GetxController {
   }
 
   getFilteredDuas(SubCategoryModel subCategoryModel) {
-    _lastSubCategoryId = subCategoryModel.id;
-    refreshFilteredDuas();
-    update();
-  }
-
-  void refreshFilteredDuas() {
-    if (_lastSubCategoryId == null) return;
-
+    final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
     _filteredDuas = _allDuas.where((dua) {
-      return dua.subCategoryIds.contains(_lastSubCategoryId);
+      if (!dua.subCategoryIds.contains(subCategoryModel.id)) return false;
+      if (ageGroup == 0) return dua.littleKids;
+      if (ageGroup == 1) return dua.olderKids;
+      return dua.grownUps;
     }).toList();
 
     _sortDuas(_filteredDuas);
