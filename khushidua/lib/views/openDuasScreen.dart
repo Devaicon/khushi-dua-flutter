@@ -1402,17 +1402,6 @@ class _DuaTileState extends State<DuaTile> {
         widget.dua.benefitsString != null &&
         widget.dua.benefitsString!.isNotEmpty;
 
-    if (!widget.dua.hasBenefits() &&
-        widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay" &&
-        !hasStringBenefits) {
-      return _buildBenefitContainer(
-        "this is the best dua",
-        isRtl,
-        themeController,
-        userLanguage,
-      );
-    }
-
     if (!widget.dua.hasBenefits() && !hasStringBenefits) {
       return const SizedBox.shrink();
     }
@@ -1726,16 +1715,20 @@ class _DuaTileState extends State<DuaTile> {
     Color accentColor,
   ) {
     bool isExpanded = widget.expandedBenefitsDuaId == widget.dua.id;
-    bool hasBenefits =
-        widget.dua.hasBenefits() || widget.dua.id == "8Sbwp6FmZK7wZUuYk4Ay";
+    bool hasBenefits = widget.dua.hasBenefits();
 
-    if (!hasBenefits) return const SizedBox.shrink();
+    // The row is always rendered. With a benefit it is live and expandable;
+    // without one it stays greyed out and inert, so the reader can see at a
+    // glance whether this dua has a benefit recorded.
+    final Color labelColor = hasBenefits ? rtext : Colors.grey;
+    final Color iconColor = hasBenefits ? accentColor : Colors.grey;
 
     return Column(
       children: [
         InkWell(
-          onTap: () =>
-              widget.onToggleBenefits(isExpanded ? null : widget.dua.id),
+          onTap: hasBenefits
+              ? () => widget.onToggleBenefits(isExpanded ? null : widget.dua.id)
+              : null,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             decoration: BoxDecoration(
@@ -1745,24 +1738,30 @@ class _DuaTileState extends State<DuaTile> {
             ),
             child: Row(
               children: [
-                Icon(Icons.auto_awesome_outlined, size: 18, color: accentColor),
+                Icon(Icons.auto_awesome_outlined, size: 18, color: iconColor),
                 const SizedBox(width: 8),
                 Text(
                   "Benefits & Virtues".tr,
                   style: TextStyle(
-                    color: rtext,
+                    color: labelColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: Colors.grey,
-                  size: 20,
-                ),
+                if (hasBenefits)
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Colors.grey,
+                    size: 20,
+                  )
+                else
+                  Text(
+                    "None".tr,
+                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                  ),
               ],
             ),
           ),
@@ -1770,7 +1769,7 @@ class _DuaTileState extends State<DuaTile> {
         AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          child: isExpanded
+          child: isExpanded && hasBenefits
               ? Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: _buildBenefitsList(),

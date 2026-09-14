@@ -1,12 +1,14 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    // Content assets are served to the app through tokenised download URLs,
+    // which bypass these rules; public read keeps untokenised paths working too.
+    // Uploads come from the admin panel, signed in as a /Management user.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.exists(/databases/(default)/documents/Management/$(request.auth.uid));
     }
   }
 }

@@ -13,6 +13,7 @@ import 'package:khushiduaadmin/views/tabs/notifications.dart';
 import 'package:khushiduaadmin/views/tabs/profile.dart';
 import 'package:khushiduaadmin/views/tabs/users.dart';
 import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
+import 'package:khushiduaadmin/views/tabs/homeBanner.dart';
 import 'dart:html' as html;
 import '../constants/colors.dart';
 import '../controllers/authController.dart';
@@ -36,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     NotificationTab(),
     ProfileTab(),
     MLSettingsTab(),
+    HomeBannerTab(),
   ];
 
   @override
@@ -79,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSidebar(),
           Expanded(
             child: IndexedStack(
-              index: _selectedTab > 6
+              index: _selectedTab > 7
                   ? 0
                   : _selectedTab, // Fallback for logout tab index
               children: _tabs,
@@ -114,6 +116,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Column(
             children: [
               _buildSidebarItem(5, 'Profile', 'assets/svgs/user.svg'),
+              _buildSidebarItem(7, 'Home Banner', null,
+                  iconData: Icons.view_carousel_outlined),
               _buildSidebarItem(6, 'ML Settings', null,
                   iconData: Icons.settings_applications),
               _buildSidebarItem(8, 'Logout', 'assets/svgs/logout.svg',

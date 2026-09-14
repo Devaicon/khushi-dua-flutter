@@ -5,6 +5,7 @@ import 'package:khushiduaadmin/controllers/duaController.dart';
 import 'package:khushiduaadmin/controllers/notificationController.dart';
 import 'package:khushiduaadmin/controllers/userController.dart';
 import 'package:khushiduaadmin/controllers/mlSettingsController.dart';
+import 'package:khushiduaadmin/controllers/homeBannerController.dart';
 
 class InitController extends Bindings {
   @override
@@ -15,5 +16,6 @@ class InitController extends Bindings {
     Get.put(UserController(), permanent: true);
     Get.put(NotificationController(), permanent: true);
     Get.put(MLSettingsController(), permanent: true);
+    Get.put(HomeBannerController(), permanent: true);
   }
 }

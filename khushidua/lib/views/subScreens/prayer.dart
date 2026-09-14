@@ -11,7 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../controllers/reminderController.dart';
+import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
+import '../../widgets/salahBanner.dart';
 import '../qiblaDirection.dart';
 
 class PrayerScreen extends StatefulWidget {
@@ -76,6 +79,24 @@ class _PrayerScreenState extends State<PrayerScreen> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _calculateNextPrayer();
     });
+  }
+
+  /// The computed start time for a schedulable prayer, if it is available.
+  DateTime? _prayerTimeFor(String prayer) {
+    switch (prayer) {
+      case "Fajr":
+        return _prayerTimes?.fajrStartTime;
+      case "Dhuhr":
+        return _prayerTimes?.dhuhrStartTime;
+      case "Asr":
+        return _prayerTimes?.asrStartTime;
+      case "Maghrib":
+        return _prayerTimes?.maghribStartTime;
+      case "Ishaa":
+        return _prayerTimes?.ishaStartTime;
+      default:
+        return null;
+    }
   }
 
   void _calculateNextPrayer() {
@@ -213,7 +234,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<void> _getLocationName(Position position) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(
+      List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(
         position.latitude,
         position.longitude,
       );
@@ -450,6 +471,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
         isLoadingPrayerTimes = false;
       });
 
+      // Re-arm the Salah reminders against the freshly computed times. Safe to
+      // call when the reminders are off: the controller cancels instead.
+      await Get.find<ReminderController>().syncSalahReminders({
+        for (final prayer in kSchedulablePrayers)
+          if (_prayerTimeFor(prayer) != null) prayer: _prayerTimeFor(prayer)!,
+      });
+
       debugPrint(
         'Prayer times calculated successfully. List length: ${_namazList.length}',
       );
@@ -628,6 +656,14 @@ class _PrayerScreenState extends State<PrayerScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [_buildLocationHeader(), _buildCompassButton()],
                     ),
+                  ),
+                ),
+
+                // Salah time banner
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: SalahBanner(),
                   ),
                 ),
 
@@ -1074,6 +1110,19 @@ class _NamazTileState extends State<NamazTile> {
                         color: Colors.white,
                       ),
                     ),
+                    if (widget._namazModel.arabicName.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        widget._namazModel.arabicName,
+                        style: TextStyle(
+                          fontFamily: 'arabic',
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(
+                            widget.isNext ? 0.9 : 0.7,
+                          ),
+                        ),
+                      ),
+                    ],
                     if (widget.isNext)
                       Container(
                         margin: const EdgeInsets.only(left: 8),

@@ -7,9 +7,14 @@ import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
 import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
+import '../../controllers/reminderController.dart';
+import '../../controllers/homeBannerController.dart';
+import '../../models/homeBannerModel.dart';
+import '../subSettings/azkarReminderSettings.dart';
 import '../../models/categoryModel.dart';
 import 'categoryDetailScreen.dart';
 import '../../widgets/profileAvatar.dart';
+import '../../widgets/salahBanner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -75,6 +80,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ).paddingSymmetric(horizontal: 20),
                   ),
 
+                  // Salah time banner
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: SalahBanner(),
+                    ),
+                  ),
+
+                  // Azkar Reminder
+                  SliverToBoxAdapter(
+                    child: _buildAzkarCard().paddingOnly(
+                      left: 20,
+                      right: 20,
+                      top: 12,
+                    ),
+                  ),
+
                   // Age Group Selector
                   SliverToBoxAdapter(
                     child: _buildAgeGroupSelector(
@@ -91,11 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     sliver: SliverGrid(
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount:
-                                3, // Converted to 3x3 grid as requested
-                            crossAxisSpacing: 15, // Slightly reduced spacing
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
                             mainAxisSpacing: 15,
-                            childAspectRatio: 0.85, // Taller to fit text
+                            childAspectRatio: 1.05,
                           ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final category = filteredCategories[index];
@@ -195,6 +216,51 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBanner(ThemeController themeController) {
+    return GetBuilder<HomeBannerController>(
+      builder: (bannerController) {
+        final banner = bannerController.banner;
+        final language = Get.find<UserController>().selectedLanguage;
+
+        // Until an admin publishes a banner, keep the copy the app shipped
+        // with so the home screen never looks empty.
+        final title = banner.hasContent(language)
+            ? banner.titleFor(language)
+            : "Ready to learn and play?".tr;
+        final subtitle = banner.hasContent(language)
+            ? banner.subtitleFor(language)
+            : "Listen to available duas to UNLOCK remaining duas".tr;
+
+        final content = _bannerBody(themeController, banner, title, subtitle);
+
+        if (!banner.hasLink) return content;
+
+        return InkWell(
+          onTap: () => _openBannerLink(banner.linkCategoryId),
+          borderRadius: BorderRadius.circular(24),
+          child: content,
+        );
+      },
+    );
+  }
+
+  /// Opens the category the admin linked the banner to. Does nothing when the
+  /// id no longer matches a category, rather than pushing a blank screen.
+  void _openBannerLink(String categoryId) {
+    final categories = Get.find<CategoryController>().filteredCategories;
+    final match = categories.where((c) => c.id == categoryId);
+    if (match.isEmpty) return;
+    Get.to(
+      () => CategoryDetailScreen(match.first, rpurple),
+      transition: Transition.rightToLeft,
+    );
+  }
+
+  Widget _bannerBody(
+    ThemeController themeController,
+    HomeBannerModel banner,
+    String title,
+    String subtitle,
+  ) {
     Color accentColor = themeController.selectedAgeGroup == 0
         ? rpink
         : themeController.selectedAgeGroup == 1
@@ -236,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Ready to learn and play?".tr,
+                        title,
                         style: TextStyle(
                           color: rtext.withOpacity(0.7),
                           fontSize: 13,
@@ -244,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Listen to available duas to UNLOCK remaining duas".tr,
+                        subtitle,
                         style: TextStyle(
                           color: rtext,
                           fontWeight: FontWeight.w900,
@@ -267,16 +333,107 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Image.asset(
-                  "assets/images/homeBannerImage.png",
-                  width: 80,
-                  height: 80,
-                ),
+                // An admin-uploaded image replaces the bundled one; a broken
+                // or slow URL falls back to the asset rather than a grey box.
+                banner.hasImage
+                    ? Image.network(
+                        banner.imageUrl,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          "assets/images/homeBannerImage.png",
+                          width: 80,
+                          height: 80,
+                        ),
+                      )
+                    : Image.asset(
+                        "assets/images/homeBannerImage.png",
+                        width: 80,
+                        height: 80,
+                      ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Entry point for the Azkar reminders. Shows the next reminder time when
+  /// they are on, and an invitation to switch them on when they are off.
+  Widget _buildAzkarCard() {
+    return GetBuilder<ReminderController>(
+      builder: (reminder) {
+        final isOn = reminder.azkarEnabled;
+        final accent = isOn ? rpurple : Colors.grey;
+
+        return InkWell(
+          onTap: () => Get.to(
+            const AzkarReminderSettings(),
+            transition: Transition.fade,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accent.withOpacity(0.25)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    isOn
+                        ? Icons.notifications_active_rounded
+                        : Icons.notifications_off_outlined,
+                    color: isOn ? rtext : Colors.grey,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Azkar Reminders".tr,
+                        style: TextStyle(
+                          color: rtext,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isOn
+                            ? "${reminder.morningTime.format(context)}  •  ${reminder.eveningTime.format(context)}"
+                            : "Tap to set morning and evening reminders".tr,
+                        style: TextStyle(
+                          color: rtext.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: rtext.withOpacity(0.4),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -309,9 +466,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     bool isSelected = themeController.selectedAgeGroup == index;
     double screenWidth = MediaQuery.of(context).size.width;
-    double horizontalPadding = screenWidth < 360 ? 4 : 8;
-    double verticalPadding = screenWidth < 360 ? 6 : 10;
-    double fontSize = screenWidth < 360 ? 11 : 13;
+    double horizontalPadding = screenWidth < 360 ? 6 : 10;
+    double verticalPadding = screenWidth < 360 ? 10 : 14;
+    double fontSize = screenWidth < 360 ? 13 : 16;
 
     return InkWell(
       onTap: () => themeController.setSelectedAgeGroup(index),
@@ -397,10 +554,10 @@ class _CategoryTileState extends State<CategoryTile>
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double iconSize = screenWidth < 360 ? 28 : 36;
-    double fontSize = screenWidth < 360 ? 10 : 12;
+    double iconSize = screenWidth < 360 ? 40 : 52;
+    double fontSize = screenWidth < 360 ? 12 : 14;
     double circlePadding = screenWidth < 360 ? 10 : 16;
-    double spacing = screenWidth < 360 ? 8 : 16;
+    double spacing = screenWidth < 360 ? 8 : 12;
 
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),

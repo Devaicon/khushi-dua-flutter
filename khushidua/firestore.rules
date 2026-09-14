@@ -3,17 +3,39 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    // An admin is any signed-in user with a document in /Management,
+    // which is how khushiduaadmin identifies its operators.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/Management/$(request.auth.uid));
+    }
+
+    // Public content. The mobile app reads these without signing in,
+    // so read must not require auth. Writes come from the admin panel.
+    match /Category/{doc}            { allow read: if true; allow write: if isAdmin(); }
+    match /SubCategory/{doc}         { allow read: if true; allow write: if isAdmin(); }
+    match /Dua/{doc}                 { allow read: if true; allow write: if isAdmin(); }
+    match /SystemConfiguration/{doc} { allow read: if true; allow write: if isAdmin(); }
+
+    // The app queries this collection unauthenticated (sentTo == null),
+    // so the whole collection must be listable.
+    match /Notifications/{doc}       { allow read: if true; allow write: if isAdmin(); }
+
+    // Admin roster. The app never reads this; keep operator emails private.
+    match /Management/{adminId} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == adminId);
+      allow write: if isAdmin();
+    }
+
+    // App users own their profile; the admin panel lists and edits them.
+    match /Users/{userId} {
+      allow read, write: if isAdmin()
+        || (request.auth != null && request.auth.uid == userId);
+    }
+
+    // Everything else is denied.
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 6, 10);
+      allow read, write: if false;
     }
   }
 }
