@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/notificationController.dart';
@@ -28,11 +27,9 @@ class NotificationService {
     // ✅ User-specific notifications
     final user = _userController.userModel;
     if (user != null) {
-      debugPrint("if called");
       notificationRef.where('sentTo', isEqualTo: user.id).snapshots().listen((
         event,
       ) {
-        debugPrint("funct called");
         event.docChanges.forEach((element) {
           if (element.type == DocumentChangeType.added ||
               element.type == DocumentChangeType.modified) {

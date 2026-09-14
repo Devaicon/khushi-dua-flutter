@@ -33,8 +33,13 @@ class DuaController extends GetxController {
     if (shouldUpdate) update();
   }
 
-  createDua(DuaModel duaModel, File grownUpmp3File, File littleKidmp3File,
-      File olderKidmp3File) {
+  removeDuaFromList(String id) {
+    _allDuas.removeWhere((dua) => dua.id == id);
+    update();
+  }
+
+  createDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File,
+      File? olderKidmp3File) {
     DuaService()
         .createDua(duaModel, grownUpmp3File, littleKidmp3File, olderKidmp3File);
   }
@@ -43,5 +48,15 @@ class DuaController extends GetxController {
       File? olderKidmp3File, File? englishTrans, File? urduTrans) {
     DuaService().updateDua(duaModel, grownUpmp3File, littleKidmp3File,
         olderKidmp3File, englishTrans, urduTrans);
+  }
+
+  deleteDua(DuaModel duaModel,
+      {required bool deleteLittleKids,
+      required bool deleteOlderKids,
+      required bool deleteGrownUps}) {
+    DuaService().deleteDua(duaModel,
+        deleteLittleKids: deleteLittleKids,
+        deleteOlderKids: deleteOlderKids,
+        deleteGrownUps: deleteGrownUps);
   }
 }

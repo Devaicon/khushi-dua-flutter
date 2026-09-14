@@ -20,24 +20,35 @@ class _FadeInAnimationBTTState extends State<FadeInAnimationBTT>
   void initState() {
     super.initState();
     controller = AnimationController(
-        duration: Duration(milliseconds: (500 * widget.delay).round()),
-        vsync: this);
-    animation2 = Tween<double>(begin: 100, end: 0).animate(controller)
-      ..addListener(() {
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    animation2 = Tween<double>(begin: 40, end: 0).animate(
+      CurvedAnimation(parent: controller, curve: Curves.easeOutCubic),
+    )..addListener(() {
         setState(() {});
       });
 
-    animation = Tween<double>(begin: 0, end: 1).animate(controller)
-      ..addListener(() {
-        setState(() {
-          // The state that has changed here is the animation object’s value.
-        });
+    animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: controller, curve: Curves.easeIn),
+    )..addListener(() {
+        setState(() {});
       });
+
+    // Start with delay
+    _startAnimation();
+  }
+
+  void _startAnimation() async {
+    await Future.delayed(Duration(milliseconds: (200 * widget.delay).round()));
+    if (mounted) {
+      controller.forward();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    controller.forward();
     return Transform.translate(
       offset: Offset(0, animation2.value),
       child: Opacity(

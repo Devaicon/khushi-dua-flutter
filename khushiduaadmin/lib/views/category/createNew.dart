@@ -98,9 +98,16 @@ class _CreateNewCategoryState extends State<CreateNewCategory> {
                       children: [
                         InkWell(
                           onTap: () => Get.back(),
-                          child: const Text(
-                            "category / ",
-                            style: TextStyle(color: rGreen),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back_ios,
+                                  color: rGreen, size: 14),
+                              Text(
+                                "category / ",
+                                style: TextStyle(color: rGreen),
+                              ),
+                            ],
                           ),
                         ),
                         const Text(

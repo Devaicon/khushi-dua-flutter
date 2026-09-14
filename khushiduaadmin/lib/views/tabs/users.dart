@@ -29,9 +29,10 @@ class _UsersTabState extends State<UsersTab> {
       backgroundColor: rBlack,
       body: GetBuilder<UserController>(
         builder: (userController) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               const TopBar(title: "Users"),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -221,6 +222,7 @@ class _UsersTabState extends State<UsersTab> {
                     ListView.builder(
                       itemCount: userController.allUsers.length,
                       shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       itemBuilder: (context, index) {
                         return UserTile(userController.allUsers[index]);
                       },
@@ -228,8 +230,9 @@ class _UsersTabState extends State<UsersTab> {
                   ],
                 ),
               )
-            ],
-          ).marginSymmetric(horizontal: 12, vertical: 12);
+              ],
+            ).marginSymmetric(horizontal: 12, vertical: 12),
+          );
         },
       ),
     );
@@ -418,23 +421,35 @@ class _UserTileState extends State<UserTile> {
               ),
               GestureDetector(
                 onTap: () async {
-                  await userRef
-                      .doc(widget.userModel.id)
-                      .update({"isBlocked": action});
-                  if (action == true) {
-                    await Get.find<NotificationController>()
-                        .sendIndividualNotification(
-                            widget.userModel,
-                            "Account suspended",
-                            "Your account has been blocked due to malicious activity");
-                  } else {
-                    await Get.find<NotificationController>()
-                        .sendIndividualNotification(
-                            widget.userModel,
-                            "Account activated",
-                            "Your account has been unbanned");
-                  }
                   Get.back();
+                  try {
+                    await userRef
+                        .doc(widget.userModel.id)
+                        .update({"isBlocked": action});
+                        
+                    Get.snackbar(
+                      "Success",
+                      action ? "User blocked successfully" : "User unblocked successfully",
+                      backgroundColor: rGreen,
+                      colorText: rWhite,
+                    );
+
+                    if (action == true) {
+                      await Get.find<NotificationController>()
+                          .sendIndividualNotification(
+                              widget.userModel,
+                              "Account suspended",
+                              "Your account has been blocked due to malicious activity");
+                    } else {
+                      await Get.find<NotificationController>()
+                          .sendIndividualNotification(
+                              widget.userModel,
+                              "Account activated",
+                              "Your account has been unbanned");
+                    }
+                  } catch (e) {
+                    debugPrint("Error updating block status: $e");
+                  }
                 },
                 child: Container(
                   // width: MediaQuery.of(context).size.width * 0.7,
@@ -502,23 +517,35 @@ class _UserTileState extends State<UserTile> {
               ),
               GestureDetector(
                 onTap: () async {
-                  await userRef
-                      .doc(widget.userModel.id)
-                      .update({"isMember": action});
-                  if (action) {
-                    await Get.find<NotificationController>()
-                        .sendIndividualNotification(
-                            widget.userModel,
-                            "Account upgraded",
-                            "You have successfully purchased premium membership");
-                  } else {
-                    await Get.find<NotificationController>()
-                        .sendIndividualNotification(
-                            widget.userModel,
-                            "Account degraded",
-                            "You account membership has been expired");
-                  }
                   Get.back();
+                  try {
+                    await userRef
+                        .doc(widget.userModel.id)
+                        .update({"isMember": action});
+                        
+                    Get.snackbar(
+                      "Success",
+                      action ? "Membership granted successfully" : "Membership revoked successfully",
+                      backgroundColor: rGreen,
+                      colorText: rWhite,
+                    );
+
+                    if (action) {
+                      await Get.find<NotificationController>()
+                          .sendIndividualNotification(
+                              widget.userModel,
+                              "Account upgraded",
+                              "You have successfully purchased premium membership");
+                    } else {
+                      await Get.find<NotificationController>()
+                          .sendIndividualNotification(
+                              widget.userModel,
+                              "Account degraded",
+                              "You account membership has been expired");
+                    }
+                  } catch (e) {
+                    debugPrint("Error updating membership status: $e");
+                  }
                 },
                 child: Container(
                   // width: MediaQuery.of(context).size.width * 0.7,

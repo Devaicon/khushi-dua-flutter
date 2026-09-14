@@ -55,30 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (themeController) {
           return GetBuilder<CategoryController>(
             builder: (categoryController) {
-              List<CategoryModel> filteredCategories = categoryController
-                  .allCategories
-                  .where((category) {
-                    if (themeController.selectedAgeGroup == 0) {
-                      return category.littleKids;
-                    } else if (themeController.selectedAgeGroup == 1) {
-                      return category.olderKids;
-                    } else {
-                      return category.grownUps;
-                    }
-                  })
-                  .toList();
-
-              filteredCategories.removeWhere(
-                (element) => element.isEnabled == false,
-              );
-
-              if (themeController.selectedAgeGroup == 0) {
-                filteredCategories.removeWhere((category) {
-                  final categoryName = category.english.toLowerCase();
-                  return categoryName.contains('family') &&
-                      categoryName.contains('wedding');
-                });
-              }
+              final filteredCategories = categoryController.filteredCategories;
 
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -226,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [

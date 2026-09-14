@@ -3,7 +3,8 @@ class AppTranslations {
     "English": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Ready to learn and play?",
-      "Listen to available duas to UNLOCK remaining duas": "Listen to available duas to UNLOCK remaining duas",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Listen to available duas to UNLOCK remaining duas",
       "Little Kids": "Little Kids",
       "Older Kids": "Older Kids",
       "Grown ups": "Grown ups",
@@ -38,12 +39,36 @@ class AppTranslations {
       "Login now! ": "Login now! ",
       "New with us? ": "New with us? ",
       "Signup now! ": "Signup now! ",
-      "Notifications": "Notifications"
+      "Notifications": "Notifications",
+      "Signed up successfully": "Signed up successfully",
+      "Login successful": "Login successful",
+      "Invalid email or password.": "Invalid email or password.",
+      "Wrong password provided.": "Wrong password provided.",
+      "The email address is badly formatted.":
+          "The email address is badly formatted.",
+      "Network error. Please check your internet connection.":
+          "Network error. Please check your internet connection.",
+      "This user has been disabled.": "This user has been disabled.",
+      "Too many failed attempts. Please try again later.":
+          "Too many failed attempts. Please try again later.",
+      "Something went wrong. Try again later":
+          "Something went wrong. Try again later",
+      "An unexpected error occurred": "An unexpected error occurred",
+      "This email is already registered.": "This email is already registered.",
+      "The password provided is too weak.":
+          "The password provided is too weak.",
+      "Success": "Success",
+      "Select Your Avatar": "Select Your Avatar",
+      "Boy": "Boy",
+      "Girl": "Girl",
+      "Cancel": "Cancel",
+      "Error": "Error",
     },
     "Arabic": {
       "Assalam o Alaikum": "السلام عليكم",
       "Ready to learn and play?": "مستعد للتعلم واللعب؟",
-      "Listen to available duas to UNLOCK remaining duas": "إذا استمعت إلى جميع الأدعية المتاحة، فستفتح جميع الأدعية",
+      "Listen to available duas to UNLOCK remaining duas":
+          "إذا استمعت إلى جميع الأدعية المتاحة، فستفتح جميع الأدعية",
       "Little Kids": "الأطفال الصغار",
       "Older Kids": "الأطفال الأكبر سناً",
       "Grown ups": "الكبار",
@@ -78,12 +103,13 @@ class AppTranslations {
       "Login now! ": "سجل دخولك الآن! ",
       "New with us? ": "جديد معنا؟ ",
       "Signup now! ": "اشترك الآن! ",
-      "Notifications": "الإشعارات"
+      "Notifications": "الإشعارات",
     },
     "Bengali": {
       "Assalam o Alaikum": "আসসালামু আলাইকুম",
       "Ready to learn and play?": "শিখতে এবং খেলতে প্রস্তুত?",
-      "Listen to available duas to UNLOCK remaining duas": "আপনি যদি সমস্ত উপলব্ধ দোয়া শোনেন তবে আপনি সমস্ত দোয়া আনলক করেন",
+      "Listen to available duas to UNLOCK remaining duas":
+          "আপনি যদি সমস্ত উপলব্ধ দোয়া শোনেন তবে আপনি সমস্ত দোয়া আনলক করেন",
       "Little Kids": "ছোট বাচ্চারা",
       "Older Kids": "বড় বাচ্চারা",
       "Grown ups": "বড়রা",
@@ -118,12 +144,13 @@ class AppTranslations {
       "Login now! ": "এখনই লগইন করুন! ",
       "New with us? ": "আমাদের সাথে নতুন? ",
       "Signup now! ": "এখনই সাইন আপ করুন! ",
-      "Notifications": "বিজ্ঞপ্তি"
+      "Notifications": "বিজ্ঞপ্তি",
     },
     "French": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Prêt à apprendre et jouer?",
-      "Listen to available duas to UNLOCK remaining duas": "Si vous écoutez toutes les duas disponibles, vous débloquez toutes les duas",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Si vous écoutez toutes les duas disponibles, vous débloquez toutes les duas",
       "Little Kids": "Petits enfants",
       "Older Kids": "Enfants plus âgés",
       "Grown ups": "Adultes",
@@ -158,12 +185,13 @@ class AppTranslations {
       "Login now! ": "Connectez-vous maintenant! ",
       "New with us? ": "Nouveau avec nous? ",
       "Signup now! ": "Inscrivez-vous maintenant! ",
-      "Notifications": "Notifications"
+      "Notifications": "Notifications",
     },
     "German": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Bereit zu lernen und zu spielen?",
-      "Listen to available duas to UNLOCK remaining duas": "Wenn Sie alle verfügbaren Duas anhören, entsperren Sie alle Duas",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Wenn Sie alle verfügbaren Duas anhören, entsperren Sie alle Duas",
       "Little Kids": "Kleine Kinder",
       "Older Kids": "Ältere Kinder",
       "Grown ups": "Erwachsene",
@@ -198,12 +226,13 @@ class AppTranslations {
       "Login now! ": "Jetzt anmelden! ",
       "New with us? ": "Neu bei uns? ",
       "Signup now! ": "Jetzt registrieren! ",
-      "Notifications": "Benachrichtigungen"
+      "Notifications": "Benachrichtigungen",
     },
     "Gujarati": {
       "Assalam o Alaikum": "અસ્સલામ ઓ અલૈકમ",
       "Ready to learn and play?": "શીખવા અને રમવા માટે તૈયાર છો?",
-      "Listen to available duas to UNLOCK remaining duas": "જો તમે બધી ઉપલબ્ધ દુઆઓ સાંભળો છો, તો તમે બધી દુઆઓ અનલૉક કરો છો",
+      "Listen to available duas to UNLOCK remaining duas":
+          "જો તમે બધી ઉપલબ્ધ દુઆઓ સાંભળો છો, તો તમે બધી દુઆઓ અનલૉક કરો છો",
       "Little Kids": "નાના બાળકો",
       "Older Kids": "મોટા બાળકો",
       "Grown ups": "વયસ્કો",
@@ -238,12 +267,13 @@ class AppTranslations {
       "Login now! ": "હવે લોગઇન કરો! ",
       "New with us? ": "અમારી સાથે નવા છો? ",
       "Signup now! ": "હવે સાઇન અપ કરો! ",
-      "Notifications": "નોટિફિકેશન્સ"
+      "Notifications": "નોટિફિકેશન્સ",
     },
     "Hindi": {
       "Assalam o Alaikum": "अस्सलाम ओ आलेकुम",
       "Ready to learn and play?": "सीखने और खेलने के लिए तैयार हैं?",
-      "Listen to available duas to UNLOCK remaining duas": "यदि आप सभी उपलब्ध दुआएं सुनते हैं तो आप सभी दुआएं अनलॉक कर देंगे",
+      "Listen to available duas to UNLOCK remaining duas":
+          "यदि आप सभी उपलब्ध दुआएं सुनते हैं तो आप सभी दुआएं अनलॉक कर देंगे",
       "Little Kids": "छोटे बच्चे",
       "Older Kids": "बड़े बच्चे",
       "Grown ups": "वयस्क",
@@ -278,12 +308,13 @@ class AppTranslations {
       "Login now! ": "अभी लॉगिन करें! ",
       "New with us? ": "हमारे साथ नए हैं? ",
       "Signup now! ": "अभी साइन अप करें! ",
-      "Notifications": "सूचनाएं"
+      "Notifications": "सूचनाएं",
     },
     "Indonesian": {
       "Assalam o Alaikum": "Assalamualaikum",
       "Ready to learn and play?": "Siap belajar dan bermain?",
-      "Listen to available duas to UNLOCK remaining duas": "Jika Anda mendengarkan semua doa yang tersedia, Anda membuka kunci semua doa",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Jika Anda mendengarkan semua doa yang tersedia, Anda membuka kunci semua doa",
       "Little Kids": "Anak-anak Kecil",
       "Older Kids": "Anak-anak yang Lebih Besar",
       "Grown ups": "Dewasa",
@@ -318,12 +349,13 @@ class AppTranslations {
       "Login now! ": "Masuk sekarang! ",
       "New with us? ": "Baru dengan kami? ",
       "Signup now! ": "Daftar sekarang! ",
-      "Notifications": "Notifikasi"
+      "Notifications": "Notifikasi",
     },
     "Japanese": {
       "Assalam o Alaikum": "アッサラームアレイクム",
       "Ready to learn and play?": "学んで遊ぶ準備はできていますか？",
-      "Listen to available duas to UNLOCK remaining duas": "利用可能なすべてのドゥアーを聞くと、すべてのドゥアーがロック解除されます",
+      "Listen to available duas to UNLOCK remaining duas":
+          "利用可能なすべてのドゥアーを聞くと、すべてのドゥアーがロック解除されます",
       "Little Kids": "小さな子供たち",
       "Older Kids": "年上の子供たち",
       "Grown ups": "大人",
@@ -358,12 +390,13 @@ class AppTranslations {
       "Login now! ": "今すぐログイン！ ",
       "New with us? ": "私たちと新しいですか？ ",
       "Signup now! ": "今すぐサインアップ！ ",
-      "Notifications": "通知"
+      "Notifications": "通知",
     },
     "Malay": {
       "Assalam o Alaikum": "Assalamualaikum",
       "Ready to learn and play?": "Bersedia untuk belajar dan bermain?",
-      "Listen to available duas to UNLOCK remaining duas": "Jika anda mendengar semua doa yang tersedia, anda membuka kunci semua doa",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Jika anda mendengar semua doa yang tersedia, anda membuka kunci semua doa",
       "Little Kids": "Kanak-kanak Kecil",
       "Older Kids": "Kanak-kanak Lebih Besar",
       "Grown ups": "Dewasa",
@@ -398,12 +431,13 @@ class AppTranslations {
       "Login now! ": "Log masuk sekarang! ",
       "New with us? ": "Baru dengan kami? ",
       "Signup now! ": "Daftar sekarang! ",
-      "Notifications": "Pemberitahuan"
+      "Notifications": "Pemberitahuan",
     },
     "Mandarin": {
       "Assalam o Alaikum": "安塞俩目阿来库姆",
       "Ready to learn and play?": "准备好学习和玩耍了吗？",
-      "Listen to available duas to UNLOCK remaining duas": "如果您收听所有可用的祈祷词，您将解锁所有祈祷词",
+      "Listen to available duas to UNLOCK remaining duas":
+          "如果您收听所有可用的祈祷词，您将解锁所有祈祷词",
       "Little Kids": "小孩子",
       "Older Kids": "大孩子",
       "Grown ups": "成年人",
@@ -438,12 +472,13 @@ class AppTranslations {
       "Login now! ": "立即登录！ ",
       "New with us? ": "新用户？ ",
       "Signup now! ": "立即注册！ ",
-      "Notifications": "通知"
+      "Notifications": "通知",
     },
     "Marathi": {
       "Assalam o Alaikum": "अस्सलाम ओ अलैकुम",
       "Ready to learn and play?": "शिकण्यासाठी आणि खेळण्यासाठी तयार आहात?",
-      "Listen to available duas to UNLOCK remaining duas": "जर तुम्ही सर्व उपलब्ध दुआ ऐकल्या तर तुम्ही सर्व दुआ अनलॉक करता",
+      "Listen to available duas to UNLOCK remaining duas":
+          "जर तुम्ही सर्व उपलब्ध दुआ ऐकल्या तर तुम्ही सर्व दुआ अनलॉक करता",
       "Little Kids": "लहान मुले",
       "Older Kids": "मोठी मुले",
       "Grown ups": "मोठे",
@@ -478,12 +513,13 @@ class AppTranslations {
       "Login now! ": "आता लॉगिन करा! ",
       "New with us? ": "आमच्याबरोबर नवीन? ",
       "Signup now! ": "आता साइन अप करा! ",
-      "Notifications": "सूचना"
+      "Notifications": "सूचना",
     },
     "Portuguese": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "Pronto para aprender e brincar?",
-      "Listen to available duas to UNLOCK remaining duas": "Se você ouvir todas as duas disponíveis, você desbloqueia todas as duas",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Se você ouvir todas as duas disponíveis, você desbloqueia todas as duas",
       "Little Kids": "Crianças Pequenas",
       "Older Kids": "Crianças Mais Velhas",
       "Grown ups": "Adultos",
@@ -518,12 +554,13 @@ class AppTranslations {
       "Login now! ": "Entre agora! ",
       "New with us? ": "Novo conosco? ",
       "Signup now! ": "Cadastre-se agora! ",
-      "Notifications": "Notificações"
+      "Notifications": "Notificações",
     },
     "Punjabi": {
       "Assalam o Alaikum": "ਅਸਲਾਮ ਓ ਅਲੈਕਮ",
       "Ready to learn and play?": "ਸਿੱਖਣ ਅਤੇ ਖੇਡਣ ਲਈ ਤਿਆਰ ਹੋ?",
-      "Listen to available duas to UNLOCK remaining duas": "ਜੇ ਤੁਸੀਂ ਸਾਰੀਆਂ ਉਪਲਬਧ ਦੁਆਵਾਂ ਸੁਣਦੇ ਹੋ ਤਾਂ ਤੁਸੀਂ ਸਾਰੀਆਂ ਦੁਆਵਾਂ ਅਨਲੌਕ ਕਰਦੇ ਹੋ",
+      "Listen to available duas to UNLOCK remaining duas":
+          "ਜੇ ਤੁਸੀਂ ਸਾਰੀਆਂ ਉਪਲਬਧ ਦੁਆਵਾਂ ਸੁਣਦੇ ਹੋ ਤਾਂ ਤੁਸੀਂ ਸਾਰੀਆਂ ਦੁਆਵਾਂ ਅਨਲੌਕ ਕਰਦੇ ਹੋ",
       "Little Kids": "ਛੋਟੇ ਬੱਚੇ",
       "Older Kids": "ਵੱਡੇ ਬੱਚੇ",
       "Grown ups": "ਵੱਡੇ",
@@ -558,12 +595,13 @@ class AppTranslations {
       "Login now! ": "ਹੁਣੇ ਲੌਗਇਨ ਕਰੋ! ",
       "New with us? ": "ਸਾਡੇ ਨਾਲ ਨਵੇਂ ਹੋ? ",
       "Signup now! ": "ਹੁਣੇ ਸਾਈਨ ਅੱਪ ਕਰੋ! ",
-      "Notifications": "ਸੂਚਨਾਵਾਂ"
+      "Notifications": "ਸੂਚਨਾਵਾਂ",
     },
     "Russian": {
       "Assalam o Alaikum": "Ассаляму алейкум",
       "Ready to learn and play?": "Готовы учиться и играть?",
-      "Listen to available duas to UNLOCK remaining duas": "Если вы прослушаете все доступные дуа, вы разблокируете все дуа",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Если вы прослушаете все доступные дуа, вы разблокируете все дуа",
       "Little Kids": "Маленькие дети",
       "Older Kids": "Дети постарше",
       "Grown ups": "Взрослые",
@@ -598,12 +636,13 @@ class AppTranslations {
       "Login now! ": "Войти сейчас! ",
       "New with us? ": "Новый у нас? ",
       "Signup now! ": "Зарегистрироваться сейчас! ",
-      "Notifications": "Уведомления"
+      "Notifications": "Уведомления",
     },
     "Sindhi": {
       "Assalam o Alaikum": "السلام عليكم",
       "Ready to learn and play?": "سيکڻ ۽ راندڙ لاءِ تيار آهيو؟",
-      "Listen to available duas to UNLOCK remaining duas": "جيڪڏهن توهان سڀني دستياب دعائن کي ٻڌو ٿا ته توهان سڀني دعائن کي انلاڪ ڪريو ٿا",
+      "Listen to available duas to UNLOCK remaining duas":
+          "جيڪڏهن توهان سڀني دستياب دعائن کي ٻڌو ٿا ته توهان سڀني دعائن کي انلاڪ ڪريو ٿا",
       "Little Kids": "ننڍا ٻار",
       "Older Kids": "وڏا ٻار",
       "Grown ups": "وڏا",
@@ -638,12 +677,13 @@ class AppTranslations {
       "Login now! ": "هاڻي لاگ ان ڪريو! ",
       "New with us? ": "اسان سان نئون آهيو؟ ",
       "Signup now! ": "هاڻي سائن اپ ڪريو! ",
-      "Notifications": "نوٽيفڪيشن"
+      "Notifications": "نوٽيفڪيشن",
     },
     "Spanish": {
       "Assalam o Alaikum": "Assalam o Alaikum",
       "Ready to learn and play?": "¿Listo para aprender y jugar?",
-      "Listen to available duas to UNLOCK remaining duas": "Si escuchas todas las duas disponibles, desbloqueas todas las duas",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Si escuchas todas las duas disponibles, desbloqueas todas las duas",
       "Little Kids": "Niños Pequeños",
       "Older Kids": "Niños Mayores",
       "Grown ups": "Adultos",
@@ -678,12 +718,13 @@ class AppTranslations {
       "Login now! ": "¡Inicia sesión ahora! ",
       "New with us? ": "¿Nuevo con nosotros? ",
       "Signup now! ": "¡Regístrate ahora! ",
-      "Notifications": "Notificaciones"
+      "Notifications": "Notificaciones",
     },
     "Tamil": {
       "Assalam o Alaikum": "அஸ்ஸலாம் ஓ அலைகும்",
       "Ready to learn and play?": "கற்றல் மற்றும் விளையாட தயாரா?",
-      "Listen to available duas to UNLOCK remaining duas": "கிடைக்கக்கூடிய அனைத்து துஆக்களையும் நீங்கள் கேட்டால், அனைத்து துஆக்களையும் திறக்கிறீர்கள்",
+      "Listen to available duas to UNLOCK remaining duas":
+          "கிடைக்கக்கூடிய அனைத்து துஆக்களையும் நீங்கள் கேட்டால், அனைத்து துஆக்களையும் திறக்கிறீர்கள்",
       "Little Kids": "சிறிய குழந்தைகள்",
       "Older Kids": "பெரிய குழந்தைகள்",
       "Grown ups": "வயது வந்தோர்",
@@ -718,12 +759,14 @@ class AppTranslations {
       "Login now! ": "இப்போது உள்நுழையவும்! ",
       "New with us? ": "எங்களுடன் புதியவரா? ",
       "Signup now! ": "இப்போது பதிவு செய்யவும்! ",
-      "Notifications": "அறிவிப்புகள்"
+      "Notifications": "அறிவிப்புகள்",
     },
     "Telugu": {
       "Assalam o Alaikum": "అస్సలాం ఓ అలైకుం",
-      "Ready to learn and play?": "నేర్చుకోవడానికి మరియు ఆడుకోవడానికి సిద్ధంగా ఉన్నారా?",
-      "Listen to available duas to UNLOCK remaining duas": "మీరు అన్ని అందుబాటులో ఉన్న దుఆలు విన్నట్లయితే, మీరు అన్ని దుఆలు అన్లాక్ చేస్తారు",
+      "Ready to learn and play?":
+          "నేర్చుకోవడానికి మరియు ఆడుకోవడానికి సిద్ధంగా ఉన్నారా?",
+      "Listen to available duas to UNLOCK remaining duas":
+          "మీరు అన్ని అందుబాటులో ఉన్న దుఆలు విన్నట్లయితే, మీరు అన్ని దుఆలు అన్లాక్ చేస్తారు",
       "Little Kids": "చిన్న పిల్లలు",
       "Older Kids": "పెద్ద పిల్లలు",
       "Grown ups": "పెద్దలు",
@@ -758,12 +801,13 @@ class AppTranslations {
       "Login now! ": "ఇప్పుడు లాగిన్ అవ్వండి! ",
       "New with us? ": "మాతో కొత్తగా ఉన్నారా? ",
       "Signup now! ": "ఇప్పుడే సైన్ అప్ చేయండి! ",
-      "Notifications": "నోటిఫికేషన్‌లు"
+      "Notifications": "నోటిఫికేషన్‌లు",
     },
     "Turkish": {
       "Assalam o Alaikum": "Esselamü Aleyküm",
       "Ready to learn and play?": "Öğrenmeye ve oynamaya hazır mısınız?",
-      "Listen to available duas to UNLOCK remaining duas": "Mevcut tüm duaları dinlerseniz tüm duaların kilidini açarsınız",
+      "Listen to available duas to UNLOCK remaining duas":
+          "Mevcut tüm duaları dinlerseniz tüm duaların kilidini açarsınız",
       "Little Kids": "Küçük Çocuklar",
       "Older Kids": "Büyük Çocuklar",
       "Grown ups": "Yetişkinler",
@@ -798,12 +842,13 @@ class AppTranslations {
       "Login now! ": "Şimdi giriş yap! ",
       "New with us? ": "Bizimle yeni misiniz? ",
       "Signup now! ": "Şimdi kaydolun! ",
-      "Notifications": "Bildirimler"
+      "Notifications": "Bildirimler",
     },
     "Urdu": {
       "Assalam o Alaikum": "السلام علیکم",
       "Ready to learn and play?": "سیکھنے اور کھیلنے کے لیے تیار ہیں؟",
-      "Listen to available duas to UNLOCK remaining duas": "اگر آپ تمام دستیاب دعائیں سنیں گے تو آپ تمام دعائیں انلاک کر دیں گے",
+      "Listen to available duas to UNLOCK remaining duas":
+          "اگر آپ تمام دستیاب دعائیں سنیں گے تو آپ تمام دعائیں انلاک کر دیں گے",
       "Little Kids": "چھوٹے بچے",
       "Older Kids": "بڑے بچے",
       "Grown ups": "بڑے",
@@ -838,7 +883,28 @@ class AppTranslations {
       "Login now! ": "ابھی لاگ ان کریں! ",
       "New with us? ": "ہمارے ساتھ نئے ہیں؟ ",
       "Signup now! ": "ابھی سائن اپ کریں! ",
-      "Notifications": "اطلاعات"
-    }
+      "Notifications": "اطلاعات",
+      "Signed up successfully": "اکاؤنٹ کامیابی سے بن گیا",
+      "Login successful": "لاگ ان کامیاب رہا",
+      "Invalid email or password.": "ای میل یا پاس ورڈ غلط ہے",
+      "Wrong password provided.": "غلط پاس ورڈ درج کیا گیا ہے",
+      "The email address is badly formatted.": "ای میل کا فارمیٹ درست نہیں ہے",
+      "Network error. Please check your internet connection.":
+          "نیٹ ورک میں مسئلہ ہے۔ براہ کرم انٹرنیٹ کنکشن چیک کریں",
+      "This user has been disabled.": "یہ صارف بلاک کر دیا گیا ہے",
+      "Too many failed attempts. Please try again later.":
+          "بہت زیادہ غلط کوششیں کی گئی ہیں۔ براہ کرم کچھ دیر بعد کوشش کریں",
+      "Something went wrong. Try again later":
+          "کچھ غلط ہو گیا۔ براہ کرم بعد میں کوشش کریں",
+      "An unexpected error occurred": "ایک غیر متوقع مسئلہ پیش آ گیا",
+      "This email is already registered.": "یہ ای میل پہلے سے رجسٹرڈ ہے",
+      "The password provided is too weak.": "پاس ورڈ بہت کمزور ہے",
+      "Success": "کامیابی",
+      "Select Your Avatar": "اپنا اوتار منتخب کریں",
+      "Boy": "لڑکا",
+      "Girl": "لڑکی",
+      "Cancel": "منسوخ کریں",
+      "Error": "خرابی",
+    },
   };
 }

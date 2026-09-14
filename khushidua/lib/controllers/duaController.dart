@@ -11,13 +11,33 @@ class DuaController extends GetxController {
   List<DuaModel> get allDuas => _allDuas;
   List<DuaModel> get filteredDuas => _filteredDuas;
 
+  String? _lastSubCategoryId;
+
   int _getVerseCount(DuaModel dua) {
-    // Veruses are typically separated by newlines in the Arabic text
     if (dua.arabic.isEmpty) return 0;
     return dua.arabic
         .split('\n')
         .where((line) => line.trim().isNotEmpty)
         .length;
+  }
+
+  void _sortDuas(List<DuaModel> list) {
+    list.sort((a, b) {
+      // Primary: Original Order field from Firebase
+      if (a.order != b.order) {
+        return a.order.compareTo(b.order);
+      }
+
+      // Secondary: Shortest first (verse count)
+      int countA = _getVerseCount(a);
+      int countB = _getVerseCount(b);
+      if (countA != countB) {
+        return countA.compareTo(countB);
+      }
+
+      // Tertiary: ID for stability
+      return a.id.compareTo(b.id);
+    });
   }
 
   addDuaToList(DuaModel duaModel) {
@@ -28,15 +48,14 @@ class DuaController extends GetxController {
     } else {
       _allDuas[existingIndex] = duaModel;
     }
-    // Sort by verse count (ascending), then by original order
-    _allDuas.sort((a, b) {
-      int countA = _getVerseCount(a);
-      int countB = _getVerseCount(b);
-      if (countA != countB) {
-        return countA.compareTo(countB);
-      }
-      return a.order.compareTo(b.order);
-    });
+
+    _sortDuas(_allDuas);
+
+    // If we're currently viewing a subcategory, refresh the filtered list
+    if (_lastSubCategoryId != null) {
+      refreshFilteredDuas();
+    }
+
     update();
   }
 
@@ -53,15 +72,6 @@ class DuaController extends GetxController {
       return dua.grownUps;
     }).toList();
 
-    // Also sort the filtered list just in case
-    _filteredDuas.sort((a, b) {
-      int countA = _getVerseCount(a);
-      int countB = _getVerseCount(b);
-      if (countA != countB) {
-        return countA.compareTo(countB);
-      }
-      return a.order.compareTo(b.order);
-    });
-    update();
+    _sortDuas(_filteredDuas);
   }
 }

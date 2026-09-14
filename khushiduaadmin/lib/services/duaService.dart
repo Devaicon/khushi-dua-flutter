@@ -32,8 +32,8 @@ class DuaService {
     });
   }
 
-  createDua(DuaModel duaModel, File grownUpmp3File, File littleKidmp3File,
-      File olderKidmp3File) async {
+  createDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File,
+      File? olderKidmp3File) async {
     _duaController.setLoading(true);
     duaModel.id = duaRef.doc().id;
     try {
@@ -44,12 +44,18 @@ class DuaService {
       debugPrint("Firestore Path: /Dua/${duaModel.id}");
       debugPrint("-----------------------------------------");
 
-      duaModel.olderKidsAudio = (await uploadFileToFirebase(
-          olderKidmp3File, "${duaModel.id}/olderKidsAudio"))!;
-      duaModel.littleKidsAudio = (await uploadFileToFirebase(
-          littleKidmp3File, "${duaModel.id}/littleKidsAudio"))!;
-      duaModel.grownUpsAudio = (await uploadFileToFirebase(
-          grownUpmp3File, "${duaModel.id}/grownUpsAudio"))!;
+      if (olderKidmp3File != null) {
+        duaModel.olderKidsAudio = (await uploadFileToFirebase(
+            olderKidmp3File, "${duaModel.id}/olderKidsAudio"))!;
+      }
+      if (littleKidmp3File != null) {
+        duaModel.littleKidsAudio = (await uploadFileToFirebase(
+            littleKidmp3File, "${duaModel.id}/littleKidsAudio"))!;
+      }
+      if (grownUpmp3File != null) {
+        duaModel.grownUpsAudio = (await uploadFileToFirebase(
+            grownUpmp3File, "${duaModel.id}/grownUpsAudio"))!;
+      }
 
       final duaMap = duaModel.toMap();
       duaRef.doc(duaModel.id).set(duaMap);
@@ -173,6 +179,43 @@ class DuaService {
     Get.back();
     CustomSnackbar.show(
         "Success", "Dua updated successfully!\nID: ${duaModel.id}");
+  }
+
+  deleteDua(DuaModel duaModel,
+      {required bool deleteLittleKids,
+      required bool deleteOlderKids,
+      required bool deleteGrownUps}) async {
+    _duaController.setLoading(true);
+    try {
+      final bool newLittleKids = duaModel.littleKids && !deleteLittleKids;
+      final bool newOlderKids = duaModel.olderKids && !deleteOlderKids;
+      final bool newGrownUps = duaModel.grownUps && !deleteGrownUps;
+
+      if (!newLittleKids && !newOlderKids && !newGrownUps) {
+        await duaRef.doc(duaModel.id).delete();
+        _duaController.removeDuaFromList(duaModel.id);
+        _duaController.setLoading(false);
+        Get.back();
+        CustomSnackbar.show("Success", "Dua deleted successfully!");
+      } else {
+        duaModel.littleKids = newLittleKids;
+        duaModel.olderKids = newOlderKids;
+        duaModel.grownUps = newGrownUps;
+        await duaRef.doc(duaModel.id).update({
+          'littleKids': newLittleKids,
+          'olderKids': newOlderKids,
+          'grownUps': newGrownUps,
+        });
+        _duaController.addDuaToList(duaModel);
+        _duaController.setLoading(false);
+        Get.back();
+        CustomSnackbar.show("Success", "Dua removed from selected sections!");
+      }
+    } catch (e) {
+      debugPrint("ERROR DELETING DUA: $e");
+      _duaController.setLoading(false);
+      CustomSnackbar.show("Error", "Something went wrong", isSuccess: false);
+    }
   }
 
   Future<String?> uploadFileToFirebase(File file, String path) async {

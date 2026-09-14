@@ -42,6 +42,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'Khushi Dua Book',
+      navigatorKey: Get.key,
       initialBinding: InitControllers(),
       translations: Localization(),
       locale: Locale('en', 'US'),

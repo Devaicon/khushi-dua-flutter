@@ -60,6 +60,17 @@ class _AllSubCategoriesState extends State<AllSubCategories> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TopBar(title: widget.categoryModel.english),
+                InkWell(
+                  onTap: () => Get.back(),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back_ios, color: rWhite, size: 16),
+                      SizedBox(width: 4),
+                      Text("Back", style: TextStyle(color: rWhite)),
+                    ],
+                  ),
+                ).marginOnly(top: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

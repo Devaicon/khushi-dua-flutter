@@ -4,10 +4,6 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
 
-import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-// import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -18,6 +14,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
+import 'package:khushidua/controllers/audioController.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
@@ -28,7 +25,6 @@ import '../constants/colors.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
-import '../services/audioDownloadService.dart';
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
@@ -40,8 +36,6 @@ class OpenDuasScreen extends StatefulWidget {
 }
 
 class _OpenDuasScreenState extends State<OpenDuasScreen> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  String? _currentlyPlayingPath;
   String? _expandedBenefitsDuaId; // Track which dua has benefits expanded
 
   @override
@@ -54,64 +48,11 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     super.dispose();
   }
 
-  Future<void> markDuaAsDone(String duaId) async {
-    try {
-      if (!Get.find<UserController>().userModel!.readDuas.contains(duaId)) {
-        userRef.doc(Get.find<UserController>().userModel!.id).update({
-          "readDuas": FieldValue.arrayUnion([duaId]),
-          "points": Get.find<UserController>().userModel!.points + 50,
-        });
-      }
-    } catch (e) {
-      debugPrint("Error updating Dua status: $e");
-    }
-  }
-
-  void _toggleAudio(String path, String duaId) async {
-    if (_currentlyPlayingPath == path) {
-      await _audioPlayer.stop();
-      setState(() {
-        _currentlyPlayingPath = null;
-      });
-    } else {
-      await _audioPlayer.stop();
-
-      // Check if local file exists
-      final downloadService = Get.find<AudioDownloadService>();
-      final themeController = Get.find<ThemeController>();
-      final localPath = await downloadService.getLocalPath(
-        duaId,
-        themeController.selectedAgeGroup,
-      );
-
-      if (localPath != null) {
-        debugPrint("Playing local audio: $localPath");
-        await _audioPlayer.play(DeviceFileSource(localPath));
-      } else {
-        debugPrint("Playing remote audio: $path");
-        await _audioPlayer.play(UrlSource(path));
-      }
-
-      setState(() {
-        _currentlyPlayingPath = path;
-      });
-
-      _audioPlayer.onPlayerComplete.listen((event) {
-        setState(() {
-          _currentlyPlayingPath = null;
-        });
-        if (Get.find<UserController>().userModel?.isLoggedIn ?? false) {
-          markDuaAsDone(duaId);
-        }
-      });
-    }
-  }
-
   void showTextOptionsPopup() {
+    // ... (unchanged)
     showDialog(
       context: context,
       builder: (context) {
@@ -283,8 +224,6 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
             itemBuilder: (context, index) {
               return DuaTile(
                 dua: duaController.filteredDuas[index],
-                currentlyPlayingPath: _currentlyPlayingPath,
-                onToggle: _toggleAudio,
                 expandedBenefitsDuaId: _expandedBenefitsDuaId,
                 onToggleBenefits: (duaId) {
                   setState(() {
@@ -304,15 +243,11 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
 class DuaTile extends StatefulWidget {
   final DuaModel dua;
-  final String? currentlyPlayingPath;
-  final Function(String, String) onToggle;
   final String? expandedBenefitsDuaId;
   final Function(String?) onToggleBenefits;
 
   const DuaTile({
     required this.dua,
-    required this.currentlyPlayingPath,
-    required this.onToggle,
     required this.expandedBenefitsDuaId,
     required this.onToggleBenefits,
     super.key,
@@ -325,6 +260,7 @@ class DuaTile extends StatefulWidget {
 class _DuaTileState extends State<DuaTile> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   String baseUrl = "";
+  bool _isSharing = false;
 
   final List<String> imagePaths = [
     'assets/images/1.png',
@@ -341,6 +277,10 @@ class _DuaTileState extends State<DuaTile> {
     super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
     getBaseUrl();
+
+    debugPrint(
+      "OpenDuasScreen: Share feature initialized with random image: $randomImage",
+    );
   }
 
   @override
@@ -1074,8 +1014,8 @@ class _DuaTileState extends State<DuaTile> {
                     ),
                   ),
                 ),
-                // Close Button
-                TextButton(
+                // Enhanced Close Button
+                OutlinedButton(
                   onPressed: () async {
                     if (dialogIsRecording) {
                       await stopRecording();
@@ -1085,9 +1025,25 @@ class _DuaTileState extends State<DuaTile> {
                       Navigator.of(context).pop();
                     }
                   },
-                  child: const Text(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: const Color(0xff2A158F).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
                     "Close",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: const Color(0xff2A158F).withOpacity(0.7),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1100,34 +1056,48 @@ class _DuaTileState extends State<DuaTile> {
 
   Future<void> _captureAndShare() async {
     try {
-      // Ensure all fonts are loaded before capturing
+      debugPrint("📸 Starting capture and share process...");
+
+      // Ensure all fonts and images are rendered before capturing
       await Future.delayed(const Duration(milliseconds: 300));
 
       // Check if the context is still valid
       if (_popupKey.currentContext == null) {
-        debugPrint("Error: Context is null, cannot capture image");
+        debugPrint("❌ Error: Context is null, cannot capture image");
+        if (mounted && Get.context != null) {
+          Get.snackbar(
+            'Error',
+            'Failed to prepare image. Please try again.',
+            backgroundColor: Colors.red.withOpacity(0.7),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
         return;
       }
 
+      debugPrint("✅ Context is valid, finding boundary...");
       RenderRepaintBoundary? boundary =
           _popupKey.currentContext!.findRenderObject()
               as RenderRepaintBoundary?;
 
       if (boundary == null) {
-        debugPrint("Error: Boundary is null");
+        debugPrint("❌ Error: Boundary is null");
         return;
       }
 
+      debugPrint("✅ Boundary found, capturing image...");
       // Use higher pixel ratio for better quality on iOS
-      var image = await boundary.toImage(pixelRatio: 4.0);
+      var image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
 
       if (byteData == null) {
-        debugPrint("Error: Failed to convert image to bytes");
+        debugPrint("❌ Error: Failed to convert image to bytes");
         return;
       }
 
       Uint8List pngBytes = byteData.buffer.asUint8List();
+      debugPrint("✅ Image captured successfully (${pngBytes.length} bytes)");
 
       // Save image to temporary file with timestamp
       final tempDir = await getTemporaryDirectory();
@@ -1137,41 +1107,54 @@ class _DuaTileState extends State<DuaTile> {
       ).create();
       await file.writeAsBytes(pngBytes);
 
-      debugPrint("Image saved to: ${file.path}");
+      debugPrint("✅ Image saved to: ${file.path}");
 
-      // Close the dialog first, then share
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      // Get screen size for iPad share sheet positioning
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, 100, 100);
 
-      // Small delay to ensure dialog is closed
-      await Future.delayed(const Duration(milliseconds: 100));
+      debugPrint("📤 Opening share sheet (keeping dialog for context)...");
 
       // Share using share_plus with proper iOS handling
+      // We do NOT pop the dialog until AFTER the share sheet is requested
       final result = await Share.shareXFiles(
         [XFile(file.path)],
-        text: "Check out this beautiful Dua from Khushi Dua App",
-        subject: "Khushi Dua",
+        text: "Check out this beautiful Dua from Khushi Dua App".tr,
+        subject: "Khushi Dua".tr,
+        sharePositionOrigin: sharePositionOrigin,
       );
 
-      debugPrint("Share result: ${result.status}");
+      debugPrint("✅ Share sheet requested. Result: ${result.status}");
 
-      // Clean up the temporary file after sharing
+      // Now close the dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+        debugPrint("✅ Dialog closed");
+      }
+
+      // Clean up the temporary file
       try {
         await file.delete();
+        debugPrint("✅ Temporary file cleaned up");
       } catch (e) {
-        debugPrint("Error deleting temp file: $e");
+        debugPrint("⚠️ Error deleting temp file: $e");
       }
-    } catch (e) {
-      debugPrint("Error sharing: $e");
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error sharing: $e");
+      debugPrint("Stack trace: $stackTrace");
       if (mounted && Get.context != null) {
         Get.snackbar(
           'Error',
           'Failed to share: ${e.toString()}',
           backgroundColor: Colors.red.withOpacity(0.7),
-          colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
       }
     }
   }
@@ -1194,80 +1177,218 @@ class _DuaTileState extends State<DuaTile> {
   void showShareDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(20),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            RepaintBoundary(
-              key: _popupKey, // This is what we'll capture as image
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Background Image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      randomImage,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  // Arabic and English Text
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.dua.arabic,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily:
-                              'arabic', // Use the font family from pubspec
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      Divider(
-                        height: 2,
-                        color: rwhite,
-                      ).marginSymmetric(vertical: 12),
-                      Text(
-                        widget.dua.english,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ).marginSymmetric(horizontal: 12),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            child: Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
-            ),
-            // Share button - not inside RepaintBoundary
-            Positioned(
-              bottom: 20,
-              child: GestureDetector(
-                onTap: _captureAndShare, // sharing function
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Color(0xff2A158F),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "📤 Share",
-                    style: TextStyle(color: rwhite),
-                  ).marginSymmetric(horizontal: 20, vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Scrollable content area
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: RepaintBoundary(
+                          key: _popupKey,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Background Image
+                              Image.asset(
+                                randomImage,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                              // Overlay
+                              Container(
+                                color: Colors.black.withOpacity(0.3),
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      widget.dua.arabic,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'arabic',
+                                        height: 1.8,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 20,
+                                      ),
+                                      child: Divider(
+                                        color: Colors.white54,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    Text(
+                                      widget.dua.english,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    // App Branding in the shared image
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.auto_awesome,
+                                          color: Colors.white70,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "Khushi Dua App".tr,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Action Footer
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(top: BorderSide(color: Colors.black12)),
+                      ),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () async {
+                          debugPrint("🖱️ Share button tapped in dialog");
+                          if (_isSharing) {
+                            debugPrint("⚠️ Already sharing, ignoring tap");
+                            return;
+                          }
+
+                          // Update both states to be safe
+                          setState(() => _isSharing = true);
+                          setDialogState(() => _isSharing = true);
+
+                          try {
+                            debugPrint("🏃 Calling _captureAndShare...");
+                            await _captureAndShare();
+                          } catch (e) {
+                            debugPrint("❌ Exception in onTap sharing: $e");
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isSharing = false);
+                              try {
+                                setDialogState(() => _isSharing = false);
+                              } catch (_) {}
+                            }
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: double.infinity,
+                          height: 56,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _isSharing
+                                  ? [Colors.grey, Colors.grey.shade400]
+                                  : [
+                                      const Color(0xff4A3AFF),
+                                      const Color(0xff2A158F),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              if (!_isSharing)
+                                BoxShadow(
+                                  color: const Color(
+                                    0xff2A158F,
+                                  ).withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                            ],
+                          ),
+                          child: _isSharing
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "PREPARING SHARE...".tr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.share_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "Share This Dua".tr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1384,90 +1505,102 @@ class _DuaTileState extends State<DuaTile> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<UserController>(
-      builder: (userController) {
-        return GetBuilder<ThemeController>(
-          builder: (themeController) {
-            Color accentColor = themeController.selectedAgeGroup == 0
-                ? rpink
-                : themeController.selectedAgeGroup == 1
-                ? rblue
-                : rgreen;
+    return GetBuilder<AudioController>(
+      builder: (audioController) {
+        return GetBuilder<UserController>(
+          builder: (userController) {
+            return GetBuilder<ThemeController>(
+              builder: (themeController) {
+                Color accentColor = themeController.selectedAgeGroup == 0
+                    ? rpink
+                    : themeController.selectedAgeGroup == 1
+                    ? rblue
+                    : rgreen;
 
-            String audioPath = themeController.selectedAgeGroup == 0
-                ? widget.dua.littleKidsAudio
-                : themeController.selectedAgeGroup == 1
-                ? widget.dua.olderKidsAudio
-                : widget.dua.grownUpsAudio;
-            bool isPlayingAudio = widget.currentlyPlayingPath == audioPath;
+                String audioPath = themeController.selectedAgeGroup == 0
+                    ? widget.dua.littleKidsAudio
+                    : themeController.selectedAgeGroup == 1
+                    ? widget.dua.olderKidsAudio
+                    : widget.dua.grownUpsAudio;
 
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                bool isPlayingAudio =
+                    audioController.currentlyPlayingPath == audioPath &&
+                    audioController.currentlyPlayingDuaId == widget.dua.id;
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
-                ],
-                border: Border.all(
-                  color: accentColor.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: Column(
-                  children: [
-                    // Focused Header with Metadata & Core Actions
-                    _buildHeader(accentColor, isPlayingAudio, audioPath),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: accentColor.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Column(
+                      children: [
+                        // Focused Header with Metadata & Core Actions
+                        _buildHeader(accentColor, isPlayingAudio, audioPath),
 
-                    // The Sacred Arabic Text
-                    GestureDetector(
-                      onLongPress: () {
-                        // Copy to clipboard or other context action
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width < 360
-                              ? 16
-                              : 24,
-                          vertical: MediaQuery.of(context).size.width < 360
-                              ? 20
-                              : 32,
-                        ),
-                        width: double.infinity,
-                        color: accentColor.withOpacity(0.02),
-                        child: Text(
-                          widget.dua.arabic,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: MediaQuery.of(context).size.width < 360
-                                ? themeController.textSize
-                                : themeController.textSize * 1.15,
-                            height: 2.0,
-                            fontFamily: 'arabic',
-                            fontWeight: FontWeight.w400,
+                        // The Sacred Arabic Text
+                        GestureDetector(
+                          onLongPress: () {
+                            // Copy to clipboard or other context action
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width < 360
+                                  ? 16
+                                  : 24,
+                              vertical: MediaQuery.of(context).size.width < 360
+                                  ? 20
+                                  : 32,
+                            ),
+                            width: double.infinity,
+                            color: accentColor.withOpacity(0.02),
+                            child: Text(
+                              widget.dua.arabic,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize:
+                                    MediaQuery.of(context).size.width < 360
+                                    ? themeController.textSize
+                                    : themeController.textSize * 1.15,
+                                height: 2.0,
+                                fontFamily: 'arabic',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+
+                        // Transliteration & Translation with selective visibility
+                        _buildContentSections(themeController, accentColor),
+
+                        // Expandable Benefits
+                        _buildBenefitsSection(themeController, accentColor),
+
+                        // Minimal Footer Actions
+                        _buildFooter(accentColor),
+                      ],
                     ),
-
-                    // Transliteration & Translation with selective visibility
-                    _buildContentSections(themeController, accentColor),
-
-                    // Expandable Benefits
-                    _buildBenefitsSection(themeController, accentColor),
-
-                    // Minimal Footer Actions
-                    _buildFooter(accentColor),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -1574,10 +1707,12 @@ class _DuaTileState extends State<DuaTile> {
       return const SizedBox.shrink();
     }
 
-    bool isPlaying = widget.currentlyPlayingPath == path;
+    bool isPlaying =
+        Get.find<AudioController>().currentlyPlayingPath == path &&
+        Get.find<AudioController>().currentlyPlayingDuaId == widget.dua.id;
 
     return InkWell(
-      onTap: () => widget.onToggle(path, widget.dua.id),
+      onTap: () => Get.find<AudioController>().toggleAudio(path, widget.dua.id),
       child: Icon(
         isPlaying ? Icons.volume_up_rounded : Icons.volume_off_rounded,
         size: 18,
@@ -1647,26 +1782,36 @@ class _DuaTileState extends State<DuaTile> {
   }
 
   Widget _buildFooter(Color accentColor) {
-    bool hasShare = widget.dua.arabic.length < 500;
+    bool hasShare = widget.dua.arabic.length < 2500;
     if (!hasShare) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Center(
         child: TextButton.icon(
-          onPressed: showShareDialog,
-          icon: const Icon(Icons.share_rounded, size: 16),
+          onPressed: _isSharing ? null : showShareDialog,
+          icon: _isSharing
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.share_rounded, size: 18),
           label: Text(
-            "SHARE DUA".tr,
+            (_isSharing ? "PREPARING..." : "SHARE DUA").tr,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
             ),
           ),
           style: TextButton.styleFrom(
             foregroundColor: accentColor,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            backgroundColor: accentColor.withOpacity(0.05),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
       ),

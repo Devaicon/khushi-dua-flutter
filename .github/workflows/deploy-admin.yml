@@ -1,0 +1,41 @@
+name: Deploy Admin App to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: khushiduaadmin
+        run: flutter pub get
+
+      - name: Build Flutter web app
+        working-directory: khushiduaadmin
+        run: flutter build web --release
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: khushidua
+          entryPoint: khushiduaadmin
+          channelId: live

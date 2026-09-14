@@ -175,11 +175,11 @@ class _DashboardState extends State<Dashboard> {
           items: <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/prayer.png", 0),
-              label: 'Home',
+              label: 'Prayer',
             ),
             BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/home.png", 1),
-              label: 'Prayer',
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: _buildNavItem("assets/images/search.png", 2),

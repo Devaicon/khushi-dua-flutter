@@ -9,6 +9,7 @@ import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../services/authService.dart';
 import '../../widgets/profileAvatar.dart';
+import 'forgotPasswordScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,7 +51,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         top: 10,
                         left: 10,
                         child: IconButton(
-                          onPressed: () => Get.back(),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Get.back();
+                            }
+                          },
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: rblack,
@@ -109,12 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: emailController,
                       validator: (email) {
-                        if (email == null || email.isEmpty) {
+                        if (email == null || email.trim().isEmpty) {
                           return "Email is required".tr;
-                        } else {
-                          emailController.text = email;
-                          return null;
                         }
+                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (!emailRegex.hasMatch(email.trim())) {
+                          return "Please enter a valid email address".tr;
+                        }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Email'.tr,
@@ -146,10 +155,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (password) {
                         if (password == null || password.isEmpty) {
                           return "Password is required".tr;
-                        } else {
-                          passwordController.text = password;
-                          return null;
                         }
+                        return null;
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter Password'.tr,
@@ -167,7 +174,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ).marginOnly(top: 12),
-                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Get.to(() => const ForgotPasswordScreen()),
+                        child: Text(
+                          "Forgot Password?".tr,
+                          style: const TextStyle(
+                            color: rbluedark,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     InkWell(
                       onTap: _isLoading
                           ? null
@@ -221,7 +242,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           InkWell(
                             onTap: () {
-                              Get.back();
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else {
+                                Get.back();
+                              }
                             },
                             child: Text(
                               "Signup now! ".tr,

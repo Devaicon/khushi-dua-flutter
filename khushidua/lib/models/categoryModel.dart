@@ -25,10 +25,10 @@ class CategoryModel {
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
   bool isEnabled = true;
-  int order=0;
-  bool littleKids=true;
-  bool olderKids=true;
-  bool grownUps=true;
+  int order = 0;
+  bool littleKids = true;
+  bool olderKids = true;
+  bool grownUps = true;
 
   CategoryModel({
     required this.id,
@@ -60,7 +60,7 @@ class CategoryModel {
     required this.order,
     required this.grownUps,
     required this.littleKids,
-    required this.olderKids
+    required this.olderKids,
   });
 
   String getName(String languageCode) {
@@ -112,39 +112,42 @@ class CategoryModel {
     }
   }
 
-
   factory CategoryModel.fromMap(Map<String, dynamic> map) {
     return CategoryModel(
-        id: map["id"],
-        createdAt: map["createdAt"].toDate(),
-        arabic: map["arabic"],
-        bengali: map["bengali"],
-        english: map["english"],
-        french: map["french"],
-        german: map["german"],
-        gujrati: map["gujrati"],
-        hindi: map["hindi"],
-        indonesian: map["indonesian"],
-        isEnabled: map["isEnabled"],
-        japanese: map["japanese"],
-        logo: map["logo"],
-        malay: map["malay"],
-        mandrain: map["mandrain"],
-        marathi: map["marathi"],
-        portugese: map["portugese"],
-        punjabi: map["punjabi"],
-        russian: map["russian"],
-        sindhi: map["sindhi"],
-        spanish: map["spanish"],
-        tamil: map["tamil"],
-        telgu: map["telgu"],
-        turkish: map["turkish"],
-        updatedAt: map["updatedAt"].toDate(),
-        urdu: map["urdu"],
-        order: map["order"],
-      littleKids: map["littleKids"],
-      olderKids: map["olderKids"],
-      grownUps:map["grownUps"]
+      id: map["id"] ?? '',
+      createdAt: map["createdAt"] != null
+          ? map["createdAt"].toDate()
+          : DateTime.now(),
+      arabic: map["arabic"] ?? '',
+      bengali: map["bengali"] ?? '',
+      english: map["english"] ?? '',
+      french: map["french"] ?? '',
+      german: map["german"] ?? '',
+      gujrati: map["gujrati"] ?? '',
+      hindi: map["hindi"] ?? '',
+      indonesian: map["indonesian"] ?? '',
+      isEnabled: map["isEnabled"] ?? true,
+      japanese: map["japanese"] ?? '',
+      logo: map["logo"] ?? '',
+      malay: map["malay"] ?? '',
+      mandrain: map["mandrain"] ?? '',
+      marathi: map["marathi"] ?? '',
+      portugese: map["portugese"] ?? '',
+      punjabi: map["punjabi"] ?? '',
+      russian: map["russian"] ?? '',
+      sindhi: map["sindhi"] ?? '',
+      spanish: map["spanish"] ?? '',
+      tamil: map["tamil"] ?? '',
+      telgu: map["telgu"] ?? '',
+      turkish: map["turkish"] ?? '',
+      updatedAt: map["updatedAt"] != null
+          ? map["updatedAt"].toDate()
+          : DateTime.now(),
+      urdu: map["urdu"] ?? '',
+      order: map["order"] ?? 0,
+      littleKids: map["littleKids"] ?? true,
+      olderKids: map["olderKids"] ?? true,
+      grownUps: map["grownUps"] ?? true,
     );
   }
 
@@ -176,10 +179,10 @@ class CategoryModel {
       "turkish": turkish,
       "updatedAt": updatedAt,
       "urdu": urdu,
-      "order":order,
-      "grownUps":grownUps,
-      "olderKids":olderKids,
-      "littleKids":littleKids
+      "order": order,
+      "grownUps": grownUps,
+      "olderKids": olderKids,
+      "littleKids": littleKids,
     };
   }
 }

@@ -812,8 +812,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
         if (locationAllowed) {
           Get.to(
             CompassScreen(
-              latitude: currentPosition?.latitude ?? 0,
-              longitude: currentPosition?.longitude ?? 0,
+              latitude: currentPosition?.latitude ?? coordinates.latitude,
+              longitude: currentPosition?.longitude ?? coordinates.longitude,
             ),
             transition: Transition.cupertino,
           );

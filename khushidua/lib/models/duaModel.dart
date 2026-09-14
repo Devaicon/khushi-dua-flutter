@@ -173,8 +173,6 @@ class DuaModel {
       benefits: _parseBenefitsList(map["benefits"]),
       benefitsString: _parseBenefitsString(map["benefits"]),
     );
-
-    return dua;
   }
 
   String getName(String languageCode) {
