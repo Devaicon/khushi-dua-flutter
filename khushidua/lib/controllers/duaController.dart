@@ -3,6 +3,7 @@ import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
 import 'package:khushidua/services/duaService.dart';
 
+import '../controllers/themeController.dart';
 import '../models/duaModel.dart';
 
 class DuaController extends GetxController {
