@@ -131,7 +131,7 @@ class DuaModel {
   }
 
   factory DuaModel.fromMap(Map<String, dynamic> map) {
-    final dua = DuaModel(
+    return DuaModel(
       id: map["id"] ?? '',
       createdAt:
           map["createdAt"] != null ? map["createdAt"].toDate() : DateTime.now(),
@@ -141,22 +141,22 @@ class DuaModel {
       english: map["english"] ?? '',
       french: map["french"] ?? '',
       german: map["german"] ?? '',
-      gujrati: map["gujrati"] ?? '',
+      gujrati: map["gujrati"] ?? map["gujarati"] ?? '',
       hindi: map["hindi"] ?? '',
       indonesian: map["indonesian"] ?? '',
       isEnabled: map["isEnabled"] ?? true,
       japanese: map["japanese"] ?? '',
       subCategoryIds: List<String>.from(map["subCategoryIds"] ?? []),
       malay: map["malay"] ?? '',
-      mandrain: map["mandrain"] ?? '',
+      mandrain: map["mandrain"] ?? map["mandarin"] ?? '',
       marathi: map["marathi"] ?? '',
-      portugese: map["portugese"] ?? '',
+      portugese: map["portugese"] ?? map["portuguese"] ?? '',
       punjabi: map["punjabi"] ?? '',
       russian: map["russian"] ?? '',
       sindhi: map["sindhi"] ?? '',
       spanish: map["spanish"] ?? '',
       tamil: map["tamil"] ?? '',
-      telgu: map["telgu"] ?? '',
+      telgu: map["telgu"] ?? map["telugu"] ?? '',
       turkish: map["turkish"] ?? '',
       updatedAt:
           map["updatedAt"] != null ? map["updatedAt"].toDate() : DateTime.now(),

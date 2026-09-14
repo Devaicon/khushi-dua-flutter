@@ -1607,7 +1607,10 @@ class _DuaTileState extends State<DuaTile> {
             icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
             color: hasAudio ? accentColor : Colors.grey,
             onTap: hasAudio
-                ? () => widget.onToggle(audioPath, widget.dua.id)
+                ? () => Get.find<AudioController>().toggleAudio(
+                    audioPath,
+                    widget.dua.id,
+                  )
                 : () {
                     Get.snackbar(
                       'No Audio',
