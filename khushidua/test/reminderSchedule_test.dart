@@ -96,4 +96,20 @@ void main() {
       expect(ids.contains(kAzkarEveningNotificationId), isFalse);
     });
   });
+
+  group('salahAlertFor', () {
+    test('"on" and unknown or missing values play the Salah sound', () {
+      expect(salahAlertFor('on'), SalahAlert.sound);
+      expect(salahAlertFor(null), SalahAlert.sound);
+      expect(salahAlertFor('something-else'), SalahAlert.sound);
+    });
+
+    test('"vibrate" stays silent', () {
+      expect(salahAlertFor('vibrate'), SalahAlert.vibrate);
+    });
+
+    test('"off" schedules nothing', () {
+      expect(salahAlertFor('off'), SalahAlert.off);
+    });
+  });
 }

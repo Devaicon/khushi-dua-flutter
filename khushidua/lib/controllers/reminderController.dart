@@ -76,6 +76,9 @@ class ReminderController extends GetxController {
     // Re-arm on every launch: pending alarms do not survive some reboots or
     // app updates, and the OS may have dropped them.
     if (_azkarEnabled) await _scheduleAzkar();
+    // Also moves reminders scheduled before the Salah sound was added onto
+    // the new channel; the old channel is deleted, so they would not show.
+    if (_salahEnabled) await syncSalahReminders(const {});
   }
 
   /// Prayer times are stored as minutes-since-midnight and rehydrated onto
@@ -225,8 +228,8 @@ class ReminderController extends GetxController {
       final time = _prayerTimes[prayer];
 
       // "off" silences a single prayer; the master switch silences all of them.
-      final mode = prefs.getString(_speakerKeyFor(prayer)) ?? 'on';
-      final wanted = _salahEnabled && mode != 'off' && time != null;
+      final alert = salahAlertFor(prefs.getString(_speakerKeyFor(prayer)));
+      final wanted = _salahEnabled && alert != SalahAlert.off && time != null;
 
       if (!wanted) {
         await ReminderService.instance.cancel(id);
@@ -235,8 +238,19 @@ class ReminderController extends GetxController {
 
       await ReminderService.instance.scheduleDaily(
         id: id,
-        channelId: ReminderService.salahChannelId,
-        channelName: 'Salah Reminders',
+        channelId: alert == SalahAlert.vibrate
+            ? ReminderService.salahVibrateChannelId
+            : ReminderService.salahChannelId,
+        channelName: alert == SalahAlert.vibrate
+            ? 'Salah Reminders (vibrate only)'
+            : 'Salah Reminders',
+        playSound: alert == SalahAlert.sound,
+        androidSound: alert == SalahAlert.sound
+            ? ReminderService.salahSoundAndroid
+            : null,
+        iosSound: alert == SalahAlert.sound
+            ? ReminderService.salahSoundIos
+            : null,
         title: '${prayer.tr} ${'time'.tr}',
         body: '${'It is time for'.tr} ${prayer.tr}',
         hour: time.hour,

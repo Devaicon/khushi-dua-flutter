@@ -51,6 +51,23 @@ bool isWithinBannerWindow(DateTime prayerTime, DateTime now) {
   return now.difference(prayerTime) <= kSalahBannerWindow;
 }
 
+/// How a single prayer's reminder should alert, from its on/vibrate/off
+/// setting on the prayer screen.
+enum SalahAlert { sound, vibrate, off }
+
+/// Anything other than "vibrate" or "off" — including a setting that was
+/// never saved — plays the Salah sound, matching the prayer screen's default.
+SalahAlert salahAlertFor(String? mode) {
+  switch (mode) {
+    case 'off':
+      return SalahAlert.off;
+    case 'vibrate':
+      return SalahAlert.vibrate;
+    default:
+      return SalahAlert.sound;
+  }
+}
+
 /// The stable notification id for a prayer, or -1 if it is not schedulable.
 int notificationIdFor(String prayerName) {
   final index = kSchedulablePrayers.indexOf(prayerName);
