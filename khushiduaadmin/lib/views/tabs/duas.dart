@@ -9,6 +9,8 @@ import 'package:khushiduaadmin/views/duas/createNewDua.dart';
 import 'package:khushiduaadmin/views/duas/editDua.dart';
 
 import '../../constants/colors.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../../widgets/topBar.dart';
 
 class DuasTab extends StatefulWidget {
@@ -19,6 +21,8 @@ class DuasTab extends StatefulWidget {
 }
 
 class _DuasTabState extends State<DuasTab> {
+  String _query = '';
+
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
@@ -30,6 +34,9 @@ class _DuasTabState extends State<DuasTab> {
       backgroundColor: rBlack,
       body: GetBuilder<DuaController>(
         builder: (duaController) {
+          final searching = hasSearchText(_query);
+          final visibleDuas =
+              filterBySearch(duaController.allDuas, _query, duaSearchFields);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +230,14 @@ class _DuasTabState extends State<DuasTab> {
                           fontWeight: FontWeight.w600,
                           fontSize: 20),
                     ),
+                    Expanded(
+                      child: AdminSearchField(
+                        hint: "Search duas by any language, id or benefits",
+                        matchCount: visibleDuas.length,
+                        totalCount: duaController.allDuas.length,
+                        onChanged: (value) => setState(() => _query = value),
+                      ).marginSymmetric(horizontal: 24),
+                    ),
                     InkWell(
                       splashColor: Colors.transparent,
                       onTap: () {
@@ -256,6 +271,16 @@ class _DuasTabState extends State<DuasTab> {
                   child: Column(
                     children: [
                       TableHeader(),
+                      if (searching) ...[
+                        SearchResultsNote(
+                          query: _query,
+                          matchCount: visibleDuas.length,
+                          itemLabel: "duas",
+                          reorderPaused: true,
+                        ),
+                        for (final dua in visibleDuas)
+                          DuaTile(dua, key: ValueKey(dua.id)),
+                      ] else
                       Theme(
                         data: Theme.of(context).copyWith(
                           iconTheme: const IconThemeData(color: Colors.white),

@@ -9,6 +9,8 @@ import 'package:khushiduaadmin/views/category/editCategory.dart';
 import 'package:khushiduaadmin/widgets/topBar.dart';
 
 import '../../constants/colors.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../category/createNew.dart';
 
 class CategoriesTab extends StatefulWidget {
@@ -19,6 +21,8 @@ class CategoriesTab extends StatefulWidget {
 }
 
 class _CategoriesTabState extends State<CategoriesTab> {
+  String _query = '';
+
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
@@ -30,6 +34,9 @@ class _CategoriesTabState extends State<CategoriesTab> {
       backgroundColor: rBlack,
       body: GetBuilder<CategoryController>(
         builder: (categoryController) {
+          final searching = hasSearchText(_query);
+          final visibleCategories =
+              filterBySearch(categoryController.allCategories, _query, categorySearchFields);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,6 +231,14 @@ class _CategoriesTabState extends State<CategoriesTab> {
                           fontWeight: FontWeight.w600,
                           fontSize: 20),
                     ),
+                    Expanded(
+                      child: AdminSearchField(
+                        hint: "Search categories by any language or id",
+                        matchCount: visibleCategories.length,
+                        totalCount: categoryController.allCategories.length,
+                        onChanged: (value) => setState(() => _query = value),
+                      ).marginSymmetric(horizontal: 24),
+                    ),
                     InkWell(
                       splashColor: Colors.transparent,
                       onTap: () {
@@ -257,6 +272,16 @@ class _CategoriesTabState extends State<CategoriesTab> {
                   child: Column(
                     children: [
                       TableHeader(),
+                      if (searching) ...[
+                        SearchResultsNote(
+                          query: _query,
+                          matchCount: visibleCategories.length,
+                          itemLabel: "categories",
+                          reorderPaused: true,
+                        ),
+                        for (final item in visibleCategories)
+                          CategoryTile(item, key: ValueKey(item.id)),
+                      ] else
                       Theme(
                         data: Theme.of(context).copyWith(
                           iconTheme: const IconThemeData(color: Colors.white),
