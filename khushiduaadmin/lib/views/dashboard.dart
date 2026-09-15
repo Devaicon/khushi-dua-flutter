@@ -14,6 +14,7 @@ import 'package:khushiduaadmin/views/tabs/profile.dart';
 import 'package:khushiduaadmin/views/tabs/users.dart';
 import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
 import 'package:khushiduaadmin/views/tabs/homeBanner.dart';
+import 'package:khushiduaadmin/views/tabs/dataTransfer.dart';
 import '../constants/colors.dart';
 import '../controllers/authController.dart';
 
@@ -36,6 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ProfileTab(),
     MLSettingsTab(),
     HomeBannerTab(),
+    DataTransferTab(),
   ];
 
   @override
@@ -60,7 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onTabSelected(int index) {
-    if (index == 8) {
+    if (index == 99) {
       // Logout
       showLogOutPopup();
       return;
@@ -79,9 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSidebar(),
           Expanded(
             child: IndexedStack(
-              index: _selectedTab > 7
-                  ? 0
-                  : _selectedTab, // Fallback for logout tab index
+              index: _selectedTab < _tabs.length ? _selectedTab : 0,
               children: _tabs,
             ),
           ),
@@ -114,11 +114,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Column(
             children: [
               _buildSidebarItem(5, 'Profile', 'assets/svgs/user.svg'),
+              _buildSidebarItem(8, 'Import / Export', null,
+                  iconData: Icons.import_export_rounded),
               _buildSidebarItem(7, 'Home Banner', null,
                   iconData: Icons.view_carousel_outlined),
               _buildSidebarItem(6, 'ML Settings', null,
                   iconData: Icons.settings_applications),
-              _buildSidebarItem(8, 'Logout', 'assets/svgs/logout.svg',
+              _buildSidebarItem(99, 'Logout', 'assets/svgs/logout.svg',
                   isLogout: true),
               const SizedBox(height: 20),
             ],
