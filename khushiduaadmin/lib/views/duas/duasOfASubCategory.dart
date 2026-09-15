@@ -6,6 +6,8 @@ import 'package:khushiduaadmin/models/subCategoryModel.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/firebaseRef.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../../controllers/duaController.dart';
 import '../../models/duaModel.dart';
 import '../../widgets/topBar.dart';
@@ -20,6 +22,8 @@ class DuasOfASubCategory extends StatefulWidget {
 }
 
 class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
+  String _query = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,6 +33,9 @@ class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
           final filteredDuas = duaController.allDuas
               .where((dua) => dua.subCategoryIds.contains(widget.model.id))
               .toList();
+          final searching = hasSearchText(_query);
+          final visibleDuas =
+              filterBySearch(filteredDuas, _query, duaSearchFields);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,6 +62,14 @@ class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
                           fontWeight: FontWeight.w600,
                           fontSize: 20),
                     ),
+                    Expanded(
+                      child: AdminSearchField(
+                        hint: "Search these duas by any language, id or benefits",
+                        matchCount: visibleDuas.length,
+                        totalCount: filteredDuas.length,
+                        onChanged: (value) => setState(() => _query = value),
+                      ).marginSymmetric(horizontal: 24),
+                    ),
                   ],
                 ).marginOnly(top: 6),
                 const SizedBox(
@@ -67,6 +82,16 @@ class _DuasOfASubCategoryState extends State<DuasOfASubCategory> {
                   child: Column(
                     children: [
                       TableHeader(),
+                      if (searching) ...[
+                        SearchResultsNote(
+                          query: _query,
+                          matchCount: visibleDuas.length,
+                          itemLabel: "duas",
+                          reorderPaused: true,
+                        ),
+                        for (final item in visibleDuas)
+                          DuaTile(item, key: ValueKey(item.id)),
+                      ] else
                       Theme(
                         data: Theme.of(context).copyWith(
                           iconTheme: const IconThemeData(color: Colors.white),

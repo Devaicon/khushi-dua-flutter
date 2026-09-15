@@ -5,6 +5,8 @@ import 'package:khushiduaadmin/controllers/notificationController.dart';
 import 'package:khushiduaadmin/models/notificationModel.dart';
 import 'package:intl/intl.dart';
 import '../../constants/colors.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/topBar.dart';
 
@@ -16,12 +18,18 @@ class NotificationTab extends StatefulWidget {
 }
 
 class _NotificationTabState extends State<NotificationTab> {
+  String _query = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: rBlack,
       body: GetBuilder<NotificationController>(
         builder: (notificationController) {
+          final visibleNotifications = filterBySearch(
+              notificationController.allNotifications,
+              _query,
+              notificationSearchFields);
           return Column(
             children: [
               const TopBar(title: "Notifications"),
@@ -31,7 +39,15 @@ class _NotificationTabState extends State<NotificationTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(),
+                  Expanded(
+                    child: AdminSearchField(
+                      hint: "Search notifications by title or message",
+                      matchCount: visibleNotifications.length,
+                      totalCount:
+                          notificationController.allNotifications.length,
+                      onChanged: (value) => setState(() => _query = value),
+                    ).marginOnly(right: 24),
+                  ),
                   InkWell(
                     splashColor: Colors.transparent,
                     onTap: () {
@@ -64,12 +80,18 @@ class _NotificationTabState extends State<NotificationTab> {
                 child: Column(
                   children: [
                     TableHeader(),
+                    if (hasSearchText(_query))
+                      SearchResultsNote(
+                        query: _query,
+                        matchCount: visibleNotifications.length,
+                        itemLabel: "notifications",
+                      ),
                     ListView.builder(
-                      itemCount: notificationController.allNotifications.length,
+                      itemCount: visibleNotifications.length,
                       shrinkWrap: true,
                       itemBuilder: (context, index) {
-                        return NotificationTile(
-                            notificationController.allNotifications[index]);
+                        return NotificationTile(visibleNotifications[index],
+                            key: ValueKey(visibleNotifications[index].id));
                       },
                     ),
                   ],

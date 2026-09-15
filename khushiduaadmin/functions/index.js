@@ -15,6 +15,13 @@ const {setGlobalOptions} = require("firebase-functions/v2");
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
+const {getAuth} = require("firebase-admin/auth");
+const {
+  normalizeEmail,
+  validateInvite,
+  claimableEmail,
+  revokeProblem,
+} = require("./adminAccess");
 
 initializeApp();
 setGlobalOptions({region: "us-central1", maxInstances: 10});
@@ -31,6 +38,19 @@ async function assertAdmin(request) {
   const doc = await db.collection("Management").doc(uid).get();
   if (!doc.exists) {
     throw new HttpsError("permission-denied", "Not an admin account.");
+  }
+  return uid;
+}
+
+/** Throws unless the caller is an admin whose role is Super_Admin. */
+async function assertSuperAdmin(request) {
+  const uid = await assertAdmin(request);
+  const doc = await db.collection("Management").doc(uid).get();
+  if (doc.get("role") !== "Super_Admin") {
+    throw new HttpsError(
+        "permission-denied",
+        "Only a super admin can manage admins.",
+    );
   }
   return uid;
 }
@@ -189,3 +209,132 @@ async function clearStaleTokens(tokens) {
     await batch.commit();
   }
 }
+
+/**
+ * Invite someone to become an admin. They gain access the first time they
+ * sign in to the admin panel with Google using this email.
+ * Data: { email, role?, firstName?, lastName? }
+ */
+exports.inviteAdmin = onCall(async (request) => {
+  const callerUid = await assertSuperAdmin(request);
+
+  const result = validateInvite(request.data);
+  if (result.error) throw new HttpsError("invalid-argument", result.error);
+  const {email, role, firstName, lastName} = result.value;
+
+  const existing = await db.collection("Management")
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+  if (!existing.empty) {
+    throw new HttpsError("already-exists", `${email} is already an admin.`);
+  }
+
+  await db.collection("AdminInvites").doc(email).set({
+    email,
+    role,
+    firstName,
+    lastName,
+    invitedBy: callerUid,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  return {email, role};
+});
+
+/** Withdraw a pending invite. Data: { email } */
+exports.cancelInvite = onCall(async (request) => {
+  await assertSuperAdmin(request);
+
+  const email = normalizeEmail(request.data && request.data.email);
+  if (!email) throw new HttpsError("invalid-argument", "email is required.");
+
+  await db.collection("AdminInvites").doc(email).delete();
+  return {email};
+});
+
+/**
+ * Turn a pending invite into a real admin record for the signed-in caller.
+ * Safe to call on every sign-in: it does nothing when there is no invite or
+ * the caller is already an admin.
+ */
+exports.claimAdminInvite = onCall(async (request) => {
+  const uid = request.auth && request.auth.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign in with Google first.");
+  }
+
+  const email = claimableEmail(request.auth.token);
+  if (!email) {
+    throw new HttpsError(
+        "permission-denied",
+        "Sign in with a Google account whose email is verified.",
+    );
+  }
+
+  const inviteRef = db.collection("AdminInvites").doc(email);
+  const adminRef = db.collection("Management").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const [invite, admin] = await Promise.all([
+      tx.get(inviteRef),
+      tx.get(adminRef),
+    ]);
+    if (admin.exists) return {claimed: false, alreadyAdmin: true};
+    if (!invite.exists) return {claimed: false, alreadyAdmin: false};
+
+    tx.set(adminRef, {
+      id: uid,
+      email,
+      firstName: invite.get("firstName") || "",
+      lastName: invite.get("lastName") || "",
+      role: invite.get("role") || "Admin",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    tx.delete(inviteRef);
+    return {claimed: true, alreadyAdmin: false};
+  });
+});
+
+/**
+ * Remove an admin's access and end their sessions. Their Google account and
+ * any app-user profile are untouched. Data: { uid }
+ */
+exports.revokeAdmin = onCall(async (request) => {
+  const callerUid = await assertSuperAdmin(request);
+
+  const targetUid =
+    request.data && typeof request.data.uid === "string" ?
+      request.data.uid :
+      "";
+
+  let targetRole;
+  if (targetUid) {
+    const target = await db.collection("Management").doc(targetUid).get();
+    if (!target.exists) {
+      throw new HttpsError("not-found", "That admin no longer exists.");
+    }
+    targetRole = target.get("role");
+  }
+
+  const superAdmins = await db.collection("Management")
+      .where("role", "==", "Super_Admin")
+      .count()
+      .get();
+
+  const problem = revokeProblem({
+    callerUid,
+    targetUid,
+    targetRole,
+    superAdminCount: superAdmins.data().count,
+  });
+  if (problem) throw new HttpsError("failed-precondition", problem);
+
+  await db.collection("Management").doc(targetUid).delete();
+  // Existing ID tokens stay valid for up to an hour, but every rule and
+  // callable checks /Management, which is now gone.
+  await getAuth().revokeRefreshTokens(targetUid);
+
+  return {uid: targetUid};
+});

@@ -6,6 +6,8 @@ import 'package:khushiduaadmin/models/subCategoryModel.dart';
 
 import '../../constants/colors.dart';
 import '../../constants/firebaseRef.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../../controllers/categoryController.dart';
 import '../../widgets/topBar.dart';
 import '../subCategory/editSubCategory.dart';
@@ -20,6 +22,8 @@ class AllSubCategories extends StatefulWidget {
 }
 
 class _AllSubCategoriesState extends State<AllSubCategories> {
+  String _query = '';
+
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
@@ -55,6 +59,9 @@ class _AllSubCategoriesState extends State<AllSubCategories> {
       backgroundColor: rBlack,
       body: GetBuilder<CategoryController>(
         builder: (categoryController) {
+          final searching = hasSearchText(_query);
+          final visibleSubCategories =
+              filterBySearch(allSubCategories, _query, subCategorySearchFields);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,6 +265,14 @@ class _AllSubCategoriesState extends State<AllSubCategories> {
                           fontWeight: FontWeight.w600,
                           fontSize: 20),
                     ),
+                    Expanded(
+                      child: AdminSearchField(
+                        hint: "Search subcategories by any language or id",
+                        matchCount: visibleSubCategories.length,
+                        totalCount: allSubCategories.length,
+                        onChanged: (value) => setState(() => _query = value),
+                      ).marginSymmetric(horizontal: 24),
+                    ),
                     InkWell(
                       splashColor: Colors.transparent,
                       onTap: () {
@@ -293,6 +308,16 @@ class _AllSubCategoriesState extends State<AllSubCategories> {
                   child: Column(
                     children: [
                       TableHeader(),
+                      if (searching) ...[
+                        SearchResultsNote(
+                          query: _query,
+                          matchCount: visibleSubCategories.length,
+                          itemLabel: "subcategories",
+                          reorderPaused: true,
+                        ),
+                        for (final item in visibleSubCategories)
+                          SubCategoryTile(item, key: ValueKey(item.id)),
+                      ] else
                       Theme(
                         data: Theme.of(context).copyWith(
                           iconTheme: const IconThemeData(color: Colors.white),

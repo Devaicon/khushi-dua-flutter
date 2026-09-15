@@ -8,6 +8,8 @@ import 'package:khushiduaadmin/controllers/userController.dart';
 import 'package:khushiduaadmin/models/userModel.dart';
 
 import '../../constants/colors.dart';
+import '../../search/adminSearch.dart';
+import '../../widgets/adminSearchField.dart';
 import '../../widgets/topBar.dart';
 
 class UsersTab extends StatefulWidget {
@@ -18,6 +20,8 @@ class UsersTab extends StatefulWidget {
 }
 
 class _UsersTabState extends State<UsersTab> {
+  String _query = '';
+
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
         RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
@@ -29,6 +33,8 @@ class _UsersTabState extends State<UsersTab> {
       backgroundColor: rBlack,
       body: GetBuilder<UserController>(
         builder: (userController) {
+          final visibleUsers =
+              filterBySearch(userController.allUsers, _query, userSearchFields);
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,6 +218,15 @@ class _UsersTabState extends State<UsersTab> {
               const SizedBox(
                 height: 20,
               ),
+              AdminSearchField(
+                hint: "Search users by name, email or id",
+                matchCount: visibleUsers.length,
+                totalCount: userController.allUsers.length,
+                onChanged: (value) => setState(() => _query = value),
+              ),
+              const SizedBox(
+                height: 12,
+              ),
               Container(
                 width: MediaQuery.of(context).size.width,
                 decoration: BoxDecoration(
@@ -219,12 +234,19 @@ class _UsersTabState extends State<UsersTab> {
                 child: Column(
                   children: [
                     TableHeader(),
+                    if (hasSearchText(_query))
+                      SearchResultsNote(
+                        query: _query,
+                        matchCount: visibleUsers.length,
+                        itemLabel: "users",
+                      ),
                     ListView.builder(
-                      itemCount: userController.allUsers.length,
+                      itemCount: visibleUsers.length,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemBuilder: (context, index) {
-                        return UserTile(userController.allUsers[index]);
+                        return UserTile(visibleUsers[index],
+                            key: ValueKey(visibleUsers[index].id));
                       },
                     ),
                   ],

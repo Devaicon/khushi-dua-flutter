@@ -5,8 +5,7 @@ import 'package:khushiduaadmin/controllers/initController.dart';
 import 'package:khushiduaadmin/views/auth/login.dart';
 import 'package:khushiduaadmin/views/dashboard.dart';
 import 'firebase_options.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:html' as html;
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,16 +21,15 @@ void main() async {
     debugPrint("Firebase error: $e");
   }
 
-  String? adminId;
-  if (kIsWeb) {
-    try {
-      adminId = html.window.localStorage['adminId'];
-    } catch (e) {
-      debugPrint("Storage error: $e");
-    }
+  // Firebase persists the admin's session in the browser. The dashboard
+  // re-checks /Management on open, so a non-admin session is sent back here.
+  String initialRoute = '/login';
+  try {
+    final user = await FirebaseAuth.instance.authStateChanges().first;
+    if (user != null) initialRoute = '/dashboard';
+  } catch (e) {
+    debugPrint("Auth restore error: $e");
   }
-
-  String initialRoute = adminId == null ? '/login' : '/dashboard';
   debugPrint("Initial route determined: $initialRoute");
 
   runApp(MyApp(initialRoute: initialRoute));

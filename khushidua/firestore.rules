@@ -22,9 +22,19 @@ service cloud.firestore {
     match /Notifications/{doc}       { allow read: if true; allow write: if isAdmin(); }
 
     // Admin roster. The app never reads this; keep operator emails private.
+    // Admins are created and removed only by Cloud Functions (Admin SDK
+    // bypasses these rules), so even a hijacked admin session cannot mint
+    // new admins.
     match /Management/{adminId} {
       allow read: if isAdmin() || (request.auth != null && request.auth.uid == adminId);
-      allow write: if isAdmin();
+      allow write: if false;
+    }
+
+    // Pending admin invites, keyed by lowercase email. Written only by the
+    // inviteAdmin / cancelInvite / claimAdminInvite functions.
+    match /AdminInvites/{email} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // App users own their profile; the admin panel lists and edits them.
