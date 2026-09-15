@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -199,15 +201,42 @@ class AuthService {
     }
   }
 
+  /// The one live listener on the signed-in user's document. Sign-in and the
+  /// dashboard both ask for user data, and each call used to open another
+  /// listener that was never closed; after switching accounts the previous
+  /// user's listener kept pushing their readDuas into the app.
+  static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _userSubscription;
+  static String? _subscribedUserId;
+
   getUserData(String userId) async {
-    await userRef.doc(userId).snapshots().listen((event) {
-      final userModel = UserModel.fromMap(event.data()!);
+    if (_subscribedUserId == userId && _userSubscription != null) return;
+    await _userSubscription?.cancel();
+    _subscribedUserId = userId;
+    _userSubscription = userRef.doc(userId).snapshots().listen((event) {
+      final data = event.data();
+      if (data == null) return;
+      final userModel = UserModel.fromMap(data);
       _userController.setUserModel(userModel);
 
       if (userModel.isBlocked) {
         Get.offAll(() => BlockedScreen());
       }
     });
+  }
+
+  /// Stops listening to the user document, signs out of Firebase and forgets
+  /// the user, so the app goes back to guest state straight away.
+  Future<void> signOut() async {
+    await _userSubscription?.cancel();
+    _userSubscription = null;
+    _subscribedUserId = null;
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      debugPrint("Sign out error: $e");
+    }
+    _userController.clearUserModel();
   }
 
   Future<void> sendPasswordResetEmail(String email) async {

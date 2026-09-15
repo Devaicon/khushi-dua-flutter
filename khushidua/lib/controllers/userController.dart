@@ -72,6 +72,12 @@ class UserController extends GetxController {
     await AuthService().getUserData(userId);
   }
 
+  /// Back to guest: no user record, so nothing is locked or counted.
+  clearUserModel() {
+    _userModel = null;
+    update();
+  }
+
   setUserModel(UserModel user) {
     _userModel = user;
     setUserName(user.name);

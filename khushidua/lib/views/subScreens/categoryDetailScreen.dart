@@ -6,10 +6,12 @@ import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../constants/colors.dart';
+import '../../helpers/sectionProgress.dart';
 import '../../models/categoryModel.dart';
 import '../../models/subCategoryModel.dart';
 import '../imageScreen.dart';
 import '../openDuasScreen.dart';
+import '../../widgets/listenedHelp.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final CategoryModel categoryModel;
@@ -46,39 +48,16 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             final subCategories = categoryController.filteredSubCategories;
             final allDuas = duaController.allDuas;
             final userModel = userController.userModel;
-            final readDuas = userModel?.readDuas ?? [];
-            final total = subCategories.length;
-            final half = (total / 2).ceil();
-
             final themeController = Get.find<ThemeController>();
-            final ageGroup = themeController.selectedAgeGroup;
-
-            // Pre-calculate completed status for better performance
-            Map<String, bool> subStatusMap = {};
-            for (var sub in subCategories) {
-              final subDuas = allDuas.where(
-                (d) => d.subCategoryIds.contains(sub.id),
-              );
-              if (subDuas.isEmpty) {
-                subStatusMap[sub.id] = false;
-              } else {
-                subStatusMap[sub.id] = subDuas.every(
-                  (d) => readDuas.contains(d.id),
-                );
-              }
-            }
-
-            bool isEnabled(int index) {
-              if (userModel == null || userModel.isMember == true) return true;
-              if (index < half) return true;
-
-              // Check if first half is complete
-              int completedCount = 0;
-              for (int i = 0; i < half; i++) {
-                if (subStatusMap[subCategories[i].id] == true) completedCount++;
-              }
-              return completedCount >= half;
-            }
+            final progress = SectionProgress.compute(
+              sectionIds: [for (final sub in subCategories) sub.id],
+              allDuas: allDuas,
+              listenedDuaIds: (userModel?.readDuas ?? const <String>[])
+                  .toSet(),
+              ageGroup: themeController.selectedAgeGroup,
+              // Guests and members see every section.
+              restricted: userModel != null && !userModel.isMember,
+            );
 
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
@@ -146,6 +125,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       ),
                     ),
                   ),
+                  actions: [
+                    if (progress.restricted)
+                      IconButton(
+                        tooltip: "How to unlock sections".tr,
+                        icon: const Icon(
+                          Icons.info_outline_rounded,
+                          color: rbluedark,
+                        ),
+                        onPressed: () => showSectionUnlockHelp(progress),
+                      ),
+                  ],
                   leading: IconButton(
                     icon: const Icon(
                       Icons.arrow_back_ios_new_rounded,
@@ -160,6 +150,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     },
                   ),
                 ),
+                if (progress.restricted && !progress.allUnlocked)
+                  SliverToBoxAdapter(
+                    child: FirstTimeTip(
+                      prefsKey: kSectionUnlockTipSeenKey,
+                      color: widget.color,
+                      message: sectionUnlockSummary(progress),
+                    ).paddingOnly(left: 20, right: 20, top: 20),
+                  ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -171,7 +169,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         widget.color,
                         subCategories[index],
                         index,
-                        isClickable: isEnabled(index),
+                        isClickable: progress.isUnlocked(index),
+                        onLockedTap: () => showSectionUnlockHelp(progress),
                       );
                     }, childCount: subCategories.length),
                   ),
@@ -194,12 +193,16 @@ class SubCategoryTile extends StatefulWidget {
   final int index;
   final bool isClickable;
 
+  /// Called when a locked section is tapped, to explain how to unlock it.
+  final VoidCallback? onLockedTap;
+
   const SubCategoryTile(
     this.color,
     this.subCategoryModel,
     this.index, {
     super.key,
     required this.isClickable,
+    this.onLockedTap,
   });
 
   @override
@@ -253,7 +256,7 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                     Get.to(OpenDuasScreen(widget.subCategoryModel));
                   }
                 }
-              : null,
+              : widget.onLockedTap,
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Container(

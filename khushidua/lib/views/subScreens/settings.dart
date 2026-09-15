@@ -11,6 +11,7 @@ import '../../constants/colors.dart';
 import '../../controllers/userController.dart';
 import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
+import '../../services/authService.dart';
 import '../subSettings/languageSettings.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
@@ -285,6 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             SharedPreferences prefs =
                                 await SharedPreferences.getInstance();
                             await prefs.clear();
+                            await AuthService().signOut();
                             userController.setLoggedIn(false);
                             Get.find<UserController>().setUserName(
                               "Guest User",

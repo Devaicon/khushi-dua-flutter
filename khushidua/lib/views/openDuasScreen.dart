@@ -25,6 +25,7 @@ import '../constants/colors.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
+import '../widgets/listenedHelp.dart';
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
@@ -220,8 +221,26 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
           return ListView.builder(
             padding: const EdgeInsets.only(top: 8, bottom: 24),
             physics: const BouncingScrollPhysics(),
-            itemCount: duaController.filteredDuas.length,
-            itemBuilder: (context, index) {
+            // The first item is the one-time tip explaining "listened".
+            itemCount: duaController.filteredDuas.length + 1,
+            itemBuilder: (context, itemIndex) {
+              if (itemIndex == 0) {
+                final loggedIn =
+                    Get.find<UserController>().userModel != null;
+                return FirstTimeTip(
+                  key: ValueKey(loggedIn),
+                  prefsKey: loggedIn
+                      ? kListenedTipSeenKey
+                      : '$kListenedTipSeenKey.guest',
+                  color: rgreen,
+                  message: loggedIn
+                      ? "Play a dua's audio all the way to the end to mark it as listened. Listening to duas unlocks more sections."
+                            .tr
+                      : "Log in to keep track of the duas you have listened to."
+                            .tr,
+                ).paddingSymmetric(horizontal: 16, vertical: 8);
+              }
+              final index = itemIndex - 1;
               return DuaTile(
                 dua: duaController.filteredDuas[index],
                 expandedBenefitsDuaId: _expandedBenefitsDuaId,
@@ -1629,6 +1648,11 @@ class _DuaTileState extends State<DuaTile> {
             onTap: _openRecordingDialog,
           ),
           const Spacer(),
+          if (Get.find<UserController>().userModel?.readDuas.contains(
+                widget.dua.id,
+              ) ??
+              false)
+            ListenedBadge(color: accentColor).marginOnly(right: 8),
           Container(
             height: 40,
             width: 40,
