@@ -9,4 +9,5 @@ final duaRef = firestore.collection('Dua');
 final notificationRef = firestore.collection('Notifications');
 final sysConfigRef = firestore.collection('SystemConfiguration');
 final mlSettingsRef = firestore.collection('MLSettings');
+final adminInvitesRef = firestore.collection('AdminInvites');
 

@@ -3,232 +3,126 @@ import 'package:get/get.dart';
 
 import '../../constants/colors.dart';
 import '../../controllers/authController.dart';
+import '../../services/authService.dart';
 import '../../widgets/customLoading.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  bool isObsecure = true;
-  TextEditingController emailController =
-      TextEditingController(text: "admin@gmail.com");
-  TextEditingController passwordController =
-      TextEditingController(text: "123456");
-
-  // @override
-  // void initState() {
-  //  Get.find<AuthController>().createAdmin();
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: rBg,
       body: GetBuilder<AuthController>(
-        builder: (authController) {
+        builder: (auth) {
           return Stack(
             children: [
               Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          "assets/images/logo.png",
-                          width: 180,
-                          height: 180,
-                          fit: BoxFit.fill,
-                        )
+                child: SizedBox(
+                  width: 420,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        "assets/images/logo.png",
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.fill,
+                      ),
+                      const Text(
+                        "Log In",
+                        style: TextStyle(
+                            color: rWhite,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: "fontBold"),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Sign in with your Google account",
+                        style: TextStyle(color: rHint, fontSize: 18),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              auth.isLoading ? null : auth.signInWithGoogle,
+                          icon: const Icon(Icons.login_rounded),
+                          label: const Text(
+                            "Sign in with Google",
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: rGreen,
+                            foregroundColor: rWhite,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                      if (auth.error != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          auth.error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: rRed),
+                        ),
                       ],
-                    ),
-                    const Text(
-                      "Log In",
-                      style: TextStyle(
-                          color: rWhite,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "fontBold"),
-                    ),
-                    const Text(
-                      "Please Log In to your account",
-                      style: TextStyle(
-                          color: rHint,
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal),
-                    ),
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.35,
-                            child: TextFormField(
-                              cursorColor: rGreen,
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (email) {
-                                if (email == null || email.isEmpty) {
-                                  return "Email required";
-                                } else if (!RegExp(
-                                        r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-                                    .hasMatch(email)) {
-                                  return "Enter a valid email address";
-                                } else {
-                                  return null;
-                                }
-                              },
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.transparent,
-                                hintText: 'Email address',
-                                hintStyle: const TextStyle(
-                                  color: rHint,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                    color: rHint,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                    color: rHint,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 12.0,
-                                  horizontal: 16.0,
-                                ),
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white, // Text color
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.35,
-                            child: TextFormField(
-                              cursorColor: rGreen,
-                              controller: passwordController,
-                              validator: (password) {
-                                if (password == null || password.isEmpty) {
-                                  return "Password is required";
-                                } else {
-                                  return null;
-                                }
-                              },
-                              obscureText: isObsecure,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.transparent,
-                                hintText: 'Password',
-                                suffixIcon: InkWell(
-                                    splashColor: Colors.transparent,
-                                    onTap: () {
-                                      setState(() {
-                                        isObsecure = !isObsecure;
-                                      });
-                                    },
-                                    child: Icon(isObsecure
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined)),
-                                hintStyle: const TextStyle(
-                                  color: rHint,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                    color: rHint,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: const BorderSide(
-                                    color: rHint,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 12.0,
-                                  horizontal: 16.0,
-                                ),
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ).marginOnly(top: 12),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width * 0.35,
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: InkWell(
-                                onTap: () {
-                                  // Get.to(ForgotPassword(),transition: Transition.downToUp);
-                                },
-                                child: const Text(
-                                  "Forgot password",
-                                  style: TextStyle(color: rHint),
-                                ),
-                              ),
-                            ),
-                          ).marginOnly(top: 20),
-                          InkWell(
-                            splashColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
-                            onTap: () {
-                              if (formKey.currentState!.validate()) {
-                                authController.login(emailController.text,
-                                    passwordController.text);
-                                // authController.setLoading(true);
-                              } else {
-                                return;
-                              }
-                            },
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.35,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                  color: rGreen,
-                                  borderRadius: BorderRadius.circular(8)),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "Log In",
-                                style: TextStyle(color: rWhite, fontSize: 16),
-                              ),
-                            ).marginOnly(top: 20),
-                          ),
-                        ],
-                      ).marginOnly(top: 20),
-                    ),
-                  ],
+                      if (auth.lastDenied != null) ...[
+                        const SizedBox(height: 24),
+                        _NotAnAdminPanel(result: auth.lastDenied!),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-              Visibility(
-                  visible: authController.isLoading,
-                  child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height,
-                      color: rWhite.withOpacity(0.2),
-                      child: const CustomLoading()))
+              if (auth.isLoading) const CustomLoading(),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _NotAnAdminPanel extends StatelessWidget {
+  const _NotAnAdminPanel({required this.result});
+
+  final AdminSignInResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: rYellow),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "This Google account isn't an admin",
+            style: TextStyle(color: rWhite, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Ask a super admin to invite ${result.email ?? 'this account'}, then sign in again.",
+            style: const TextStyle(color: rHint),
+          ),
+          const SizedBox(height: 12),
+          // Selectable so the very first super admin can copy their UID into
+          // the Firebase Console.
+          SelectableText(
+            "Account ID: ${result.uid ?? '-'}",
+            style: const TextStyle(
+                color: rHint, fontFamily: 'monospace', fontSize: 12),
+          ),
+        ],
       ),
     );
   }

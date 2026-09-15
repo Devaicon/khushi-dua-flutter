@@ -14,10 +14,8 @@ import 'package:khushiduaadmin/views/tabs/profile.dart';
 import 'package:khushiduaadmin/views/tabs/users.dart';
 import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
 import 'package:khushiduaadmin/views/tabs/homeBanner.dart';
-import 'dart:html' as html;
 import '../constants/colors.dart';
 import '../controllers/authController.dart';
-import 'auth/login.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -53,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userController = Get.find<UserController>();
     final notificationController = Get.find<NotificationController>();
 
-    await authController.getAdminDetails();
+    await authController.restoreSession();
     categoryController.getAllCategories();
     categoryController.getAllSubCategories();
     duaController.getAllDuas();
@@ -229,8 +227,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      html.window.localStorage.remove('adminId');
-                      Get.off(const LoginScreen(), transition: Transition.fade);
+                      Navigator.pop(context);
+                      Get.find<AuthController>().signOut();
                     },
                     child: Container(
                       width: MediaQuery.of(context).size.width * 0.15,

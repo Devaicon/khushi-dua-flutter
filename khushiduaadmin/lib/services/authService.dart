@@ -1,140 +1,138 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:khushiduaadmin/controllers/authController.dart';
-import 'dart:html' as html;
+import 'package:flutter/foundation.dart';
+
 import '../constants/firebaseRef.dart';
 import '../models/managementModel.dart';
 
+enum AdminSignInStatus { signedIn, notAnAdmin, cancelled, failed }
+
+class AdminSignInResult {
+  const AdminSignInResult(
+    this.status, {
+    this.admin,
+    this.email,
+    this.uid,
+    this.message,
+  });
+
+  final AdminSignInStatus status;
+  final ManagementModel? admin;
+
+  /// Shown on the "not an admin" panel, so the account can be invited — or,
+  /// for the very first super admin, added in the Firebase Console.
+  final String? email;
+  final String? uid;
+  final String? message;
+}
+
+/// Admin sign-in. There are no admin passwords: a Google account is an admin
+/// only if /Management/{uid} exists, and only Cloud Functions write that.
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final AuthController _authController = Get.find<AuthController>();
+  static final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: "us-central1");
 
-  createAdmin() async {
+  Future<AdminSignInResult> signInWithGoogle() async {
     try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: "admin@gmail.com",
-        password: "123456",
-      );
-      ManagementModel managementModel = ManagementModel(
-          id: userCredential.user!.uid,
-          email: userCredential.user!.email!,
-          role: "Super_Admin",
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          firstName: 'Admin',
-          lastName: 'John');
-      await managementRef.doc(managementModel.id).set(managementModel.toMap());
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Error creating admin: ${e.message}');
-    }
-  }
-
-  Future<void> login(String email, String password) async {
-    _authController.setLoading(true);
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      html.window.localStorage['adminId'] = userCredential.user!.uid;
-      await managementRef.doc(userCredential.user!.uid).get().then((value) {
-        _authController
-            .setManagementUserModel(ManagementModel.fromMap(value.data()!));
-        _authController.setLoading(false);
-        Get.offAllNamed('/dashboard');
-      });
-    } on FirebaseAuthException {
-      debugPrint("Error logging in");
-      _authController.setLoading(false);
-    }
-  }
-
-  getAdminDetails() async {
-    String? adminId = html.window.localStorage['adminId'];
-    if (adminId == null) return;
-
-    try {
-      var snapshot = await managementRef.doc(adminId).get();
-      if (snapshot.exists && snapshot.data() != null) {
-        _authController
-            .setManagementUserModel(ManagementModel.fromMap(snapshot.data()!));
-      } else {
-        debugPrint("Admin document does not exist, clearing session.");
-        html.window.localStorage.remove('adminId');
-        Get.offAllNamed('/login');
-      }
-    } catch (e) {
-      debugPrint("Error fetching admin details: $e");
-    }
-  }
-
-  Future<String?> changePassword(
-      String currentPassword, String newPassword) async {
-    try {
-      User? user = _auth.currentUser;
+      final provider = GoogleAuthProvider()
+        ..setCustomParameters({'prompt': 'select_account'});
+      final credential = await _auth.signInWithPopup(provider);
+      final user = credential.user;
       if (user == null) {
-        return "No user logged in";
+        return const AdminSignInResult(AdminSignInStatus.failed,
+            message: "Sign-in didn't complete. Try again.");
       }
-
-      // Re-authenticate user with current password
-      AuthCredential credential = EmailAuthProvider.credential(
-        email: user.email!,
-        password: currentPassword,
-      );
-
-      await user.reauthenticateWithCredential(credential);
-
-      // Update password
-      await user.updatePassword(newPassword);
-
-      return null; // Success
+      return await resolveAdmin(user);
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'wrong-password') {
-        return "Current password is incorrect";
-      } else if (e.code == 'weak-password') {
-        return "New password is too weak";
-      } else {
-        return "Error changing password: ${e.message}";
+      switch (e.code) {
+        case 'popup-closed-by-user':
+        case 'cancelled-popup-request':
+          return const AdminSignInResult(AdminSignInStatus.cancelled);
+        case 'popup-blocked':
+          return const AdminSignInResult(AdminSignInStatus.failed,
+              message:
+                  "Your browser blocked the sign-in window. Allow pop-ups for this site and try again.");
+        case 'account-exists-with-different-credential':
+          return const AdminSignInResult(AdminSignInStatus.failed,
+              message:
+                  "This email already has a password login. Delete that user in Firebase Console → Authentication, then sign in with Google again.");
+        default:
+          return AdminSignInResult(AdminSignInStatus.failed,
+              message: e.message ?? "Sign-in failed (${e.code}).");
       }
-    } catch (e) {
-      return "Error: ${e.toString()}";
     }
   }
 
-  Future<String?> createNewAdmin(String email, String password,
-      String firstName, String lastName, String role) async {
-    try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+  /// Loads the admin record for [user], claiming a pending invite first if
+  /// there is one. Signs non-admins straight back out so their session never
+  /// lingers in the browser.
+  Future<AdminSignInResult> resolveAdmin(User user) async {
+    var doc = await managementRef.doc(user.uid).get();
 
-      ManagementModel managementModel = ManagementModel(
-          id: userCredential.user!.uid,
-          email: userCredential.user!.email!,
-          role: role.isEmpty ? "Admin" : role,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          firstName: firstName,
-          lastName: lastName);
-
-      await managementRef.doc(managementModel.id).set(managementModel.toMap());
-      return null; // Success
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'weak-password') {
-        return "Password is too weak";
-      } else if (e.code == 'email-already-in-use') {
-        return "Email is already in use";
-      } else if (e.code == 'invalid-email') {
-        return "Invalid email address";
-      } else {
-        return "Error creating admin: ${e.message}";
+    if (!doc.exists) {
+      try {
+        final result =
+            await _functions.httpsCallable("claimAdminInvite").call();
+        final data = Map<String, dynamic>.from(result.data as Map);
+        if (data["claimed"] == true) {
+          doc = await managementRef.doc(user.uid).get();
+        }
+      } on FirebaseFunctionsException catch (e) {
+        debugPrint("claimAdminInvite: ${e.code} ${e.message}");
       }
+    }
+
+    final data = doc.data();
+    if (doc.exists && data != null) {
+      return AdminSignInResult(AdminSignInStatus.signedIn,
+          admin: ManagementModel.fromMap(data));
+    }
+
+    final email = user.email;
+    final uid = user.uid;
+    await _auth.signOut();
+    return AdminSignInResult(AdminSignInStatus.notAnAdmin,
+        email: email, uid: uid);
+  }
+
+  /// The admin behind Firebase's persisted browser session, or null.
+  Future<ManagementModel?> restoreSession() async {
+    final user = await _auth.authStateChanges().first;
+    if (user == null) return null;
+    return (await resolveAdmin(user)).admin;
+  }
+
+  Future<void> signOut() => _auth.signOut();
+
+  Future<String?> inviteAdmin({
+    required String email,
+    required String role,
+    required String firstName,
+    required String lastName,
+  }) =>
+      _call("inviteAdmin", {
+        "email": email,
+        "role": role,
+        "firstName": firstName,
+        "lastName": lastName,
+      });
+
+  Future<String?> cancelInvite(String email) =>
+      _call("cancelInvite", {"email": email});
+
+  Future<String?> revokeAdmin(String uid) =>
+      _call("revokeAdmin", {"uid": uid});
+
+  /// Null on success, otherwise a message fit to show the admin.
+  Future<String?> _call(String name, Map<String, dynamic> data) async {
+    try {
+      await _functions.httpsCallable(name).call(data);
+      return null;
+    } on FirebaseFunctionsException catch (e) {
+      return e.message ?? "Request failed (${e.code}).";
     } catch (e) {
-      return "Error: ${e.toString()}";
+      return "Request failed: $e";
     }
   }
 }
