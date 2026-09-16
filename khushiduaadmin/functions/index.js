@@ -338,3 +338,32 @@ exports.revokeAdmin = onCall(async (request) => {
 
   return {uid: targetUid};
 });
+
+/**
+ * Bumps SystemConfiguration/ContentVersion whenever app content changes.
+ *
+ * The mobile app serves categories, subcategories and duas from its on-device
+ * cache until this version moves. Doing the bump here, rather than at each
+ * admin-panel save, covers every write path — form edits, reordering, CSV
+ * import, console edits — so no path can silently leave devices stale.
+ */
+const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+
+const CONTENT_VERSION_DOC = "SystemConfiguration/ContentVersion";
+
+async function bumpContentVersion() {
+  await db.doc(CONTENT_VERSION_DOC).set(
+      {
+        version: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+  );
+}
+
+exports.bumpContentOnCategoryWrite =
+  onDocumentWritten("Category/{docId}", bumpContentVersion);
+exports.bumpContentOnSubCategoryWrite =
+  onDocumentWritten("SubCategory/{docId}", bumpContentVersion);
+exports.bumpContentOnDuaWrite =
+  onDocumentWritten("Dua/{docId}", bumpContentVersion);

@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/firebaseRef.dart';
 import '../../csv/csvCodec.dart';
 import '../../csv/csvSchema.dart';
 import '../../csv/importPlanner.dart';
@@ -106,6 +108,8 @@ class _DataTransferTabState extends State<DataTransferTab> {
               style: TextStyle(color: rHint),
             ),
             const SizedBox(height: 20),
+            _refreshDevicesCard(),
+            const SizedBox(height: 12),
             Expanded(
               child: ListView.separated(
                 itemCount: schemas.length,
@@ -115,6 +119,106 @@ class _DataTransferTabState extends State<DataTransferTab> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  bool _refreshing = false;
+
+  /// Makes every device refetch content on its next launch.
+  ///
+  /// Content edits already do this automatically (a Cloud Function bumps the
+  /// version on every write). This is for when that did not happen — the
+  /// functions were not deployed, or data was changed some other way.
+  Future<void> _forceRefreshDevices() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: rBg,
+        title: const Text("Refresh all devices?",
+            style: TextStyle(color: rWhite)),
+        content: const Text(
+          "Every app will download categories, subcategories and duas again "
+          "the next time it opens. Content edits already trigger this "
+          "automatically; use this only if devices are showing stale content.",
+          style: TextStyle(color: rHint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: rHint)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Refresh", style: TextStyle(color: rGreen)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _refreshing = true);
+    try {
+      await sysConfigRef.doc("ContentVersion").set({
+        "version": FieldValue.increment(1),
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      CustomSnackbar.show(
+        "Done",
+        "Devices will refresh their content on next launch.",
+        isSuccess: true,
+      );
+    } catch (e) {
+      CustomSnackbar.show("Failed", "Could not refresh: $e", isSuccess: false);
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
+  Widget _refreshDevicesCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: rBg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("App content cache",
+                    style: TextStyle(
+                        color: rWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text(
+                  "Apps keep content on the device and only download it again "
+                  "when it changes. Force a refresh if devices show stale data.",
+                  style: TextStyle(color: rHint, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          if (_refreshing)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: rGreen),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: _forceRefreshDevices,
+              icon: const Icon(Icons.sync_rounded, color: rGreen),
+              label: const Text("Refresh all devices",
+                  style: TextStyle(color: rWhite)),
+              style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: rGreen)),
+            ),
+        ],
       ),
     );
   }
