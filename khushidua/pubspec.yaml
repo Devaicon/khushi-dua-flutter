@@ -43,6 +43,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
   flutter_timezone: ^4.1.1
+  google_sign_in: ^7.2.0
 
 dependency_overrides:
   record_linux: ^1.2.1

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../constants/colors.dart';
+import '../constants/theme.dart';
 import '../constants/prayerNames.dart';
 import '../controllers/reminderController.dart';
 
@@ -14,7 +15,12 @@ import '../controllers/reminderController.dart';
 /// elsewhere, this reaches one who already has the app open. Renders nothing
 /// when the reminders are off, outside the window, or once dismissed.
 class SalahBanner extends StatefulWidget {
-  const SalahBanner({super.key});
+  const SalahBanner({super.key, this.topGap = 0, this.bottomGap = 0});
+
+  /// Space above and below the banner, applied only while it is showing, so a
+  /// hidden banner leaves no hole in the layout around it.
+  final double topGap;
+  final double bottomGap;
 
   @override
   State<SalahBanner> createState() => _SalahBannerState();
@@ -50,14 +56,13 @@ class _SalahBannerState extends State<SalahBanner> {
 
         return Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
+          margin: EdgeInsets.only(
+            top: widget.topGap,
+            bottom: widget.bottomGap,
+          ),
+          padding: const EdgeInsets.all(AppSpace.lg),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [rbluedark, rbluedark.withOpacity(0.75)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: AppGradient.forSeed(rbluedark),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(

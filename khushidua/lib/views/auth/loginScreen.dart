@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../widgets/googleSignInButton.dart';
 import '../../constants/userData.dart';
 import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
@@ -230,6 +231,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                       ),
                     ),
+                    GoogleSignInButton(enabled: !_isLoading),
                     const SizedBox(height: 30),
                     Align(
                       alignment: Alignment.center,

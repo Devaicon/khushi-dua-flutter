@@ -645,158 +645,157 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
           ),
 
-          SafeArea(
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Minimal Header
+          // The dashboard already applies the system SafeArea; a second one
+          // here added nothing, and the header sat flush against the top.
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Minimal Header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.lg,
+                    AppSpace.xl,
+                    AppSpace.lg,
+                    0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [_buildLocationHeader(), _buildCompassButton()],
+                  ),
+                ),
+              ),
+
+              // Salah time banner
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: SalahBanner(bottomGap: AppSpace.md),
+                ),
+              ),
+
+              // Date Selector
+              SliverToBoxAdapter(
+                child: _buildDateSelector().paddingSymmetric(vertical: 20),
+              ),
+
+              // Next Prayer Highlights
+              if (locationAllowed &&
+                  !isLoadingPrayerTimes &&
+                  _nextPrayerName.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [_buildLocationHeader(), _buildCompassButton()],
-                    ),
-                  ),
+                  child: FadeInAnimationTTB(
+                    delay: 0.3,
+                    child: _buildNextPrayerCard(),
+                  ).paddingSymmetric(horizontal: 20, vertical: 10),
                 ),
 
-                // Salah time banner
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: SalahBanner(),
-                  ),
+              // Prayer Times List
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-
-                // Date Selector
-                SliverToBoxAdapter(
-                  child: _buildDateSelector().paddingSymmetric(vertical: 20),
-                ),
-
-                // Next Prayer Highlights
-                if (locationAllowed &&
-                    !isLoadingPrayerTimes &&
-                    _nextPrayerName.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: FadeInAnimationTTB(
-                      delay: 0.3,
-                      child: _buildNextPrayerCard(),
-                    ).paddingSymmetric(horizontal: 20, vertical: 10),
-                  ),
-
-                // Prayer Times List
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  sliver: locationAllowed
-                      ? isLoadingPrayerTimes
-                            ? const SliverFillRemaining(
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
+                sliver: locationAllowed
+                    ? isLoadingPrayerTimes
+                          ? const SliverFillRemaining(
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
                                 ),
-                              )
-                            : _namazList.isEmpty
-                            ? SliverToBoxAdapter(
-                                child: Center(
-                                  child: Text(
-                                    "Unable to load prayer times".tr,
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                ),
-                              )
-                            : SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final namaz = _namazList[index];
-                                  final isNext = namaz.name == _nextPrayerName;
-                                  return FadeInAnimationBTT(
-                                    delay: 0.1 * index,
-                                    child: NamazTile(
-                                      namaz,
-                                      index != _namazList.length - 1,
-                                      isNext: isNext,
-                                    ),
-                                  );
-                                }, childCount: _namazList.length),
-                              )
-                      : SliverToBoxAdapter(
-                          child: Center(
-                            child: Text(
-                              "Location is not enabled".tr,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
                               ),
-                            ),
+                            )
+                          : _namazList.isEmpty
+                          ? SliverToBoxAdapter(
+                              child: Center(
+                                child: Text(
+                                  "Unable to load prayer times".tr,
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                            )
+                          : SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final namaz = _namazList[index];
+                                final isNext = namaz.name == _nextPrayerName;
+                                return FadeInAnimationBTT(
+                                  delay: 0.1 * index,
+                                  child: NamazTile(
+                                    namaz,
+                                    index != _namazList.length - 1,
+                                    isNext: isNext,
+                                  ),
+                                );
+                              }, childCount: _namazList.length),
+                            )
+                    : SliverToBoxAdapter(
+                        child: Center(
+                          child: Text(
+                            "Location is not enabled".tr,
+                            style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
                         ),
-                ),
+                      ),
+              ),
 
-                // Calculation Methods
-                if (locationAllowed)
-                  SliverToBoxAdapter(
-                    child: FadeInAnimationBTT(
-                      delay: 0.8,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _CalculationMethodDropdown(
-                                selectedValue: selectedCalculationMethod,
-                                onChanged: (String value) async {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString(
-                                    "calculationMethod",
-                                    value,
-                                  );
-                                  setState(() {
-                                    selectedCalculationMethod = value;
-                                  });
-                                  _updateCalculationParams();
-                                  await _calculatePrayerTimes(
-                                    selectedEnglishDate,
-                                  );
-                                },
-                              ),
+              // Calculation Methods
+              if (locationAllowed)
+                SliverToBoxAdapter(
+                  child: FadeInAnimationBTT(
+                    delay: 0.8,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _CalculationMethodDropdown(
+                              selectedValue: selectedCalculationMethod,
+                              onChanged: (String value) async {
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                  "calculationMethod",
+                                  value,
+                                );
+                                setState(() {
+                                  selectedCalculationMethod = value;
+                                });
+                                _updateCalculationParams();
+                                await _calculatePrayerTimes(
+                                  selectedEnglishDate,
+                                );
+                              },
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _JuristicMethodDropdown(
-                                selectedValue: selectedJuristicMethod,
-                                onChanged: (String value) async {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString(
-                                    "juristicMethod",
-                                    value,
-                                  );
-                                  setState(() {
-                                    selectedJuristicMethod = value;
-                                  });
-                                  _updateCalculationParams();
-                                  await _calculatePrayerTimes(
-                                    selectedEnglishDate,
-                                  );
-                                },
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _JuristicMethodDropdown(
+                              selectedValue: selectedJuristicMethod,
+                              onChanged: (String value) async {
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString("juristicMethod", value);
+                                setState(() {
+                                  selectedJuristicMethod = value;
+                                });
+                                _updateCalculationParams();
+                                await _calculatePrayerTimes(
+                                  selectedEnglishDate,
+                                );
+                              },
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                ),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 30)),
-              ],
-            ),
+              const SliverToBoxAdapter(child: SizedBox(height: 30)),
+            ],
           ),
         ],
       ),
@@ -1215,7 +1214,6 @@ class _NamazTileState extends State<NamazTile> {
         return Icons.access_time_filled_rounded;
     }
   }
-
 }
 
 // Calculation Method Dropdown Widget

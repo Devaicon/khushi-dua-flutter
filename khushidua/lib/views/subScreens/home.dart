@@ -66,55 +66,39 @@ class _HomeScreenState extends State<HomeScreen> {
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  // Premium Header
-                  SliverToBoxAdapter(
-                    child: FadeInAnimationTTB(
+                  // Every row above the grid shares one horizontal gutter and
+                  // one gap, set here rather than by each widget.
+                  _section(
+                    FadeInAnimationTTB(
                       delay: 1,
                       child: _buildHeader(themeController),
-                    ).paddingSymmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm),
+                    ),
+                    top: AppSpace.lg,
                   ),
-
-                  // Premium Banner
-                  SliverToBoxAdapter(
-                    child: _buildBanner(
-                      themeController,
-                    ).paddingSymmetric(horizontal: AppSpace.lg),
-                  ),
-
-                  // Salah time banner
+                  _section(_buildBanner(themeController)),
+                  // SalahBanner renders nothing outside its window, so it
+                  // carries its own gap instead of leaving an empty one.
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppSpace.lg,
-                        AppSpace.md,
-                        AppSpace.lg,
-                        0,
-                      ),
-                      child: SalahBanner(),
+                      padding: EdgeInsets.symmetric(horizontal: AppSpace.lg),
+                      child: SalahBanner(topGap: AppSpace.lg),
                     ),
                   ),
-
-                  // Azkar Reminder
-                  SliverToBoxAdapter(
-                    child: _buildAzkarCard().paddingOnly(
-                      left: AppSpace.lg,
-                      right: AppSpace.lg,
-                      top: AppSpace.md,
+                  _section(_buildAzkarCard()),
+                  SliverPadding(
+                    padding: const EdgeInsets.only(top: AppSpace.lg),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildAgeGroupSelector(themeController),
                     ),
-                  ),
-
-                  // Age Group Selector
-                  SliverToBoxAdapter(
-                    child: _buildAgeGroupSelector(
-                      themeController,
-                    ).paddingSymmetric(vertical: AppSpace.lg),
                   ),
 
                   // Category Grid
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.lg,
-                      vertical: AppSpace.sm,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.lg,
+                      AppSpace.lg,
+                      AppSpace.lg,
+                      AppSpace.lg,
                     ),
                     sliver: SliverGrid(
                       gridDelegate:
@@ -143,6 +127,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// One row of the home screen: the shared gutter, and [top] spacing from
+  /// the row above.
+  Widget _section(Widget child, {double top = AppSpace.lg}) {
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(AppSpace.lg, top, AppSpace.lg, 0),
+      sliver: SliverToBoxAdapter(child: child),
+    );
+  }
+
   Widget _buildHeader(ThemeController themeController) {
     Color accentColor = themeController.selectedAgeGroup == 0
         ? rpink
@@ -154,8 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (userController) {
         return Row(
           children: [
-            const ProfileAvatar(size: 55),
-            const SizedBox(width: 15),
+            const ProfileAvatar(size: 52),
+            const SizedBox(width: AppSpace.md),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

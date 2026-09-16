@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
-import 'package:khushidua/services/duaService.dart';
 
 import '../helpers/sectionProgress.dart';
 import '../models/duaModel.dart';
@@ -60,8 +59,14 @@ class DuaController extends GetxController {
     update();
   }
 
-  getAllDuas() {
-    DuaService().getAllDuas();
+  /// Replaces every dua in one pass, with a single sort and rebuild.
+  void replaceDuas(List<DuaModel> duas) {
+    _allDuas
+      ..clear()
+      ..addAll(duas);
+    _sortDuas(_allDuas);
+    if (_lastSubCategoryId != null) refreshFilteredDuas();
+    update();
   }
 
   getFilteredDuas(SubCategoryModel subCategoryModel) {

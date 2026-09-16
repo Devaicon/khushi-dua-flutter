@@ -3,7 +3,6 @@ import 'package:khushidua/controllers/themeController.dart';
 
 import '../models/categoryModel.dart';
 import '../models/subCategoryModel.dart';
-import '../services/categoryService.dart';
 
 class CategoryController extends GetxController {
   final List<CategoryModel> _allCategories = [];
@@ -25,12 +24,22 @@ class CategoryController extends GetxController {
     update();
   }
 
-  getAllCategories() {
-    CategoryService().getAllCategories();
+  /// Replaces the whole category list in one pass. Adding items one at a time
+  /// re-sorted and rebuilt the UI once per document.
+  void replaceCategories(List<CategoryModel> categories) {
+    _allCategories
+      ..clear()
+      ..addAll(categories)
+      ..sort((a, b) => a.order.compareTo(b.order));
+    _refreshFilteredCategories();
   }
 
-  getAllSubCategories() {
-    CategoryService().getAllSubCategories();
+  void replaceSubCategories(List<SubCategoryModel> subCategories) {
+    _allSubCategories
+      ..clear()
+      ..addAll(subCategories)
+      ..sort((a, b) => a.order.compareTo(b.order));
+    _refreshFilteredSubCategories();
   }
 
   final List<CategoryModel> _filteredCategories = [];

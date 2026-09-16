@@ -17,6 +17,11 @@
         android:label="Khushii Dua"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Background admin pushes land on the same channel the app uses for
+             foreground ones (ReminderService.pushChannelId). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="admin_announcements" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

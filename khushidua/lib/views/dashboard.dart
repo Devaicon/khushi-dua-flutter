@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:khushidua/controllers/categoryController.dart';
-import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/notificationController.dart';
 import 'package:khushidua/views/subScreens/home.dart';
 import 'package:khushidua/views/subScreens/notifications.dart';
@@ -16,6 +15,10 @@ import '../constants/theme.dart';
 import '../constants/userData.dart';
 import '../controllers/userController.dart';
 import '../helpers/adHelper.dart';
+import '../services/contentRepository.dart';
+import '../services/pushService.dart';
+import '../services/reminderService.dart';
+import 'subScreens/categoryDetailScreen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -64,10 +67,9 @@ class _DashboardState extends State<Dashboard> {
     setState(() {
       // _selectedScreen = _screens[0]; // Removed for lazy loading
     });
-    Get.find<CategoryController>().getAllCategories();
-    Get.find<CategoryController>().getAllSubCategories();
-    Get.find<DuaController>().getAllDuas();
+    ContentRepository.instance.load();
     Get.find<NotificationController>().getAllNotifications();
+    _wireNotificationTaps();
 
     _bannerAd = BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
@@ -87,6 +89,51 @@ class _DashboardState extends State<Dashboard> {
     );
 
     _bannerAd!.load();
+  }
+
+  static const int _homeTab = 0;
+  static const int _prayerTab = 1;
+  static const int _inboxTab = 3;
+
+  /// Routes taps on reminders and pushes. Nothing consumed them before, so a
+  /// tap only ever opened the app wherever it last was.
+  void _wireNotificationTaps() {
+    PushService.instance.onOpenInbox = () => _goToTab(_inboxTab);
+    ReminderService.instance.onNotificationTap = _handlePayload;
+
+    final pending = ReminderService.instance.pendingPayload;
+    ReminderService.instance.pendingPayload = null;
+    if (pending != null) {
+      // After the first frame, so the tabs exist to switch to.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _handlePayload(pending));
+    }
+
+    PushService.instance.start();
+  }
+
+  void _handlePayload(String payload) {
+    if (payload == 'inbox') {
+      _goToTab(_inboxTab);
+    } else if (payload.startsWith('salah:')) {
+      _goToTab(_prayerTab);
+    } else if (payload.startsWith('azkar:')) {
+      _goToTab(_homeTab);
+      _openCategory(payload.substring('azkar:'.length));
+    }
+  }
+
+  void _goToTab(int index) {
+    if (!mounted) return;
+    Get.until((route) => route.isFirst);
+    _onItemTapped(index);
+  }
+
+  void _openCategory(String categoryId) {
+    final matches = Get.find<CategoryController>().allCategories.where(
+      (c) => c.id == categoryId,
+    );
+    if (matches.isEmpty) return;
+    Get.to(() => CategoryDetailScreen(matches.first, rbluedark));
   }
 
   getSharedPrefs() async {

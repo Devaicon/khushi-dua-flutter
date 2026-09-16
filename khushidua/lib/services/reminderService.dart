@@ -17,6 +17,10 @@ class ReminderService {
 
   static const String azkarChannelId = 'azkar_reminders';
 
+  /// Admin announcements received while the app is open. FCM only draws a
+  /// notification itself when the app is in the background.
+  static const String pushChannelId = 'admin_announcements';
+
   /// Android fixes a channel's sound when the channel is first created, so
   /// adding the Salah sound needed a new channel id. The old one is deleted in
   /// [init].
@@ -137,6 +141,13 @@ class ReminderService {
         >();
     if (android == null) return;
     try {
+      await android.createNotificationChannel(
+        const AndroidNotificationChannel(
+          pushChannelId,
+          'Announcements',
+          importance: Importance.high,
+        ),
+      );
       await android.deleteNotificationChannel(_legacySalahChannelId);
       await android.deleteNotificationChannel(_legacyVibrateChannelId);
       await android.createNotificationChannel(
@@ -272,6 +283,35 @@ class ReminderService {
       );
     } catch (e) {
       debugPrint('⏰ ReminderService: scheduling id $id failed: $e');
+    }
+  }
+
+  /// Shows a notification immediately, on the announcements channel.
+  Future<void> showNow({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await init();
+    try {
+      await _plugin.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            pushChannelId,
+            'Announcements',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(presentSound: true),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('⏰ ReminderService: showing id $id failed: $e');
     }
   }
 
