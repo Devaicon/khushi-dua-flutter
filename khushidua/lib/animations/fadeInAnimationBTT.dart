@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../constants/theme.dart';
+
+/// Fades and slides a child up into place, staggered by [delay].
+///
+/// [delay] is a stagger multiplier, not a duration: 1 is one step, 2 is two.
 class FadeInAnimationBTT extends StatefulWidget {
-  const FadeInAnimationBTT({super.key, required this.child, required this.delay});
+  const FadeInAnimationBTT({
+    super.key,
+    required this.child,
+    required this.delay,
+  });
 
   final Widget child;
   final double delay;
@@ -11,56 +20,51 @@ class FadeInAnimationBTT extends StatefulWidget {
 }
 
 class _FadeInAnimationBTTState extends State<FadeInAnimationBTT>
-    with TickerProviderStateMixin {
-  late AnimationController controller;
-  late Animation<double> animation;
-  late Animation<double> animation2;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    duration: AppMotion.slow,
+    vsync: this,
+  );
+
+  late final Animation<double> _opacity = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOut,
+  );
+
+  late final Animation<double> _offset = Tween<double>(
+    begin: 24,
+    end: 0,
+  ).animate(CurvedAnimation(parent: _controller, curve: AppMotion.curve));
 
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    
-    animation2 = Tween<double>(begin: 40, end: 0).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeOutCubic),
-    )..addListener(() {
-        setState(() {});
-      });
-
-    animation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeIn),
-    )..addListener(() {
-        setState(() {});
-      });
-
-    // Start with delay
-    _startAnimation();
+    _start();
   }
 
-  void _startAnimation() async {
-    await Future.delayed(Duration(milliseconds: (200 * widget.delay).round()));
-    if (mounted) {
-      controller.forward();
+  Future<void> _start() async {
+    final stagger = (60 * widget.delay).round();
+    if (stagger > 0) {
+      await Future.delayed(Duration(milliseconds: stagger));
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: Offset(0, animation2.value),
-      child: Opacity(
-        opacity: animation.value,
-        child: widget.child,
-      ),
-    );
+    if (mounted) _controller.forward();
   }
 
   @override
   void dispose() {
-    controller.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, _offset.value),
+        child: Opacity(opacity: _opacity.value, child: child),
+      ),
+    );
   }
 }

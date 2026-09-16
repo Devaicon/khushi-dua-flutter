@@ -12,6 +12,7 @@ import 'package:khushidua/views/subScreens/settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/colors.dart';
+import '../constants/theme.dart';
 import '../constants/userData.dart';
 import '../controllers/userController.dart';
 import '../helpers/adHelper.dart';
@@ -124,7 +125,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppSurface.page,
       body: GetBuilder<UserController>(
         builder: (userController) {
           return SafeArea(
@@ -155,79 +156,73 @@ class _DashboardState extends State<Dashboard> {
           );
         },
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/prayer.png", 0),
-              label: 'Prayer',
-            ),
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/home.png", 1),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/search.png", 2),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/notification.png", 3),
-              label: 'Notification',
-            ),
-            BottomNavigationBarItem(
-              icon: _buildNavItem("assets/images/settings.png", 4),
-              label: 'Settings',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
+      bottomNavigationBar: _buildNavBar(),
+    );
+  }
+
+  /// Hand-rolled rather than a BottomNavigationBar: no ink splash, no
+  /// competing elevation, and a highlight that slides between tabs.
+  static const List<String> _navIcons = [
+    "assets/images/home.png",
+    "assets/images/prayer.png",
+    "assets/images/search.png",
+    "assets/images/notification.png",
+    "assets/images/settings.png",
+  ];
+
+  Widget _buildNavBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: AppElevation.raised,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              for (int i = 0; i < _navIcons.length; i++)
+                Expanded(child: _buildNavItem(_navIcons[i], i)),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildNavItem(String asset, int index) {
-    bool isSelected = _selectedIndex == index;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isSelected ? rbluedark.withOpacity(0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onItemTapped(index),
+      child: Center(
+        child: AnimatedContainer(
+          duration: AppMotion.base,
+          curve: AppMotion.curve,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? AppSpace.xl : AppSpace.md,
+            vertical: AppSpace.sm,
           ),
-          child: Image.asset(
-            asset,
-            width: isSelected ? 28 : 24,
-            height: isSelected ? 28 : 24,
-            color: isSelected ? rbluedark : Colors.grey,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? rbluedark.withValues(alpha: 0.10)
+                : Colors.transparent,
+            borderRadius: AppRadius.pillAll,
+          ),
+          child: AnimatedScale(
+            duration: AppMotion.base,
+            curve: AppMotion.curve,
+            scale: isSelected ? 1.1 : 1.0,
+            child: Image.asset(
+              asset,
+              width: 24,
+              height: 24,
+              color: isSelected ? rbluedark : Colors.grey.shade400,
+            ),
           ),
         ),
-        if (isSelected)
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(color: rbluedark, shape: BoxShape.circle),
-          ),
-      ],
+      ),
     );
   }
 }

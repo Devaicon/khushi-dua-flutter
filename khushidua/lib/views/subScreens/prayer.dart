@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
@@ -699,10 +700,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
                                 ),
                               )
                             : _namazList.isEmpty
-                            ? const SliverToBoxAdapter(
+                            ? SliverToBoxAdapter(
                                 child: Center(
                                   child: Text(
-                                    "Unable to load prayer times",
+                                    "Unable to load prayer times".tr,
                                     style: TextStyle(color: Colors.white70),
                                   ),
                                 ),
@@ -724,10 +725,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
                                   );
                                 }, childCount: _namazList.length),
                               )
-                      : const SliverToBoxAdapter(
+                      : SliverToBoxAdapter(
                           child: Center(
                             child: Text(
-                              "Location is not enabled",
+                              "Location is not enabled".tr,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -856,8 +857,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
         } else {
           if (Get.context != null) {
             Get.snackbar(
-              "Location required",
-              "Please enable location",
+              "Location required".tr,
+              "Please enable location".tr,
               backgroundColor: Colors.red,
             );
           }
@@ -869,7 +870,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.12),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
         ),
         child: const Icon(Icons.explore_rounded, color: Colors.white, size: 24),
       ),
@@ -883,7 +883,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1070,12 +1069,6 @@ class _NamazTileState extends State<NamazTile> {
             ? Colors.white.withOpacity(0.12)
             : Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: widget.isNext
-              ? Colors.white.withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
-          width: widget.isNext ? 1.5 : 1.0,
-        ),
       ),
       child: Row(
         children: [
@@ -1101,7 +1094,7 @@ class _NamazTileState extends State<NamazTile> {
                 Row(
                   children: [
                     Text(
-                      widget._namazModel.name,
+                      widget._namazModel.name.tr,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: widget.isNext
@@ -1134,8 +1127,8 @@ class _NamazTileState extends State<NamazTile> {
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          "NEXT",
+                        child: Text(
+                          "NEXT".tr,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 8,
@@ -1163,35 +1156,38 @@ class _NamazTileState extends State<NamazTile> {
   }
 
   Widget _buildVolumeAction() {
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        setState(() {
-          if (widget._namazModel.speakerEnabled == "on") {
-            widget._namazModel.speakerEnabled = "off";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "off");
-          } else if (widget._namazModel.speakerEnabled == "off") {
-            widget._namazModel.speakerEnabled = "vibrate";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "vibrate");
-          } else {
-            widget._namazModel.speakerEnabled = "on";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "on");
-          }
-        });
+        final prefs = await SharedPreferences.getInstance();
+        final next = switch (widget._namazModel.speakerEnabled) {
+          "on" => "off",
+          "off" => "vibrate",
+          _ => "on",
+        };
+        await prefs.setString(
+          salahSpeakerKeyFor(widget._namazModel.name),
+          next,
+        );
+        if (mounted) {
+          setState(() => widget._namazModel.speakerEnabled = next);
+        }
+        // Without this the scheduler keeps the alarm it armed at launch, so
+        // the change would not take effect until the app restarts.
+        await Get.find<ReminderController>().syncSalahReminders(const {});
       },
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpace.sm),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: AppRadius.smAll,
         ),
         child: Icon(
-          widget._namazModel.speakerEnabled == "on"
-              ? Icons.notifications_active_rounded
-              : widget._namazModel.speakerEnabled == "off"
-              ? Icons.notifications_off_rounded
-              : Icons.vibration_rounded,
+          switch (widget._namazModel.speakerEnabled) {
+            "on" => Icons.notifications_active_rounded,
+            "off" => Icons.notifications_off_rounded,
+            _ => Icons.vibration_rounded,
+          },
           color: Colors.white,
           size: 18,
         ),
@@ -1220,35 +1216,6 @@ class _NamazTileState extends State<NamazTile> {
     }
   }
 
-  void _saveSpeakerSetting(SharedPreferences prefs, String name, String value) {
-    String key = "";
-    switch (name) {
-      case "Fajr":
-        key = "fajrSpeaker";
-        break;
-      case "Sunrise":
-        key = "sunriseSpeaker";
-        break;
-      case "Dhuhr":
-        key = "dhuhrSpeaker";
-        break;
-      case "Asr":
-        key = "asrSpeaker";
-        break;
-      case "Maghrib":
-        key = "maghribSpeaker";
-        break;
-      case "Sunset":
-        key = "sunsetSpeaker";
-        break;
-      case "Ishaa":
-        key = "ishaSpeaker";
-        break;
-    }
-    if (key.isNotEmpty) {
-      prefs.setString(key, value);
-    }
-  }
 }
 
 // Calculation Method Dropdown Widget
@@ -1288,7 +1255,6 @@ class _CalculationMethodDropdown extends StatelessWidget {
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: rwhite),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1296,7 +1262,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Calculation Method",
+              "Calculation Method".tr,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1353,7 +1319,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Calculation Method",
+                        "Calculation Method".tr,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1363,7 +1329,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          "Done",
+                          "Done".tr,
                           style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.bold,
@@ -1445,7 +1411,6 @@ class _JuristicMethodDropdown extends StatelessWidget {
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: rwhite),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1453,7 +1418,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Juristic Method",
+              "Juristic Method".tr,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1510,7 +1475,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Juristic Method",
+                        "Juristic Method".tr,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1520,7 +1485,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          "Done",
+                          "Done".tr,
                           style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.bold,

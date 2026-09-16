@@ -21,8 +21,45 @@ class ReminderService {
   /// adding the Salah sound needed a new channel id. The old one is deleted in
   /// [init].
   static const String salahChannelId = 'salah_reminders_haya';
-  static const String salahVibrateChannelId = 'salah_reminders_vibrate';
+  static const String salahDefaultChannelId = 'salah_reminders_default';
+
+  /// v2: the first vibrate channel shipped without an explicit vibration
+  /// pattern, and a channel's settings cannot be changed after creation — so
+  /// reaching existing installs needs a new id.
+  static const String salahVibrateChannelId = 'salah_reminders_vibrate_v2';
   static const String _legacySalahChannelId = 'salah_reminders';
+  static const String _legacyVibrateChannelId = 'salah_reminders_vibrate';
+
+  /// Long enough to be felt through a pocket: wait, buzz, pause, buzz.
+  static final Int64List salahVibrationPattern = Int64List.fromList(
+    const [0, 500, 250, 500],
+  );
+
+  /// The notification channel a prayer's reminder should use.
+  static String channelIdForSalah(SalahChannel channel) {
+    switch (channel) {
+      case SalahChannel.haya:
+        return salahChannelId;
+      case SalahChannel.deviceDefault:
+        return salahDefaultChannelId;
+      case SalahChannel.vibrate:
+      case SalahChannel.none:
+        return salahVibrateChannelId;
+    }
+  }
+
+  /// The user-visible channel name, shown in Android's system settings.
+  static String channelNameForSalah(SalahChannel channel) {
+    switch (channel) {
+      case SalahChannel.haya:
+        return 'Salah Reminders';
+      case SalahChannel.deviceDefault:
+        return 'Salah Reminders (default sound)';
+      case SalahChannel.vibrate:
+      case SalahChannel.none:
+        return 'Salah Reminders (vibrate only)';
+    }
+  }
 
   /// `android/app/src/main/res/raw/haya_al_salah.mp3`. Android resource names
   /// allow only lowercase letters, digits and underscores.
@@ -101,6 +138,7 @@ class ReminderService {
     if (android == null) return;
     try {
       await android.deleteNotificationChannel(_legacySalahChannelId);
+      await android.deleteNotificationChannel(_legacyVibrateChannelId);
       await android.createNotificationChannel(
         const AndroidNotificationChannel(
           salahChannelId,
@@ -112,11 +150,20 @@ class ReminderService {
       );
       await android.createNotificationChannel(
         const AndroidNotificationChannel(
+          salahDefaultChannelId,
+          'Salah Reminders (default sound)',
+          importance: Importance.high,
+          playSound: true,
+        ),
+      );
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(
           salahVibrateChannelId,
           'Salah Reminders (vibrate only)',
           importance: Importance.high,
           playSound: false,
           enableVibration: true,
+          vibrationPattern: salahVibrationPattern,
         ),
       );
     } catch (e) {
@@ -180,6 +227,7 @@ class ReminderService {
     bool playSound = true,
     String? androidSound,
     String? iosSound,
+    bool vibrate = true,
   }) async {
     await init();
 
@@ -205,6 +253,10 @@ class ReminderService {
             sound: androidSound == null
                 ? null
                 : RawResourceAndroidNotificationSound(androidSound),
+            enableVibration: vibrate,
+            vibrationPattern: vibrate && !playSound
+                ? salahVibrationPattern
+                : null,
           ),
           iOS: DarwinNotificationDetails(
             presentSound: playSound,

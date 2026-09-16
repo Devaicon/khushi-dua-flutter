@@ -407,7 +407,6 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

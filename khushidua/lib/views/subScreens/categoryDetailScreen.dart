@@ -6,6 +6,7 @@ import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../helpers/sectionProgress.dart';
 import '../../models/categoryModel.dart';
 import '../../models/subCategoryModel.dart';
@@ -260,44 +261,24 @@ class _SubCategoryTileState extends State<SubCategoryTile>
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: widget.isClickable
-                      ? widget.color.withOpacity(0.3)
-                      : Colors.grey.withOpacity(0.1),
-                  width: 1.5,
-                ),
-              ),
+              decoration: widget.isClickable
+                  ? cardDecoration(widget.color)
+                  : plainCardDecoration(),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: AppRadius.cardAll,
                 child: IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        width: 12,
-                        color: widget.isClickable
-                            ? widget.color
-                            : Colors.grey.withOpacity(0.3),
-                      ),
                       Expanded(
                         child: Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: MediaQuery.of(context).size.width < 360
-                                ? 12
-                                : 20,
+                                ? AppSpace.md
+                                : AppSpace.lg,
                             vertical: MediaQuery.of(context).size.width < 360
-                                ? 12
-                                : 20,
+                                ? AppSpace.md
+                                : AppSpace.lg,
                           ),
                           child: Row(
                             children: [
@@ -308,8 +289,8 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                                   ),
                                   style: TextStyle(
                                     color: widget.isClickable
-                                        ? rbluedark
-                                        : Colors.grey,
+                                        ? AppText.onSurface
+                                        : AppText.onPageMuted,
                                     fontSize:
                                         MediaQuery.of(context).size.width < 360
                                         ? 14
@@ -323,8 +304,8 @@ class _SubCategoryTileState extends State<SubCategoryTile>
                                     ? Icons.arrow_forward_ios_rounded
                                     : Icons.lock_rounded,
                                 color: widget.isClickable
-                                    ? widget.color
-                                    : Colors.grey.withOpacity(0.5),
+                                    ? AppText.onSurface
+                                    : AppText.onPageMuted,
                                 size: MediaQuery.of(context).size.width < 360
                                     ? 14
                                     : 18,

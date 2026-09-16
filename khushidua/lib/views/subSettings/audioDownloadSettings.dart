@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/constants/colors.dart';
+import 'package:khushidua/constants/theme.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/models/duaModel.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
@@ -89,7 +90,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -482,7 +483,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
               prefixIcon: const Icon(Icons.search_rounded, size: 20),
               isDense: true,
               filled: true,
-              fillColor: const Color(0xffF8F9FE),
+              fillColor: AppSurface.page,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
@@ -594,7 +595,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       selected: isSelected,
       showCheckmark: false,
       selectedColor: const Color(0xff4A3AFF),
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       labelStyle: TextStyle(
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -785,7 +786,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
       case AudioType.olderKids:
         return "Older Kids".tr;
       case AudioType.grownUps:
-        return "Grown-Up's".tr;
+        return "Grown ups".tr;
       case AudioType.english:
         return "English Translation".tr;
       case AudioType.urdu:

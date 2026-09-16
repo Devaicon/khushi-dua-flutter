@@ -68,6 +68,50 @@ SalahAlert salahAlertFor(String? mode) {
   }
 }
 
+/// What a prayer's reminder plays when its alert mode is [SalahAlert.sound].
+///
+/// Chosen per prayer, independently of the on/vibrate/off mode. A trimmed azan
+/// becomes a third value here without any other restructuring.
+enum SalahSound { haya, deviceDefault }
+
+/// The stored preference value for a sound choice.
+String salahSoundValue(SalahSound sound) =>
+    sound == SalahSound.deviceDefault ? 'default' : 'haya';
+
+/// Anything unrecognised — including a setting that was never saved — keeps
+/// the Haya al-Salah call, which is what the app shipped with.
+SalahSound salahSoundFor(String? value) =>
+    value == 'default' ? SalahSound.deviceDefault : SalahSound.haya;
+
+/// Android fixes a channel's sound when the channel is first created, so each
+/// distinct sound needs its own channel. A prayer points at one of these; it
+/// does not own one.
+enum SalahChannel { haya, deviceDefault, vibrate, none }
+
+/// The single place that maps a prayer's two settings onto a channel.
+SalahChannel salahChannelFor(SalahAlert alert, SalahSound sound) {
+  switch (alert) {
+    case SalahAlert.off:
+      return SalahChannel.none;
+    case SalahAlert.vibrate:
+      return SalahChannel.vibrate;
+    case SalahAlert.sound:
+      return sound == SalahSound.deviceDefault
+          ? SalahChannel.deviceDefault
+          : SalahChannel.haya;
+  }
+}
+
+/// The preference key holding a prayer's on/vibrate/off mode.
+///
+/// Historic naming: Ishaa's key is "isha", not "ishaa".
+String salahSpeakerKeyFor(String prayer) =>
+    prayer == 'Ishaa' ? 'ishaSpeaker' : '${prayer.toLowerCase()}Speaker';
+
+/// The preference key holding a prayer's sound choice.
+String salahSoundKeyFor(String prayer) =>
+    prayer == 'Ishaa' ? 'ishaSound' : '${prayer.toLowerCase()}Sound';
+
 /// The stable notification id for a prayer, or -1 if it is not schedulable.
 int notificationIdFor(String prayerName) {
   final index = kSchedulablePrayers.indexOf(prayerName);

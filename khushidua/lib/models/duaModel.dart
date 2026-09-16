@@ -175,7 +175,22 @@ class DuaModel {
     );
   }
 
+  /// The name in [languageCode], falling back to English and then to any
+  /// non-empty field, so an untranslated document never renders blank.
   String getName(String languageCode) {
+    final exact = _nameFor(languageCode);
+    if (exact.isNotEmpty) return exact;
+    if (english.isNotEmpty) return english;
+    return _allNames.firstWhere((n) => n.isNotEmpty, orElse: () => '');
+  }
+
+  List<String> get _allNames => [
+    english, urdu, arabic, hindi, bengali, french, german, gujrati,
+    indonesian, japanese, malay, mandrain, marathi, portugese, punjabi,
+    russian, sindhi, spanish, tamil, telgu, turkish,
+  ];
+
+  String _nameFor(String languageCode) {
     switch (languageCode) {
       case 'Arabic':
         return arabic;

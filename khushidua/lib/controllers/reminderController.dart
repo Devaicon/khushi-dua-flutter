@@ -228,29 +228,29 @@ class ReminderController extends GetxController {
       final time = _prayerTimes[prayer];
 
       // "off" silences a single prayer; the master switch silences all of them.
-      final alert = salahAlertFor(prefs.getString(_speakerKeyFor(prayer)));
-      final wanted = _salahEnabled && alert != SalahAlert.off && time != null;
+      final alert = salahAlertFor(prefs.getString(salahSpeakerKeyFor(prayer)));
+      final sound = salahSoundFor(prefs.getString(salahSoundKeyFor(prayer)));
+      final channel = salahChannelFor(alert, sound);
+      final wanted = _salahEnabled && channel != SalahChannel.none &&
+          time != null;
 
       if (!wanted) {
         await ReminderService.instance.cancel(id);
         continue;
       }
 
+      // Only the Haya channel carries a bundled sound; the default channel
+      // uses whatever the device plays for a notification.
+      final useHaya = channel == SalahChannel.haya;
+
       await ReminderService.instance.scheduleDaily(
         id: id,
-        channelId: alert == SalahAlert.vibrate
-            ? ReminderService.salahVibrateChannelId
-            : ReminderService.salahChannelId,
-        channelName: alert == SalahAlert.vibrate
-            ? 'Salah Reminders (vibrate only)'
-            : 'Salah Reminders',
-        playSound: alert == SalahAlert.sound,
-        androidSound: alert == SalahAlert.sound
-            ? ReminderService.salahSoundAndroid
-            : null,
-        iosSound: alert == SalahAlert.sound
-            ? ReminderService.salahSoundIos
-            : null,
+        channelId: ReminderService.channelIdForSalah(channel),
+        channelName: ReminderService.channelNameForSalah(channel),
+        playSound: channel != SalahChannel.vibrate,
+        vibrate: true,
+        androidSound: useHaya ? ReminderService.salahSoundAndroid : null,
+        iosSound: useHaya ? ReminderService.salahSoundIos : null,
         title: '${prayer.tr} ${'time'.tr}',
         body: '${'It is time for'.tr} ${prayer.tr}',
         hour: time.hour,
@@ -259,23 +259,5 @@ class ReminderController extends GetxController {
       );
     }
     update();
-  }
-
-  /// Mirrors the key naming already used by the prayer screen.
-  String _speakerKeyFor(String prayer) {
-    switch (prayer) {
-      case 'Fajr':
-        return 'fajrSpeaker';
-      case 'Dhuhr':
-        return 'dhuhrSpeaker';
-      case 'Asr':
-        return 'asrSpeaker';
-      case 'Maghrib':
-        return 'maghribSpeaker';
-      case 'Ishaa':
-        return 'ishaSpeaker';
-      default:
-        return '${prayer.toLowerCase()}Speaker';
-    }
   }
 }

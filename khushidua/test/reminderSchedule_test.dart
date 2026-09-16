@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:khushidua/helpers/reminderSchedule.dart';
 
 void main() {
+  _soundAndChannelTests();
   group('nextOccurrence', () {
     test('returns today when the time is still ahead', () {
       final now = DateTime(2026, 9, 11, 6, 0);
@@ -110,6 +111,72 @@ void main() {
 
     test('"off" schedules nothing', () {
       expect(salahAlertFor('off'), SalahAlert.off);
+    });
+  });
+}
+
+void _soundAndChannelTests() {
+  group('salahSoundFor', () {
+    test('reads the stored default-sound choice', () {
+      expect(salahSoundFor('default'), SalahSound.deviceDefault);
+    });
+
+    test('keeps Haya al-Salah for a setting that was never saved', () {
+      expect(salahSoundFor(null), SalahSound.haya);
+      expect(salahSoundFor('haya'), SalahSound.haya);
+      expect(salahSoundFor('something else'), SalahSound.haya);
+    });
+
+    test('round-trips through the stored value', () {
+      for (final sound in SalahSound.values) {
+        expect(salahSoundFor(salahSoundValue(sound)), sound);
+      }
+    });
+  });
+
+  group('salahChannelFor', () {
+    test('off is never scheduled, whatever the sound choice', () {
+      for (final sound in SalahSound.values) {
+        expect(salahChannelFor(SalahAlert.off, sound), SalahChannel.none);
+      }
+    });
+
+    test('vibrate ignores the sound choice', () {
+      for (final sound in SalahSound.values) {
+        expect(salahChannelFor(SalahAlert.vibrate, sound), SalahChannel.vibrate);
+      }
+    });
+
+    test('sound follows the per-prayer choice', () {
+      expect(
+        salahChannelFor(SalahAlert.sound, SalahSound.haya),
+        SalahChannel.haya,
+      );
+      expect(
+        salahChannelFor(SalahAlert.sound, SalahSound.deviceDefault),
+        SalahChannel.deviceDefault,
+      );
+    });
+  });
+
+  group('preference keys', () {
+    test('Ishaa keeps its historic "isha" spelling', () {
+      expect(salahSpeakerKeyFor('Ishaa'), 'ishaSpeaker');
+      expect(salahSoundKeyFor('Ishaa'), 'ishaSound');
+    });
+
+    test('other prayers lowercase their name', () {
+      expect(salahSpeakerKeyFor('Fajr'), 'fajrSpeaker');
+      expect(salahSoundKeyFor('Maghrib'), 'maghribSound');
+    });
+
+    test('the mode and sound keys never collide', () {
+      final keys = <String>{};
+      for (final prayer in kSchedulablePrayers) {
+        keys.add(salahSpeakerKeyFor(prayer));
+        keys.add(salahSoundKeyFor(prayer));
+      }
+      expect(keys, hasLength(kSchedulablePrayers.length * 2));
     });
   });
 }

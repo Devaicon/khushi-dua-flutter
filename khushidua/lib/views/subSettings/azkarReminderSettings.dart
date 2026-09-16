@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../controllers/reminderController.dart';
 import '../../widgets/customSnackbar.dart';
 
@@ -36,9 +37,9 @@ class AzkarReminderSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: const Color(0xffF8F9FE),
+        backgroundColor: AppSurface.page,
         appBar: AppBar(
-          backgroundColor: const Color(0xffF8F9FE),
+          backgroundColor: AppSurface.page,
           elevation: 0,
           title: Text(
             "Azkar Reminders".tr,
@@ -129,13 +130,7 @@ class AzkarReminderSettings extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppElevation.card,
       ),
       child: child,
     );

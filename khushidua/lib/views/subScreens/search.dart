@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../controllers/themeController.dart';
@@ -70,7 +71,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final userController = Get.find<UserController>();
 
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       appBar: AppBar(
         title: Text(
           "Explore Duas".tr,

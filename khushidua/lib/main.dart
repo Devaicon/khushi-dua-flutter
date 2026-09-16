@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:khushidua/views/dashboard.dart';
 
+import 'constants/theme.dart';
 import 'controllers/initController.dart';
 import 'services/reminderService.dart';
 import 'controllers/localization.dart';
@@ -53,6 +54,9 @@ class MyApp extends StatelessWidget {
       locale: Locale('en', 'US'),
       fallbackLocale: Locale('en', 'US'),
       debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(),
+      defaultTransition: Transition.cupertino,
+      transitionDuration: AppMotion.base,
       home: Dashboard(),
     );
   }

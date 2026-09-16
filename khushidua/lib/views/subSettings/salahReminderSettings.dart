@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../constants/prayerNames.dart';
 import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
@@ -23,6 +24,7 @@ class SalahReminderSettings extends StatefulWidget {
 
 class _SalahReminderSettingsState extends State<SalahReminderSettings> {
   Map<String, String> _modes = {};
+  Map<String, SalahSound> _sounds = {};
   bool _loading = true;
 
   @override
@@ -34,40 +36,32 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
   Future<void> _loadModes() async {
     final prefs = await SharedPreferences.getInstance();
     final modes = <String, String>{};
+    final sounds = <String, SalahSound>{};
     for (final prayer in kSchedulablePrayers) {
-      modes[prayer] = prefs.getString(_speakerKeyFor(prayer)) ?? 'on';
+      modes[prayer] = prefs.getString(salahSpeakerKeyFor(prayer)) ?? 'on';
+      sounds[prayer] = salahSoundFor(prefs.getString(salahSoundKeyFor(prayer)));
     }
     if (!mounted) return;
     setState(() {
       _modes = modes;
+      _sounds = sounds;
       _loading = false;
     });
-  }
-
-  /// Mirrors the key naming used by the prayer screen.
-  String _speakerKeyFor(String prayer) {
-    switch (prayer) {
-      case 'Fajr':
-        return 'fajrSpeaker';
-      case 'Dhuhr':
-        return 'dhuhrSpeaker';
-      case 'Asr':
-        return 'asrSpeaker';
-      case 'Maghrib':
-        return 'maghribSpeaker';
-      case 'Ishaa':
-        return 'ishaSpeaker';
-      default:
-        return '${prayer.toLowerCase()}Speaker';
-    }
   }
 
   Future<void> _setPrayerEnabled(String prayer, bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     final mode = enabled ? 'on' : 'off';
-    await prefs.setString(_speakerKeyFor(prayer), mode);
+    await prefs.setString(salahSpeakerKeyFor(prayer), mode);
     setState(() => _modes[prayer] = mode);
     // Empty map: keep the times the controller already holds.
+    await Get.find<ReminderController>().syncSalahReminders(const {});
+  }
+
+  Future<void> _setPrayerSound(String prayer, SalahSound sound) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(salahSoundKeyFor(prayer), salahSoundValue(sound));
+    setState(() => _sounds[prayer] = sound);
     await Get.find<ReminderController>().syncSalahReminders(const {});
   }
 
@@ -75,10 +69,8 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: const Color(0xffF8F9FE),
+        backgroundColor: AppSurface.page,
         appBar: AppBar(
-          backgroundColor: const Color(0xffF8F9FE),
-          elevation: 0,
           title: Text(
             "Salah Reminders".tr,
             style: const TextStyle(
@@ -93,12 +85,11 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
         body: GetBuilder<ReminderController>(
           builder: (controller) {
             return ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.lg),
               children: [
                 _card(
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: rbluedark,
                     value: controller.salahEnabled,
                     title: Text(
                       "Salah reminders".tr,
@@ -129,38 +120,12 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
                   ),
                 ),
                 if (controller.salahEnabled && !_loading) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpace.lg),
                   _card(
                     child: Column(
                       children: [
                         for (final prayer in kSchedulablePrayers)
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            activeColor: rbluedark,
-                            value: _modes[prayer] != 'off',
-                            title: Row(
-                              children: [
-                                Text(
-                                  prayer.tr,
-                                  style: const TextStyle(
-                                    color: rbluedark,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  arabicPrayerName(prayer),
-                                  style: TextStyle(
-                                    fontFamily: 'arabic',
-                                    color: rbluedark.withOpacity(0.55),
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            onChanged: (v) => _setPrayerEnabled(prayer, v),
-                          ),
+                          _prayerRow(prayer),
                       ],
                     ),
                   ),
@@ -173,20 +138,111 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
     );
   }
 
+  Widget _prayerRow(String prayer) {
+    final enabled = _modes[prayer] != 'off';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: enabled,
+          title: Row(
+            children: [
+              Text(
+                prayer.tr,
+                style: const TextStyle(
+                  color: rbluedark,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Text(
+                arabicPrayerName(prayer),
+                style: TextStyle(
+                  fontFamily: 'arabic',
+                  color: AppText.onPageMuted,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          onChanged: (v) => _setPrayerEnabled(prayer, v),
+        ),
+        // The sound choice only means something while the prayer alerts, and
+        // vibrate-only has no sound to choose.
+        if (enabled && _modes[prayer] != 'vibrate')
+          Padding(
+            padding: const EdgeInsets.only(
+              bottom: AppSpace.md,
+              right: AppSpace.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _soundChip(
+                    prayer,
+                    SalahSound.haya,
+                    "Haya al-Salah".tr,
+                  ),
+                ),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: _soundChip(
+                    prayer,
+                    SalahSound.deviceDefault,
+                    "Notification sound".tr,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _soundChip(String prayer, SalahSound sound, String label) {
+    final selected = (_sounds[prayer] ?? SalahSound.haya) == sound;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: selected ? null : () => _setPrayerSound(prayer, sound),
+      child: AnimatedContainer(
+        duration: AppMotion.base,
+        curve: AppMotion.curve,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.md,
+          vertical: AppSpace.sm,
+        ),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? AppGradient.forSeed(rbluedark)
+              : AppGradient.neutral,
+          borderRadius: AppRadius.pillAll,
+          boxShadow: selected ? AppElevation.card : null,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected ? AppText.onSurface : AppText.onPageMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _card({required Widget child}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.lg,
+        vertical: AppSpace.sm,
       ),
+      decoration: plainCardDecoration(),
       child: child,
     );
   }

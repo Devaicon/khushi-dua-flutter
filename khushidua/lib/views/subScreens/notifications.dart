@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/constants/colors.dart';
+import 'package:khushidua/constants/theme.dart';
 import 'package:khushidua/controllers/notificationController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../models/notificationModel.dart';
@@ -16,7 +17,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       appBar: AppBar(
         title: Text(
           "Notifications".tr,

@@ -182,7 +182,6 @@ class _FirstTimeTipState extends State<FirstTimeTip> {
       decoration: BoxDecoration(
         color: widget.color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: widget.color.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,

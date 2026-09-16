@@ -813,10 +813,6 @@ class _DuaTileState extends State<DuaTile> {
                           decoration: BoxDecoration(
                             color: Color(0xff2A158F).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Color(0xff2A158F).withValues(alpha: 0.3),
-                              width: 1,
-                            ),
                           ),
                           child: Directionality(
                             textDirection: TextDirection.rtl,
@@ -928,10 +924,6 @@ class _DuaTileState extends State<DuaTile> {
                         decoration: BoxDecoration(
                           color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.green.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1474,7 +1466,6 @@ class _DuaTileState extends State<DuaTile> {
       decoration: BoxDecoration(
         color: const Color(0xff2A158F).withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xff2A158F).withOpacity(0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1550,10 +1541,6 @@ class _DuaTileState extends State<DuaTile> {
                         offset: const Offset(0, 10),
                       ),
                     ],
-                    border: Border.all(
-                      color: accentColor.withOpacity(0.1),
-                      width: 1,
-                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(28),
@@ -1658,7 +1645,6 @@ class _DuaTileState extends State<DuaTile> {
             width: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: accentColor.withOpacity(0.2)),
             ),
             child: ClipOval(child: Image.asset(randomImage, fit: BoxFit.cover)),
           ),

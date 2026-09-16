@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../controllers/userController.dart';
 import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
@@ -147,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       body: GetBuilder<UserController>(
         builder: (userController) {
           return CustomScrollView(
@@ -306,16 +307,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 18),
-                          decoration: BoxDecoration(
-                            color: userController.isLoggedIn
-                                ? Colors.red.withOpacity(0.08)
-                                : Colors.green.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: userController.isLoggedIn
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.green.withOpacity(0.2),
-                            ),
+                          decoration: cardDecoration(
+                            userController.isLoggedIn
+                                ? const Color(0xFFE53935)
+                                : const Color(0xFF2E9E5B),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -324,19 +319,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 userController.isLoggedIn
                                     ? Icons.logout_rounded
                                     : Icons.login_rounded,
-                                color: userController.isLoggedIn
-                                    ? Colors.red
-                                    : Colors.green,
+                                color: AppText.onSurface,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: AppSpace.md),
                               Text(
                                 userController.isLoggedIn
                                     ? "Logout Account".tr
                                     : "Sign In / Sign Up".tr,
-                                style: TextStyle(
-                                  color: userController.isLoggedIn
-                                      ? Colors.red
-                                      : Colors.green,
+                                style: const TextStyle(
+                                  color: AppText.onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -373,13 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppElevation.card,
       ),
       child: Row(
         children: [
@@ -478,10 +463,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        ),
+        decoration: plainCardDecoration(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -514,28 +496,18 @@ class SettingTile extends StatelessWidget {
       onTap: function,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        margin: const EdgeInsets.only(bottom: AppSpace.md),
+        padding: const EdgeInsets.all(AppSpace.lg),
+        decoration: plainCardDecoration(),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpace.sm),
               decoration: BoxDecoration(
-                color: rbluedark.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
+                gradient: AppGradient.forSeed(rbluedark),
+                borderRadius: AppRadius.smAll,
               ),
-              child: Icon(_settingsModel.icon, color: rbluedark, size: 20),
+              child: Icon(_settingsModel.icon, color: AppText.onSurface, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(
