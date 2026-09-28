@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification sounds are referenced by name from Dart, so resource
+     shrinking can't see that they are used. Keep them. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/haya_al_salah" />

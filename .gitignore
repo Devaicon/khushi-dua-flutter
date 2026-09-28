@@ -1,1 +1,5 @@
 *.md
+.agents
+*.apk
+# Bundled in the app and shown on the Terms & Privacy screen.
+!khushidua/assets/legal/*.md

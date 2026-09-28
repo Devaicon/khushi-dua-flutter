@@ -338,3 +338,58 @@ exports.revokeAdmin = onCall(async (request) => {
 
   return {uid: targetUid};
 });
+
+/**
+ * Bumps SystemConfiguration/ContentVersion whenever app content changes.
+ *
+ * The mobile app serves categories, subcategories and duas from its on-device
+ * cache until this version moves. Doing the bump here, rather than at each
+ * admin-panel save, covers every write path — form edits, reordering, CSV
+ * import, console edits — so no path can silently leave devices stale.
+ */
+const {
+  onDocumentWritten,
+  onDocumentDeleted,
+} = require("firebase-functions/v2/firestore");
+
+const CONTENT_VERSION_DOC = "SystemConfiguration/ContentVersion";
+
+async function bumpContentVersion() {
+  await db.doc(CONTENT_VERSION_DOC).set(
+      {
+        version: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+  );
+}
+
+exports.bumpContentOnCategoryWrite =
+  onDocumentWritten("Category/{docId}", bumpContentVersion);
+exports.bumpContentOnSubCategoryWrite =
+  onDocumentWritten("SubCategory/{docId}", bumpContentVersion);
+exports.bumpContentOnDuaWrite =
+  onDocumentWritten("Dua/{docId}", bumpContentVersion);
+
+/**
+ * When a user's profile is deleted (from the app's "Delete account", or by an
+ * admin), remove the inbox messages addressed only to them. The app cannot do
+ * this itself: firestore.rules lets only admins write Notifications.
+ */
+exports.cleanUpDeletedUser =
+  onDocumentDeleted("Users/{userId}", removePersonalNotifications);
+
+/** Deletes every inbox message whose sentTo is the deleted user. */
+async function removePersonalNotifications(event) {
+  const userId = event.params.userId;
+  const personal = await db.collection("Notifications")
+      .where("sentTo", "==", userId)
+      .get();
+
+  const docs = personal.docs;
+  for (let i = 0; i < docs.length; i += 400) {
+    const batch = db.batch();
+    docs.slice(i, i + 400).forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  }
+}

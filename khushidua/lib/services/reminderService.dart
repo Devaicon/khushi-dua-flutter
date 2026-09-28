@@ -16,7 +16,62 @@ class ReminderService {
   static final ReminderService instance = ReminderService._();
 
   static const String azkarChannelId = 'azkar_reminders';
-  static const String salahChannelId = 'salah_reminders';
+
+  /// Admin announcements received while the app is open. FCM only draws a
+  /// notification itself when the app is in the background.
+  static const String pushChannelId = 'admin_announcements';
+
+  /// Android fixes a channel's sound when the channel is first created, so
+  /// adding the Salah sound needed a new channel id. The old one is deleted in
+  /// [init].
+  static const String salahChannelId = 'salah_reminders_haya';
+  static const String salahDefaultChannelId = 'salah_reminders_default';
+
+  /// v2: the first vibrate channel shipped without an explicit vibration
+  /// pattern, and a channel's settings cannot be changed after creation — so
+  /// reaching existing installs needs a new id.
+  static const String salahVibrateChannelId = 'salah_reminders_vibrate_v2';
+  static const String _legacySalahChannelId = 'salah_reminders';
+  static const String _legacyVibrateChannelId = 'salah_reminders_vibrate';
+
+  /// Long enough to be felt through a pocket: wait, buzz, pause, buzz.
+  static final Int64List salahVibrationPattern = Int64List.fromList(
+    const [0, 500, 250, 500],
+  );
+
+  /// The notification channel a prayer's reminder should use.
+  static String channelIdForSalah(SalahChannel channel) {
+    switch (channel) {
+      case SalahChannel.haya:
+        return salahChannelId;
+      case SalahChannel.deviceDefault:
+        return salahDefaultChannelId;
+      case SalahChannel.vibrate:
+      case SalahChannel.none:
+        return salahVibrateChannelId;
+    }
+  }
+
+  /// The user-visible channel name, shown in Android's system settings.
+  static String channelNameForSalah(SalahChannel channel) {
+    switch (channel) {
+      case SalahChannel.haya:
+        return 'Salah Reminders';
+      case SalahChannel.deviceDefault:
+        return 'Salah Reminders (default sound)';
+      case SalahChannel.vibrate:
+      case SalahChannel.none:
+        return 'Salah Reminders (vibrate only)';
+    }
+  }
+
+  /// `android/app/src/main/res/raw/haya_al_salah.mp3`. Android resource names
+  /// allow only lowercase letters, digits and underscores.
+  static const String salahSoundAndroid = 'haya_al_salah';
+
+  /// `ios/Runner/haya_al_salah.wav`. iOS notification sounds must be WAV,
+  /// AIFF or CAF, under 30 seconds, and bundled with the app.
+  static const String salahSoundIos = 'haya_al_salah.wav';
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -66,6 +121,8 @@ class ReminderService {
             notificationTapBackground,
       );
 
+      await _createAndroidChannels();
+
       final launchDetails = await _plugin.getNotificationAppLaunchDetails();
       if (launchDetails?.didNotificationLaunchApp ?? false) {
         pendingPayload = launchDetails?.notificationResponse?.payload;
@@ -74,6 +131,54 @@ class ReminderService {
       _initialised = true;
     } catch (e) {
       debugPrint('⏰ ReminderService: initialisation failed: $e');
+    }
+  }
+
+  Future<void> _createAndroidChannels() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+    try {
+      await android.createNotificationChannel(
+        const AndroidNotificationChannel(
+          pushChannelId,
+          'Announcements',
+          importance: Importance.high,
+        ),
+      );
+      await android.deleteNotificationChannel(_legacySalahChannelId);
+      await android.deleteNotificationChannel(_legacyVibrateChannelId);
+      await android.createNotificationChannel(
+        const AndroidNotificationChannel(
+          salahChannelId,
+          'Salah Reminders',
+          importance: Importance.high,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(salahSoundAndroid),
+        ),
+      );
+      await android.createNotificationChannel(
+        const AndroidNotificationChannel(
+          salahDefaultChannelId,
+          'Salah Reminders (default sound)',
+          importance: Importance.high,
+          playSound: true,
+        ),
+      );
+      await android.createNotificationChannel(
+        AndroidNotificationChannel(
+          salahVibrateChannelId,
+          'Salah Reminders (vibrate only)',
+          importance: Importance.high,
+          playSound: false,
+          enableVibration: true,
+          vibrationPattern: salahVibrationPattern,
+        ),
+      );
+    } catch (e) {
+      debugPrint('⏰ ReminderService: creating channels failed: $e');
     }
   }
 
@@ -130,6 +235,10 @@ class ReminderService {
     required int hour,
     required int minute,
     String? payload,
+    bool playSound = true,
+    String? androidSound,
+    String? iosSound,
+    bool vibrate = true,
   }) async {
     await init();
 
@@ -151,8 +260,19 @@ class ReminderService {
             channelName,
             importance: Importance.high,
             priority: Priority.high,
+            playSound: playSound,
+            sound: androidSound == null
+                ? null
+                : RawResourceAndroidNotificationSound(androidSound),
+            enableVibration: vibrate,
+            vibrationPattern: vibrate && !playSound
+                ? salahVibrationPattern
+                : null,
           ),
-          iOS: const DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            presentSound: playSound,
+            sound: playSound ? iosSound : null,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
@@ -163,6 +283,35 @@ class ReminderService {
       );
     } catch (e) {
       debugPrint('⏰ ReminderService: scheduling id $id failed: $e');
+    }
+  }
+
+  /// Shows a notification immediately, on the announcements channel.
+  Future<void> showNow({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await init();
+    try {
+      await _plugin.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            pushChannelId,
+            'Announcements',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(presentSound: true),
+        ),
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('⏰ ReminderService: showing id $id failed: $e');
     }
   }
 

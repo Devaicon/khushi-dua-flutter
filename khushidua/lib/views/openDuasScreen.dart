@@ -22,14 +22,30 @@ import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/colors.dart';
+import '../constants/theme.dart';
 import '../controllers/userController.dart';
 import '../models/duaModel.dart';
 import '../models/subCategoryModel.dart';
+import '../widgets/listenedHelp.dart';
+import '../widgets/skeleton.dart';
+import 'imageScreen.dart';
+
+/// "1 dua" / "5 duas", translated.
+String duaCountLabel(int count) =>
+    count == 1 ? "1 dua".tr : "@count duas".trParams({'count': '$count'});
 
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
 
-  const OpenDuasScreen(this._subCategoryModel, {super.key});
+  /// The category's colour, carried through so the section reads as part of
+  /// the category it was opened from.
+  final Color color;
+
+  const OpenDuasScreen(
+    this._subCategoryModel, {
+    super.key,
+    this.color = rpurple,
+  });
 
   @override
   State<OpenDuasScreen> createState() => _OpenDuasScreenState();
@@ -38,204 +54,327 @@ class OpenDuasScreen extends StatefulWidget {
 class _OpenDuasScreenState extends State<OpenDuasScreen> {
   String? _expandedBenefitsDuaId; // Track which dua has benefits expanded
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.find<DuaController>().getFilteredDuas(widget._subCategoryModel);
-    });
-  }
+  SubCategoryModel get _section => widget._subCategoryModel;
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  /// Kids' sections carry an illustration. It used to be a screen of its own
+  /// the reader had to tap through; now it heads the dua list instead.
+  bool get _showIllustration =>
+      _section.image.isNotEmpty &&
+      Get.find<ThemeController>().selectedAgeGroup != 2;
 
   void showTextOptionsPopup() {
-    // ... (unchanged)
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: Colors.black,
-              contentPadding: const EdgeInsets.all(20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              content: GetBuilder<ThemeController>(
-                builder: (themeController) {
-                  return SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Preview Section
-                        Text(
-                          'اللَّهُمَّ أَجِرْنِي مِنَ النَّارِ',
-                          style: TextStyle(
-                            fontSize: themeController.textSize,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        if (themeController.showTransliteration)
-                          Text(
-                            'Allahumma ajirni min an-naar',
-                            style: TextStyle(
-                              fontSize: themeController.textSize,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        if (themeController.showTranslation)
-                          Text(
-                            'O Allah, save me from the Hellfire.',
-                            style: TextStyle(
-                              fontSize: themeController.textSize,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        const Divider(height: 30, color: Colors.grey),
-
-                        // Font Size Slider
-                        Row(
-                          children: [
-                            Text(
-                              'Font Size',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            Expanded(
-                              child: Slider(
-                                value: themeController.textSize,
-                                min: 14,
-                                max: 27,
-                                divisions: 13,
-                                label: themeController.textSize
-                                    .round()
-                                    .toString(),
-                                onChanged: (value) =>
-                                    themeController.setTextSize(value),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // English 1 Toggle
-                        SwitchListTile(
-                          title: Text(
-                            "Show transliteration",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          value: themeController.showTransliteration,
-                          onChanged: (val) =>
-                              themeController.setShowTransliteration(val),
-                          activeThumbColor: Colors.green,
-                        ),
-
-                        // English 2 Toggle
-                        SwitchListTile(
-                          title: Text(
-                            "Show translation",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          value: themeController.showTranslation,
-                          onChanged: (val) =>
-                              themeController.setShowTranslation(val),
-                          activeThumbColor: Colors.green,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Close', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+    Get.bottomSheet(const _ReadingOptionsSheet(), isScrollControlled: true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final language = Get.find<UserController>().selectedLanguage;
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          "Duas".tr,
-          style: const TextStyle(
-            color: rblack,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: rblack,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            onPressed: showTextOptionsPopup,
-            icon: const Icon(Icons.text_fields_rounded, color: rblack),
-          ).marginOnly(right: 8),
-        ],
-      ),
+      backgroundColor: AppSurface.page,
       body: GetBuilder<DuaController>(
         builder: (duaController) {
-          if (duaController.filteredDuas.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.search_off_rounded,
-                    size: 64,
-                    color: Colors.grey.withOpacity(0.3),
+          final duas = duaController.duasFor(_section.id);
+          return GetBuilder<UserController>(
+            builder: (userController) {
+              final readDuas = userController.userModel?.readDuas;
+              final listened = readDuas == null
+                  ? null
+                  : duas.where((d) => readDuas.contains(d.id)).length;
+
+              return CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    backgroundColor: AppSurface.page,
+                    surfaceTintColor: Colors.transparent,
+                    scrolledUnderElevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: rbluedark,
+                        size: 20,
+                      ),
+                      onPressed: () => Get.back(),
+                    ),
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _section.getName(language),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: rbluedark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                        Text(
+                          listened == null || duas.isEmpty
+                              ? duaCountLabel(duas.length)
+                              : "@done of @total listened".trParams({
+                                  'done': '$listened',
+                                  'total': '${duas.length}',
+                                }),
+                          style: TextStyle(
+                            color: AppText.onPageMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      IconButton(
+                        tooltip: "Reading options".tr,
+                        onPressed: showTextOptionsPopup,
+                        icon: const Icon(
+                          Icons.text_fields_rounded,
+                          color: rbluedark,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.xs),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "No Duas found".tr,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+                  if (_showIllustration)
+                    SliverToBoxAdapter(child: _buildIllustration()),
+                  SliverToBoxAdapter(child: _buildListenedTip(userController)),
+                  if (duas.isEmpty)
+                    SliverToBoxAdapter(child: _buildEmpty())
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: AppSpace.xxl),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => DuaTile(
+                            key: ValueKey(duas[index].id),
+                            dua: duas[index],
+                            number: index + 1,
+                            total: duas.length,
+                            color: widget.color,
+                            expandedBenefitsDuaId: _expandedBenefitsDuaId,
+                            onToggleBenefits: (duaId) {
+                              setState(() {
+                                _expandedBenefitsDuaId =
+                                    _expandedBenefitsDuaId == duaId
+                                    ? null
+                                    : duaId;
+                              });
+                            },
+                          ),
+                          childCount: duas.length,
+                        ),
+                      ),
+                    ),
                 ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 24),
-            physics: const BouncingScrollPhysics(),
-            itemCount: duaController.filteredDuas.length,
-            itemBuilder: (context, index) {
-              return DuaTile(
-                dua: duaController.filteredDuas[index],
-                expandedBenefitsDuaId: _expandedBenefitsDuaId,
-                onToggleBenefits: (duaId) {
-                  setState(() {
-                    _expandedBenefitsDuaId = _expandedBenefitsDuaId == duaId
-                        ? null
-                        : duaId;
-                  });
-                },
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildIllustration() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.sm,
+        AppSpace.lg,
+        AppSpace.sm,
+      ),
+      child: GestureDetector(
+        onTap: () => Get.to(
+          () => ImageScreen(subCategoryModel: _section),
+          transition: Transition.fadeIn,
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.cardAll,
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: widget.color.withValues(alpha: 0.2)),
+                // Only the picture flies to the full-screen viewer; the tint
+                // and the expand badge stay behind on the card.
+                Hero(
+                  tag: 'section_image_${_section.id}',
+                  child: Image.network(
+                    _section.image,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) =>
+                        progress == null
+                        ? child
+                        : Skeleton(child: const SkeletonBox(radius: 0)),
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.image_not_supported_rounded,
+                      color: widget.color.ink.withValues(alpha: 0.5),
+                      size: 40,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: AppSpace.sm,
+                  bottom: AppSpace.sm,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.open_in_full_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The one-time tip explaining "listened".
+  Widget _buildListenedTip(UserController userController) {
+    final loggedIn = userController.userModel != null;
+    return FirstTimeTip(
+      key: ValueKey(loggedIn),
+      prefsKey: loggedIn ? kListenedTipSeenKey : '$kListenedTipSeenKey.guest',
+      color: widget.color,
+      message: loggedIn
+          ? "Play a dua's audio all the way to the end to mark it as listened. Listening to duas unlocks more sections."
+                .tr
+          : "Log in to keep track of the duas you have listened to.".tr,
+    ).paddingSymmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm);
+  }
+
+  Widget _buildEmpty() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64),
+      child: Column(
+        children: [
+          Icon(
+            Icons.search_off_rounded,
+            size: 56,
+            color: AppText.onPageMuted.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: AppSpace.md),
+          Text(
+            "No Duas found".tr,
+            style: TextStyle(color: AppText.onPageMuted, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Font size and which lines to show, applied live to the list behind it.
+class _ReadingOptionsSheet extends StatelessWidget {
+  const _ReadingOptionsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.xl,
+          AppSpace.md,
+          AppSpace.xl,
+          AppSpace.lg,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: GetBuilder<ThemeController>(
+          builder: (theme) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    borderRadius: AppRadius.pillAll,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.lg),
+              Text(
+                "Reading options".tr,
+                style: const TextStyle(
+                  color: rbluedark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpace.lg),
+              Text(
+                "Font Size".tr,
+                style: const TextStyle(
+                  color: rtext,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.text_decrease_rounded, color: rhint),
+                  Expanded(
+                    child: Slider(
+                      value: theme.textSize,
+                      min: 14,
+                      max: 27,
+                      divisions: 13,
+                      label: theme.textSize.round().toString(),
+                      onChanged: theme.setTextSize,
+                    ),
+                  ),
+                  const Icon(Icons.text_increase_rounded, color: rhint),
+                ],
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  "Show transliteration".tr,
+                  style: const TextStyle(color: rtext),
+                ),
+                value: theme.showTransliteration,
+                onChanged: theme.setShowTransliteration,
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  "Show translation".tr,
+                  style: const TextStyle(color: rtext),
+                ),
+                value: theme.showTranslation,
+                onChanged: theme.setShowTranslation,
+              ),
+              const SizedBox(height: AppSpace.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Get.back(),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.smAll,
+                    ),
+                  ),
+                  child: Text("Done".tr),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -246,10 +385,18 @@ class DuaTile extends StatefulWidget {
   final String? expandedBenefitsDuaId;
   final Function(String?) onToggleBenefits;
 
+  /// Position in the section, shown as "Dua 2 of 5".
+  final int number;
+  final int total;
+  final Color color;
+
   const DuaTile({
     required this.dua,
     required this.expandedBenefitsDuaId,
     required this.onToggleBenefits,
+    required this.number,
+    required this.total,
+    required this.color,
     super.key,
   });
 
@@ -794,10 +941,6 @@ class _DuaTileState extends State<DuaTile> {
                           decoration: BoxDecoration(
                             color: Color(0xff2A158F).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Color(0xff2A158F).withValues(alpha: 0.3),
-                              width: 1,
-                            ),
                           ),
                           child: Directionality(
                             textDirection: TextDirection.rtl,
@@ -909,10 +1052,6 @@ class _DuaTileState extends State<DuaTile> {
                         decoration: BoxDecoration(
                           color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.green.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1455,7 +1594,6 @@ class _DuaTileState extends State<DuaTile> {
       decoration: BoxDecoration(
         color: const Color(0xff2A158F).withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xff2A158F).withOpacity(0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1500,15 +1638,12 @@ class _DuaTileState extends State<DuaTile> {
           builder: (userController) {
             return GetBuilder<ThemeController>(
               builder: (themeController) {
-                Color accentColor = themeController.selectedAgeGroup == 0
-                    ? rpink
-                    : themeController.selectedAgeGroup == 1
-                    ? rblue
-                    : rgreen;
+                final accent = widget.color.ink;
+                final ageGroup = themeController.selectedAgeGroup;
 
-                String audioPath = themeController.selectedAgeGroup == 0
+                String audioPath = ageGroup == 0
                     ? widget.dua.littleKidsAudio
-                    : themeController.selectedAgeGroup == 1
+                    : ageGroup == 1
                     ? widget.dua.olderKidsAudio
                     : widget.dua.grownUpsAudio;
 
@@ -1516,75 +1651,65 @@ class _DuaTileState extends State<DuaTile> {
                     audioController.currentlyPlayingPath == audioPath &&
                     audioController.currentlyPlayingDuaId == widget.dua.id;
 
+                final isNarrow = MediaQuery.of(context).size.width < 360;
+
                 return Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                  margin: const EdgeInsets.fromLTRB(
+                    AppSpace.lg,
+                    AppSpace.sm,
+                    AppSpace.lg,
+                    AppSpace.sm,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: accentColor.withOpacity(0.1),
-                      width: 1,
+                      color: isPlayingAudio
+                          ? widget.color.withValues(alpha: 0.7)
+                          : widget.color.withValues(alpha: 0.3),
+                      width: isPlayingAudio ? 1.8 : 1.2,
                     ),
+                    boxShadow: AppElevation.card,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(23),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Focused Header with Metadata & Core Actions
-                        _buildHeader(accentColor, isPlayingAudio, audioPath),
+                        _buildHeader(userController),
 
-                        // The Sacred Arabic Text
-                        GestureDetector(
-                          onLongPress: () {
-                            // Copy to clipboard or other context action
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal:
-                                  MediaQuery.of(context).size.width < 360
-                                  ? 16
-                                  : 24,
-                              vertical: MediaQuery.of(context).size.width < 360
-                                  ? 20
-                                  : 32,
-                            ),
-                            width: double.infinity,
-                            color: accentColor.withOpacity(0.02),
-                            child: Text(
-                              widget.dua.arabic,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize:
-                                    MediaQuery.of(context).size.width < 360
-                                    ? themeController.textSize
-                                    : themeController.textSize * 1.15,
-                                height: 2.0,
-                                fontFamily: 'arabic',
-                                fontWeight: FontWeight.w400,
-                              ),
+                        // The Arabic text, the heart of the card.
+                        Container(
+                          padding: EdgeInsets.fromLTRB(
+                            isNarrow ? 16 : 24,
+                            isNarrow ? 12 : 16,
+                            isNarrow ? 16 : 24,
+                            isNarrow ? 16 : 20,
+                          ),
+                          color: widget.color.withValues(alpha: 0.06),
+                          child: Text(
+                            widget.dua.arabic,
+                            textAlign: TextAlign.center,
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: isNarrow
+                                  ? themeController.textSize
+                                  : themeController.textSize * 1.15,
+                              height: 2.0,
+                              fontFamily: 'arabic',
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ),
 
-                        // Transliteration & Translation with selective visibility
-                        _buildContentSections(themeController, accentColor),
+                        _buildContentSections(themeController, accent),
 
-                        // Expandable Benefits
-                        _buildBenefitsSection(themeController, accentColor),
+                        _buildActions(accent, isPlayingAudio, audioPath),
 
-                        // Minimal Footer Actions
-                        _buildFooter(accentColor),
+                        _buildTranslationAudio(accent),
+
+                        _buildBenefitsSection(themeController, accent),
                       ],
                     ),
                   ),
@@ -1597,47 +1722,100 @@ class _DuaTileState extends State<DuaTile> {
     );
   }
 
-  Widget _buildHeader(Color accentColor, bool isPlaying, String audioPath) {
-    final bool hasAudio = audioPath.isNotEmpty;
+  /// "Dua 2 of 5", and a Listened mark once its audio has played through.
+  Widget _buildHeader(UserController userController) {
+    final isListened =
+        userController.userModel?.readDuas.contains(widget.dua.id) ?? false;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.md,
+        AppSpace.md,
+        AppSpace.sm,
+      ),
       child: Row(
         children: [
-          _CircleAction(
-            icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-            color: hasAudio ? accentColor : Colors.grey,
-            onTap: hasAudio
-                ? () => Get.find<AudioController>().toggleAudio(
-                    audioPath,
-                    widget.dua.id,
-                  )
-                : () {
-                    Get.snackbar(
-                      'No Audio',
-                      'No audio available for this age group',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: Colors.black54,
-                      colorText: Colors.white,
-                      duration: const Duration(seconds: 2),
-                    );
-                  },
-          ),
-          const SizedBox(width: 8),
-          _CircleAction(
-            icon: Icons.mic_none_rounded,
-            color: const Color(0xff2A158F),
-            onTap: _openRecordingDialog,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: widget.color.withValues(alpha: 0.18),
+              borderRadius: AppRadius.pillAll,
+            ),
+            child: Text(
+              "Dua @index of @total".trParams({
+                'index': '${widget.number}',
+                'total': '${widget.total}',
+              }),
+              style: TextStyle(
+                color: widget.color.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const Spacer(),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: accentColor.withOpacity(0.2)),
+          if (isListened) ListenedBadge(color: widget.color),
+        ],
+      ),
+    );
+  }
+
+  /// Listen, practise and share, in one row under the text.
+  Widget _buildActions(Color accent, bool isPlaying, String audioPath) {
+    final hasAudio = audioPath.isNotEmpty;
+    final canShare = widget.dua.arabic.length < 2500;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        0,
+        AppSpace.lg,
+        AppSpace.md,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: _ActionButton(
+              icon: isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+              label: (isPlaying ? "Stop" : "Listen").tr,
+              color: hasAudio ? accent : Colors.grey,
+              filled: true,
+              onTap: hasAudio
+                  ? () => Get.find<AudioController>().toggleAudio(
+                      audioPath,
+                      widget.dua.id,
+                    )
+                  : () {
+                      Get.snackbar(
+                        'No Audio',
+                        'No audio available for this age group',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.black54,
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 2),
+                      );
+                    },
             ),
-            child: ClipOval(child: Image.asset(randomImage, fit: BoxFit.cover)),
           ),
+          const SizedBox(width: AppSpace.sm),
+          Expanded(
+            flex: 3,
+            child: _ActionButton(
+              icon: Icons.mic_none_rounded,
+              label: "Practice".tr,
+              color: accent,
+              onTap: _openRecordingDialog,
+            ),
+          ),
+          if (canShare) ...[
+            const SizedBox(width: AppSpace.sm),
+            _ActionButton(
+              icon: Icons.share_rounded,
+              color: accent,
+              onTap: _isSharing ? null : showShareDialog,
+            ),
+          ],
         ],
       ),
     );
@@ -1667,13 +1845,7 @@ class _DuaTileState extends State<DuaTile> {
             const SizedBox(height: 24),
           ],
           if (themeController.showTranslation) ...[
-            Row(
-              children: [
-                _SectionLabel(label: "TRANSLATION", color: accentColor),
-                const Spacer(),
-                _buildTranslationAudio(accentColor),
-              ],
-            ),
+            _SectionLabel(label: "TRANSLATION", color: accentColor),
             const SizedBox(height: 8),
             Text(
               widget.dua.getName(Get.find<UserController>().selectedLanguage),
@@ -1690,25 +1862,55 @@ class _DuaTileState extends State<DuaTile> {
     );
   }
 
-  Widget _buildTranslationAudio(Color accentColor) {
-    String? path = Get.find<UserController>().selectedLanguage == "Urdu"
-        ? widget.dua.urduTranslation
-        : widget.dua.englishTranslation;
+  /// English and Urdu translation audio, each with its own button and shown
+  /// whenever the dua has it, whatever the app language and whether or not
+  /// the translation text is visible.
+  Widget _buildTranslationAudio(Color accent) {
+    final tracks = [
+      ("English".tr, widget.dua.englishTranslation),
+      ("Urdu".tr, widget.dua.urduTranslation),
+    ].where((t) => t.$2 != null && t.$2!.isNotEmpty).toList();
+    if (tracks.isEmpty) return const SizedBox.shrink();
 
-    if (path == null || path.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    bool isPlaying =
-        Get.find<AudioController>().currentlyPlayingPath == path &&
-        Get.find<AudioController>().currentlyPlayingDuaId == widget.dua.id;
-
-    return InkWell(
-      onTap: () => Get.find<AudioController>().toggleAudio(path, widget.dua.id),
-      child: Icon(
-        isPlaying ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-        size: 18,
-        color: accentColor,
+    final audio = Get.find<AudioController>();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        0,
+        AppSpace.lg,
+        AppSpace.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(label: "TRANSLATION AUDIO", color: accent),
+          const SizedBox(height: AppSpace.sm),
+          Row(
+            children: [
+              for (int i = 0; i < tracks.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      final (label, path) = tracks[i];
+                      final isPlaying =
+                          audio.currentlyPlayingPath == path &&
+                          audio.currentlyPlayingDuaId == widget.dua.id;
+                      return _ActionButton(
+                        icon: isPlaying
+                            ? Icons.stop_rounded
+                            : Icons.volume_up_rounded,
+                        label: label,
+                        color: accent,
+                        onTap: () => audio.toggleAudio(path!, widget.dua.id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1783,67 +1985,59 @@ class _DuaTileState extends State<DuaTile> {
     );
   }
 
-  Widget _buildFooter(Color accentColor) {
-    bool hasShare = widget.dua.arabic.length < 2500;
-    if (!hasShare) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Center(
-        child: TextButton.icon(
-          onPressed: _isSharing ? null : showShareDialog,
-          icon: _isSharing
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.share_rounded, size: 18),
-          label: Text(
-            (_isSharing ? "PREPARING..." : "SHARE DUA").tr,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
-          ),
-          style: TextButton.styleFrom(
-            foregroundColor: accentColor,
-            backgroundColor: accentColor.withOpacity(0.05),
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-class _CircleAction extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _CircleAction({
+/// A dua card action. Filled for the primary one (Listen), tinted for the
+/// rest; with no [label] it is a square icon button.
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
     required this.icon,
     required this.color,
     required this.onTap,
+    this.label,
+    this.filled = false,
   });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+  final String? label;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
+    final foreground = filled ? Colors.white : color;
+    return Material(
+      color: filled ? color : color.withValues(alpha: 0.1),
+      borderRadius: AppRadius.smAll,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.smAll,
+        child: SizedBox(
+          height: 44,
+          width: label == null ? 44 : null,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: foreground, size: 20),
+              if (label != null) ...[
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foreground,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

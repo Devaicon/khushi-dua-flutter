@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
-import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../models/subCategoryModel.dart';
-import '../imageScreen.dart';
 import '../openDuasScreen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -70,7 +69,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final userController = Get.find<UserController>();
 
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       appBar: AppBar(
         title: Text(
           "Explore Duas".tr,
@@ -287,16 +286,9 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              if (Get.find<ThemeController>().selectedAgeGroup == 0) {
-                Get.to(
-                  ImageScreen(subCategoryModel: subCategory),
-                  transition: Transition.fadeIn,
-                );
-              } else {
-                Get.to(OpenDuasScreen(subCategory));
-              }
-            },
+            // Straight to the duas; a kids' section shows its illustration
+            // at the top of that list.
+            onTap: () => Get.to(() => OpenDuasScreen(subCategory)),
             borderRadius: BorderRadius.circular(25),
             child: Padding(
               padding: const EdgeInsets.all(16),

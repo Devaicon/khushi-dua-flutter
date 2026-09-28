@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 import 'package:khushidua/controllers/duaController.dart';
@@ -6,11 +7,16 @@ import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
+import '../../helpers/sectionProgress.dart';
 import '../../models/categoryModel.dart';
+import '../../models/duaModel.dart';
 import '../../models/subCategoryModel.dart';
-import '../imageScreen.dart';
 import '../openDuasScreen.dart';
+import '../../widgets/listenedHelp.dart';
 
+/// A category's sections, each with how many duas it holds and, for a
+/// logged-in reader, how many of them they have listened to.
 class CategoryDetailScreen extends StatefulWidget {
   final CategoryModel categoryModel;
   final Color color;
@@ -22,6 +28,8 @@ class CategoryDetailScreen extends StatefulWidget {
 }
 
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
+  static const double _headerHeight = 210;
+
   @override
   void initState() {
     super.initState();
@@ -30,314 +38,536 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     });
   }
 
+  /// The category colour laid over the page, so the header matches the home
+  /// tiles' light fill.
+  Color get _tint =>
+      Color.alphaBlend(widget.color.withValues(alpha: 0.3), AppSurface.page);
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        // Listening to a dua writes readDuas on the user document, which the
-        // live snapshot pushes into UserController. Without a
-        // GetBuilder<UserController> here, this screen never rebuilt on that
-        // change, so newly unlocked sections only appeared after navigating
-        // away and back.
-        body: GetBuilder<UserController>(
-          builder: (userController) => GetBuilder<DuaController>(
-            builder: (duaController) => GetBuilder<CategoryController>(
-          builder: (categoryController) {
-            final subCategories = categoryController.filteredSubCategories;
-            final allDuas = duaController.allDuas;
-            final userModel = userController.userModel;
-            final readDuas = userModel?.readDuas ?? [];
-            final total = subCategories.length;
-            final half = (total / 2).ceil();
-
-            final themeController = Get.find<ThemeController>();
-            final ageGroup = themeController.selectedAgeGroup;
-
-            // Pre-calculate completed status for better performance
-            Map<String, bool> subStatusMap = {};
-            for (var sub in subCategories) {
-              final subDuas = allDuas.where(
-                (d) => d.subCategoryIds.contains(sub.id),
+    return Scaffold(
+      backgroundColor: AppSurface.page,
+      // Listening to a dua writes readDuas on the user document, which the
+      // live snapshot pushes into UserController; rebuilding on it is what
+      // makes newly unlocked sections appear without leaving the screen.
+      body: GetBuilder<UserController>(
+        builder: (userController) => GetBuilder<DuaController>(
+          builder: (duaController) => GetBuilder<CategoryController>(
+            builder: (categoryController) {
+              // Until the post-frame load runs, the controller still holds
+              // the previously opened category's sections.
+              final subCategories = categoryController.filteredSubCategories
+                  .where((s) => s.categoryId == widget.categoryModel.id)
+                  .toList();
+              final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
+              final userModel = userController.userModel;
+              final listened = (userModel?.readDuas ?? const <String>[])
+                  .toSet();
+              final progress = SectionProgress.compute(
+                sectionIds: [for (final sub in subCategories) sub.id],
+                allDuas: duaController.allDuas,
+                listenedDuaIds: listened,
+                ageGroup: ageGroup,
+                // Guests and members see every section.
+                restricted: userModel != null && !userModel.isMember,
               );
-              if (subDuas.isEmpty) {
-                subStatusMap[sub.id] = false;
-              } else {
-                subStatusMap[sub.id] = subDuas.every(
-                  (d) => readDuas.contains(d.id),
-                );
-              }
-            }
 
-            bool isEnabled(int index) {
-              if (userModel == null || userModel.isMember == true) return true;
-              if (index < half) return true;
+              final stats = [
+                for (final sub in subCategories)
+                  _SectionStats.of(
+                    duaController.duasFor(sub.id),
+                    listened,
+                  ),
+              ];
+              final totalDuas = stats.fold<int>(0, (n, s) => n + s.total);
 
-              // Check if first half is complete
-              int completedCount = 0;
-              for (int i = 0; i < half; i++) {
-                if (subStatusMap[subCategories[i].id] == true) completedCount++;
-              }
-              return completedCount >= half;
-            }
-
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 180,
-                  pinned: true,
-                  elevation: 0,
-                  backgroundColor: widget.color,
-                  flexibleSpace: FlexibleSpaceBar(
-                    centerTitle: true,
-                    title: Text(
-                      widget.categoryModel.getName(
-                        userController.selectedLanguage,
-                      ),
-                      style: const TextStyle(
-                        color: rbluedark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+              return CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  _buildHeader(userController.selectedLanguage, progress),
+                  SliverToBoxAdapter(
+                    child: _buildSummary(
+                      sectionCount: subCategories.length,
+                      duaCount: totalDuas,
+                      progress: progress,
                     ),
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [widget.color, widget.color.withOpacity(0.8)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
+                  ),
+                  if (subCategories.isEmpty)
+                    SliverToBoxAdapter(child: _buildEmpty())
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpace.lg,
+                        AppSpace.sm,
+                        AppSpace.lg,
+                        AppSpace.xxl,
                       ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            right: -30,
-                            top: -30,
-                            child: Icon(
-                              Icons.auto_awesome,
-                              size: 150,
-                              color: Colors.white.withOpacity(0.15),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          return FadeInAnimationBTT(
+                            delay: 0.05 * index,
+                            child: _SectionTile(
+                              color: widget.color,
+                              subCategory: subCategories[index],
+                              number: index + 1,
+                              stats: stats[index],
+                              showListened: userModel != null,
+                              isUnlocked: progress.isUnlocked(index),
+                              onLockedTap: () =>
+                                  showSectionUnlockHelp(progress),
                             ),
-                          ),
-                          Center(
-                            child: Hero(
-                              tag: 'category_logo_${widget.categoryModel.id}',
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Image.network(
-                                  widget.categoryModel.logo,
-                                  width: 60,
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
-                                        Icons.category,
-                                        size: 40,
-                                        color: Colors.white,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                          );
+                        }, childCount: subCategories.length),
                       ),
                     ),
-                  ),
-                  leading: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: rbluedark,
-                    ),
-                    onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      } else {
-                        Get.back();
-                      }
-                    },
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 20,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      return SubCategoryTile(
-                        widget.color,
-                        subCategories[index],
-                        index,
-                        isClickable: isEnabled(index),
-                      );
-                    }, childCount: subCategories.length),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 30)),
-              ],
-            );
-          },
-            ),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  /// A tinted header with the category's artwork that collapses into a plain
+  /// title bar on scroll.
+  Widget _buildHeader(String language, SectionProgress progress) {
+    final name = widget.categoryModel.getName(language);
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: _headerHeight,
+      backgroundColor: _tint,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: rbluedark),
+        onPressed: () => Get.back(),
+      ),
+      actions: [
+        if (progress.restricted)
+          IconButton(
+            tooltip: "How to unlock sections".tr,
+            icon: const Icon(Icons.info_outline_rounded, color: rbluedark),
+            onPressed: () => showSectionUnlockHelp(progress),
+          ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
+        expandedTitleScale: 1.3,
+        titlePadding: const EdgeInsetsDirectional.only(
+          start: 56,
+          end: 56,
+          bottom: 16,
+        ),
+        title: Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: rbluedark,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned(
+              right: -24,
+              top: -12,
+              child: Icon(
+                Icons.auto_awesome,
+                size: 140,
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + AppSpace.lg,
+                bottom: 56,
+              ),
+              child: Center(
+                child: Hero(
+                  tag: 'category_logo_${widget.categoryModel.id}',
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpace.lg),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: widget.color.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Image.network(
+                      widget.categoryModel.logo,
+                      width: 60,
+                      height: 60,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.category_rounded,
+                        size: 44,
+                        color: widget.color.ink,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Counts under the header, and while sections are still locked, how far
+  /// the reader is from opening them.
+  Widget _buildSummary({
+    required int sectionCount,
+    required int duaCount,
+    required SectionProgress progress,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.lg,
+        AppSpace.lg,
+        AppSpace.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.sm,
+            children: [
+              _InfoChip(
+                icon: Icons.layers_rounded,
+                label: sectionCount == 1
+                    ? "1 section".tr
+                    : "@count sections".trParams({
+                        'count': '$sectionCount',
+                      }),
+                color: widget.color,
+              ),
+              _InfoChip(
+                icon: Icons.menu_book_rounded,
+                label: duaCountLabel(duaCount),
+                color: widget.color,
+              ),
+            ],
+          ),
+          if (progress.restricted && !progress.allUnlocked) ...[
+            const SizedBox(height: AppSpace.md),
+            _UnlockCard(color: widget.color, progress: progress),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 64),
+      child: Column(
+        children: [
+          Icon(
+            Icons.menu_book_outlined,
+            size: 56,
+            color: AppText.onPageMuted.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: AppSpace.md),
+          Text(
+            "No sections available yet".tr,
+            style: TextStyle(color: AppText.onPageMuted, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class SubCategoryTile extends StatefulWidget {
-  final Color color;
-  final SubCategoryModel subCategoryModel;
-  final int index;
-  final bool isClickable;
+/// How many duas a section holds and how many the reader has listened to.
+class _SectionStats {
+  const _SectionStats(this.total, this.listened);
 
-  const SubCategoryTile(
-    this.color,
-    this.subCategoryModel,
-    this.index, {
-    super.key,
-    required this.isClickable,
+  factory _SectionStats.of(List<DuaModel> duas, Set<String> listenedIds) {
+    var listened = 0;
+    for (final dua in duas) {
+      if (listenedIds.contains(dua.id)) listened++;
+    }
+    return _SectionStats(duas.length, listened);
+  }
+
+  final int total;
+  final int listened;
+
+  bool get isComplete => total > 0 && listened >= total;
+  double get fraction => total == 0 ? 0 : listened / total;
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
   });
 
-  @override
-  State<SubCategoryTile> createState() => _SubCategoryTileState();
-}
-
-class _SubCategoryTileState extends State<SubCategoryTile>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.98,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final IconData icon;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return FadeInAnimationBTT(
-      delay: (widget.index * 0.1) + 0.1,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: GestureDetector(
-          onTapDown: widget.isClickable ? (_) => _controller.forward() : null,
-          onTapUp: widget.isClickable ? (_) => _controller.reverse() : null,
-          onTapCancel: widget.isClickable ? () => _controller.reverse() : null,
-          onTap: widget.isClickable
-              ? () {
-                  final themeController = Get.find<ThemeController>();
-                  if (themeController.selectedAgeGroup == 0 ||
-                      themeController.selectedAgeGroup == 1) {
-                    Get.to(
-                      ImageScreen(subCategoryModel: widget.subCategoryModel),
-                      transition: Transition.fadeIn,
-                    );
-                  } else {
-                    Get.to(OpenDuasScreen(widget.subCategoryModel));
-                  }
-                }
-              : null,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.md,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppRadius.pillAll,
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: color.ink),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: rtext,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Progress towards unlocking the rest of the category, always visible while
+/// something is locked rather than a tip that disappears once dismissed.
+class _UnlockCard extends StatelessWidget {
+  const _UnlockCard({required this.color, required this.progress});
+
+  final Color color;
+  final SectionProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = progress.freeSectionCount == 0
+        ? 1.0
+        : progress.completedFreeSections / progress.freeSectionCount;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.lg),
+      decoration: plainCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_open_rounded, size: 18, color: color.ink),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
+                child: Text(
+                  "Unlock more sections".tr,
+                  style: const TextStyle(
+                    color: rtext,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
-                ],
-                border: Border.all(
-                  color: widget.isClickable
-                      ? widget.color.withOpacity(0.3)
-                      : Colors.grey.withOpacity(0.1),
-                  width: 1.5,
                 ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+              GestureDetector(
+                onTap: () => showSectionUnlockHelp(progress),
+                child: Text(
+                  "How it works".tr,
+                  style: TextStyle(
+                    color: color.ink,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Text(
+            sectionUnlockSummary(progress),
+            style: TextStyle(
+              color: rtext.withValues(alpha: 0.75),
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: AppSpace.md),
+          ClipRRect(
+            borderRadius: AppRadius.pillAll,
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 6,
+              backgroundColor: color.withValues(alpha: 0.2),
+              color: color.ink,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "@done of @total sections complete".trParams({
+              'done': '${progress.completedFreeSections}',
+              'total': '${progress.freeSectionCount}',
+            }),
+            style: TextStyle(color: AppText.onPageMuted, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One section: its number, name, dua count and listening progress.
+/// Complete sections swap the number for a check; locked ones are muted.
+class _SectionTile extends StatelessWidget {
+  const _SectionTile({
+    required this.color,
+    required this.subCategory,
+    required this.number,
+    required this.stats,
+    required this.showListened,
+    required this.isUnlocked,
+    required this.onLockedTap,
+  });
+
+  final Color color;
+  final SubCategoryModel subCategory;
+  final int number;
+  final _SectionStats stats;
+  final bool showListened;
+  final bool isUnlocked;
+  final VoidCallback onLockedTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = subCategory.getName(
+      Get.find<UserController>().selectedLanguage,
+    );
+    final ink = color.ink;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.md),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppRadius.cardAll,
+          onTap: isUnlocked
+              ? () => Get.to(() => OpenDuasScreen(subCategory, color: color))
+              : onLockedTap,
+          child: Ink(
+            padding: const EdgeInsets.all(AppSpace.md + 2),
+            decoration: BoxDecoration(
+              color: isUnlocked ? Colors.white : const Color(0xffEEEFF4),
+              borderRadius: AppRadius.cardAll,
+              border: Border.all(
+                color: isUnlocked
+                    ? color.withValues(alpha: 0.45)
+                    : Colors.transparent,
+                width: 1.2,
+              ),
+              boxShadow: isUnlocked ? AppElevation.card : null,
+            ),
+            child: Row(
+              children: [
+                _buildLeading(ink),
+                const SizedBox(width: AppSpace.md + 2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 12,
-                        color: widget.isClickable
-                            ? widget.color
-                            : Colors.grey.withOpacity(0.3),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: MediaQuery.of(context).size.width < 360
-                                ? 12
-                                : 20,
-                            vertical: MediaQuery.of(context).size.width < 360
-                                ? 12
-                                : 20,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  widget.subCategoryModel.getName(
-                                    Get.find<UserController>().selectedLanguage,
-                                  ),
-                                  style: TextStyle(
-                                    color: widget.isClickable
-                                        ? rbluedark
-                                        : Colors.grey,
-                                    fontSize:
-                                        MediaQuery.of(context).size.width < 360
-                                        ? 14
-                                        : 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                widget.isClickable
-                                    ? Icons.arrow_forward_ios_rounded
-                                    : Icons.lock_rounded,
-                                color: widget.isClickable
-                                    ? widget.color
-                                    : Colors.grey.withOpacity(0.5),
-                                size: MediaQuery.of(context).size.width < 360
-                                    ? 14
-                                    : 18,
-                              ),
-                            ],
-                          ),
+                      Text(
+                        name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isUnlocked ? rtext : AppText.onPageMuted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _meta(),
+                        style: TextStyle(
+                          color: AppText.onPageMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (isUnlocked && showListened && stats.total > 0) ...[
+                        const SizedBox(height: AppSpace.sm),
+                        ClipRRect(
+                          borderRadius: AppRadius.pillAll,
+                          child: LinearProgressIndicator(
+                            value: stats.fraction,
+                            minHeight: 4,
+                            backgroundColor: color.withValues(alpha: 0.18),
+                            color: ink,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(width: AppSpace.sm),
+                Icon(
+                  isUnlocked
+                      ? Icons.chevron_right_rounded
+                      : Icons.lock_rounded,
+                  color: isUnlocked ? ink : AppText.onPageMuted,
+                  size: isUnlocked ? 24 : 18,
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  String _meta() {
+    final count = duaCountLabel(stats.total);
+    if (!showListened || stats.total == 0) return count;
+    return "$count  ·  ${"@done of @total listened".trParams({'done': '${stats.listened}', 'total': '${stats.total}'})}";
+  }
+
+  Widget _buildLeading(Color ink) {
+    final done = isUnlocked && stats.isComplete;
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: done
+            ? ink
+            : isUnlocked
+            ? color.withValues(alpha: 0.22)
+            : Colors.black.withValues(alpha: 0.05),
+        shape: BoxShape.circle,
+      ),
+      child: done
+          ? const Icon(Icons.check_rounded, color: Colors.white, size: 22)
+          : Text(
+              '$number',
+              style: TextStyle(
+                color: isUnlocked ? ink : AppText.onPageMuted,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
     );
   }
 }

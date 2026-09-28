@@ -8,10 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
+import '../../controllers/localization.dart';
+import '../../controllers/reminderController.dart';
 import '../../controllers/userController.dart';
-import '../../models/settingsModel.dart';
 import '../auth/signupScreen.dart';
-import '../subSettings/languageSettings.dart';
+import '../legalScreen.dart';
+import '../../services/authService.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
@@ -26,40 +29,70 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  List<SettingsModel> settingsList = [
-    SettingsModel(
-      title: "Downloads",
-      subTitle: "Audio Downloads",
-      icon: Icons.download,
-    ),
-    SettingsModel(
-      title: "Language",
-      subTitle: "Change app language",
-      icon: Icons.language,
-    ),
-    SettingsModel(
-      title: "Azkar Reminders",
-      subTitle: "Morning and evening Azkar",
-      icon: Icons.notifications_active_outlined,
-    ),
-    SettingsModel(
-      title: "Salah Reminders",
-      subTitle: "Get notified at prayer times",
-      icon: Icons.mosque_outlined,
-    ),
-    SettingsModel(
-      title: "Share",
-      subTitle: "Share with friends",
-      icon: Icons.share,
-    ),
-  ];
-
   void downloadSettings() {
     Get.to(const AudioDownloadSettings(), transition: Transition.fade);
   }
 
-  void languageSettings() {
-    Get.to(const LanguageSettings(), transition: Transition.fade);
+  static const List<Map<String, String>> _languages = [
+    {"name": "Arabic", "flag": "🇸🇦"},
+    {"name": "Bengali", "flag": "🇧🇩"},
+    {"name": "English", "flag": "🇺🇸"},
+    {"name": "French", "flag": "🇫🇷"},
+    {"name": "German", "flag": "🇩🇪"},
+    {"name": "Gujarati", "flag": "🇮🇳"},
+    {"name": "Hindi", "flag": "🇮🇳"},
+    {"name": "Indonesian", "flag": "🇮🇩"},
+    {"name": "Japanese", "flag": "🇯🇵"},
+    {"name": "Malay", "flag": "🇲🇾"},
+    {"name": "Mandarin", "flag": "🇨🇳"},
+    {"name": "Marathi", "flag": "🇮🇳"},
+    {"name": "Portuguese", "flag": "🇵🇹"},
+    {"name": "Punjabi", "flag": "🇮🇳"},
+    {"name": "Russian", "flag": "🇷🇺"},
+    {"name": "Spanish", "flag": "🇪🇸"},
+    {"name": "Tamil", "flag": "🇮🇳"},
+    {"name": "Telugu", "flag": "🇮🇳"},
+    {"name": "Turkish", "flag": "🇹🇷"},
+    {"name": "Urdu", "flag": "🇵🇰"},
+  ];
+
+  Future<void> changeLanguage(String language) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString("selectedLanguage", language);
+    Localization.changeLocale(language);
+    Get.find<UserController>().setSelectedLanguage(language);
+  }
+
+  void openTermsAndPrivacy() {
+    Get.to(() => const LegalScreen());
+  }
+
+  /// Asks once more, then deletes the account; the auth service handles the
+  /// identity check and the deletion itself.
+  Future<void> confirmDeleteAccount() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text("Delete your account?".tr),
+        content: Text(
+          "This permanently deletes your account, points and listening progress. It cannot be undone."
+              .tr,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text("Cancel".tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+            ),
+            child: Text("Delete".tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await AuthService().deleteAccount();
   }
 
   void azkarReminderSettings() {
@@ -137,268 +170,284 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<VoidCallback> functionsList = [
-      downloadSettings,
-      languageSettings,
-      azkarReminderSettings,
-      salahReminderSettings,
-      shareApp,
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xffF8F9FE),
+      backgroundColor: AppSurface.page,
       body: GetBuilder<UserController>(
         builder: (userController) {
-          return CustomScrollView(
-            slivers: [
-              // Premium Profile Header
-              SliverAppBar(
-                expandedHeight: 320,
-                floating: false,
-                pinned: true,
-                backgroundColor: rbluedark,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
-                      ),
+          return GetBuilder<ReminderController>(
+            builder: (reminders) {
+              return ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: AppSpace.xxl),
+                children: [
+                  _buildProfileHeader(userController),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.lg,
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 40),
-                        FadeInAnimationTTB(
-                          delay: 1,
-                          child: InkWell(
-                            onTap: _showAvatarPopup,
-                            borderRadius: BorderRadius.circular(50),
-                            child: Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                const ProfileAvatar(
-                                  size: 100,
-                                  showBorder: true,
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.only(
-                                    right: 2,
-                                    bottom: 2,
-                                  ),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 16,
-                                    color: rbluedark,
-                                  ),
-                                ),
-                              ],
+                        _SettingsGroup(
+                          title: "PREFERENCES".tr,
+                          rows: [
+                            _SettingsRow(
+                              icon: Icons.download_rounded,
+                              seed: const Color(0xFF26A69A),
+                              title: "Downloads".tr,
+                              subtitle: "Audio Downloads".tr,
+                              onTap: downloadSettings,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        FadeInAnimationBTT(
-                          delay: 1,
-                          child: Column(
-                            children: [
-                              Text(
-                                userController.userName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                  color: rbluedark,
-                                  letterSpacing: 0.5,
-                                ),
+                            _SettingsRow(
+                              icon: Icons.translate_rounded,
+                              seed: const Color(0xFF5C6BC0),
+                              title: "Language".tr,
+                              subtitle: "Change app language".tr,
+                              trailing: _buildLanguageDropdown(
+                                userController.selectedLanguage,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-                        // Stats Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildStatCard(
-                              "Points".tr,
-                              userController.points.toString(),
-                              Icons.emoji_events_rounded,
-                            ),
-                            const SizedBox(width: 15),
-                            _buildStatCard(
-                              "Duas Read".tr,
-                              (userController.userModel?.readDuas.length ?? 0)
-                                  .toString(),
-                              Icons.menu_book_rounded,
                             ),
                           ],
+                        ),
+                        _SettingsGroup(
+                          title: "REMINDERS".tr,
+                          rows: [
+                            _SettingsRow(
+                              icon: Icons.wb_twilight_rounded,
+                              seed: const Color(0xFFFFA726),
+                              title: "Azkar Reminders".tr,
+                              subtitle: "Morning and evening Azkar".tr,
+                              status: reminders.azkarEnabled,
+                              onTap: azkarReminderSettings,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.mosque_rounded,
+                              seed: const Color(0xFF42A5F5),
+                              title: "Salah Reminders".tr,
+                              subtitle: "Get notified at prayer times".tr,
+                              status: reminders.salahEnabled,
+                              onTap: salahReminderSettings,
+                            ),
+                          ],
+                        ),
+                        _SettingsGroup(
+                          title: "SUPPORT".tr,
+                          rows: [
+                            _SettingsRow(
+                              icon: Icons.ios_share_rounded,
+                              seed: const Color(0xFFEC407A),
+                              title: "Share".tr,
+                              subtitle: "Share with friends".tr,
+                              onTap: shareApp,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.privacy_tip_rounded,
+                              seed: const Color(0xFF78909C),
+                              title: "Terms & Privacy".tr,
+                              subtitle: "Terms of use and privacy policy".tr,
+                              onTap: openTermsAndPrivacy,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpace.xl),
+                        _buildAccountButton(userController),
+                        if (userController.isLoggedIn) ...[
+                          const SizedBox(height: AppSpace.sm),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: confirmDeleteAccount,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFFE53935),
+                              ),
+                              icon: const Icon(
+                                Icons.delete_forever_rounded,
+                                size: 18,
+                              ),
+                              label: Text("Delete account".tr),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpace.xl),
+                        Center(
+                          child: Text(
+                            "Version 2.0.0".tr,
+                            style: TextStyle(
+                              color: AppText.onPageMuted,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
-
-              // Settings Content
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      _buildSectionTitle("PREFERENCES".tr),
-                      SettingTile(settingsList[0], functionsList[0]),
-                      SettingTile(settingsList[1], functionsList[1]),
-
-                      const SizedBox(height: 20),
-                      _buildSectionTitle("REMINDERS".tr),
-                      SettingTile(settingsList[2], functionsList[2]),
-                      SettingTile(settingsList[3], functionsList[3]),
-
-                      const SizedBox(height: 20),
-                      _buildSectionTitle("SUPPORT".tr),
-                      SettingTile(settingsList[4], functionsList[4]),
-
-                      const SizedBox(height: 30),
-
-                      // Logout / Login Button
-                      InkWell(
-                        onTap: () async {
-                          if (userController.isLoggedIn) {
-                            SharedPreferences prefs =
-                                await SharedPreferences.getInstance();
-                            await prefs.clear();
-                            userController.setLoggedIn(false);
-                            Get.find<UserController>().setUserName(
-                              "Guest User",
-                            );
-                            Get.find<UserController>().setPoints(0);
-                            CustomSnackbar.show(
-                              "Success",
-                              "Logged out successfully".tr,
-                            );
-                          } else {
-                            Get.to(
-                              () => const SignupScreen(),
-                              transition: Transition.downToUp,
-                            );
-                          }
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          decoration: BoxDecoration(
-                            color: userController.isLoggedIn
-                                ? Colors.red.withOpacity(0.08)
-                                : Colors.green.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: userController.isLoggedIn
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.green.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                userController.isLoggedIn
-                                    ? Icons.logout_rounded
-                                    : Icons.login_rounded,
-                                color: userController.isLoggedIn
-                                    ? Colors.red
-                                    : Colors.green,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                userController.isLoggedIn
-                                    ? "Logout Account".tr
-                                    : "Sign In / Sign Up".tr,
-                                style: TextStyle(
-                                  color: userController.isLoggedIn
-                                      ? Colors.red
-                                      : Colors.green,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      Center(
-                        child: Text(
-                          "Version 2.0.0".tr,
-                          style: TextStyle(
-                            color: Colors.grey.withOpacity(0.5),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+  /// The language picker, inline in its settings row rather than on a
+  /// screen of its own.
+  Widget _buildLanguageDropdown(String selected) {
+    final isKnown = _languages.any((l) => l["name"] == selected);
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: isKnown ? selected : null,
+        // Keeps the row the same height as its neighbours.
+        isDense: true,
+        icon: Icon(
+          Icons.expand_more_rounded,
+          color: Colors.grey.shade400,
+          size: 22,
+        ),
+        dropdownColor: Colors.white,
+        borderRadius: AppRadius.cardAll,
+        menuMaxHeight: 420,
+        style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
+        // The closed button shows just the flag and name; the menu adds a
+        // check against the current choice.
+        selectedItemBuilder: (context) => [
+          for (final language in _languages)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text("${language['flag']} ${language['name']}"),
+            ),
         ],
+        items: [
+          for (final language in _languages)
+            DropdownMenuItem<String>(
+              value: language['name'],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "${language['flag']} ${language['name']}",
+                    style: const TextStyle(color: AppText.onPage, fontSize: 15),
+                  ),
+                  if (language['name'] == selected) ...[
+                    const SizedBox(width: AppSpace.sm),
+                    const Icon(
+                      Icons.check_rounded,
+                      color: Color(0xFF2E9E5B),
+                      size: 18,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+        onChanged: (value) {
+          if (value != null && value != selected) changeLanguage(value);
+        },
       ),
-      child: Row(
+    );
+  }
+
+  /// A compact identity card: avatar, name and the two stats, instead of the
+  /// old 320px banner that pushed every setting below the fold.
+  Widget _buildProfileHeader(UserController userController) {
+    final name = userController.isLoggedIn
+        ? userController.userName
+        : "Guest User".tr;
+    final email = userController.userModel?.email ?? "";
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.lg,
+        AppSpace.lg,
+        AppSpace.sm,
+      ),
+      padding: const EdgeInsets.all(AppSpace.xl),
+      decoration: cardDecoration(rbluedark, radius: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: rbluedark, size: 20),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: rbluedark,
+              FadeInAnimationTTB(
+                delay: 1,
+                child: GestureDetector(
+                  onTap: _showAvatarPopup,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const ProfileAvatar(size: 72, showBorder: false),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: AppElevation.card,
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 13,
+                            color: rbluedark,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: rbluedark.withOpacity(0.6),
+              const SizedBox(width: AppSpace.lg),
+              Expanded(
+                child: FadeInAnimationBTT(
+                  delay: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppText.onSurface,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (email.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppText.onSurfaceMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.xl),
+          Row(
+            children: [
+              Expanded(
+                child: _statPill(
+                  Icons.emoji_events_rounded,
+                  userController.points.toString(),
+                  "Points".tr,
+                ),
+              ),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: _statPill(
+                  Icons.menu_book_rounded,
+                  (userController.userModel?.readDuas.length ?? 0).toString(),
+                  "Duas Read".tr,
                 ),
               ),
             ],
@@ -408,16 +457,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: rbluedark.withOpacity(0.4),
-          letterSpacing: 1.2,
+  Widget _statPill(IconData icon, String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.md,
+        vertical: AppSpace.md,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppRadius.sm + 4),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppText.onSurface, size: 20),
+          const SizedBox(width: AppSpace.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppText.onSurface,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: AppText.onSurfaceMuted, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountButton(UserController userController) {
+    final loggedIn = userController.isLoggedIn;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppRadius.cardAll,
+        onTap: () async {
+          if (loggedIn) {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+            await AuthService().signOut();
+            userController.setLoggedIn(false);
+            Get.find<UserController>().setUserName("Guest User");
+            Get.find<UserController>().setPoints(0);
+            CustomSnackbar.show("Success", "Logged out successfully".tr);
+          } else {
+            Get.to(() => const SignupScreen(), transition: Transition.downToUp);
+          }
+        },
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.lg),
+          decoration: cardDecoration(
+            loggedIn ? const Color(0xFFE53935) : const Color(0xFF2E9E5B),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                loggedIn ? Icons.logout_rounded : Icons.login_rounded,
+                color: AppText.onSurface,
+              ),
+              const SizedBox(width: AppSpace.md),
+              Text(
+                loggedIn ? "Logout Account".tr : "Sign In / Sign Up".tr,
+                style: const TextStyle(
+                  color: AppText.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -428,10 +549,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          backgroundColor: Colors.white,
           title: Center(
             child: Text(
               "Select Your Avatar".tr,
@@ -476,17 +593,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        ),
+        decoration: plainCardDecoration(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(imagePath, width: 90, height: 90),
             const SizedBox(height: 8),
             Text(
-              imagePath.contains("male") ? "Boy".tr : "Girl".tr,
+              isGirlAvatar(imagePath) ? "Girl".tr : "Boy".tr,
               style: const TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.w600,
@@ -500,70 +614,147 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class SettingTile extends StatelessWidget {
-  final SettingsModel _settingsModel;
-  final VoidCallback function;
+/// One titled section: a single rounded surface with divided rows, the way
+/// native settings screens group related options.
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.rows});
 
-  const SettingTile(this._settingsModel, this.function, {super.key});
+  final String title;
+  final List<_SettingsRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.xs,
+            AppSpace.xl,
+            AppSpace.xs,
+            AppSpace.sm,
+          ),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppText.onPageMuted,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: plainCardDecoration(),
+          child: Column(
+            children: [
+              for (int i = 0; i < rows.length; i++) ...[
+                if (i > 0)
+                  // Indented to start under the text, past the icon tile.
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 68,
+                    color: Colors.black.withValues(alpha: 0.05),
+                  ),
+                rows[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.icon,
+    required this.seed,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    this.trailing,
+    this.status,
+  });
+
+  final IconData icon;
+  final Color seed;
+  final String title;
+  final String subtitle;
+
+  /// Null for a row whose [trailing] control handles the interaction.
+  final VoidCallback? onTap;
+
+  /// A control shown in place of the chevron, such as a dropdown.
+  final Widget? trailing;
+
+  /// When set, a dot showing whether the feature is switched on.
+  final bool? status;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: function,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.lg,
+          vertical: AppSpace.md,
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: rbluedark.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
+                gradient: AppGradient.forSeed(seed),
+                borderRadius: AppRadius.smAll,
               ),
-              child: Icon(_settingsModel.icon, color: rbluedark, size: 20),
+              child: Icon(icon, color: AppText.onSurface, size: 20),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppSpace.md + 2),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _settingsModel.title.tr,
+                    title,
                     style: const TextStyle(
-                      color: rbluedark,
+                      color: AppText.onPage,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (_settingsModel.subTitle.isNotEmpty)
-                    Text(
-                      _settingsModel.subTitle.tr,
-                      style: TextStyle(
-                        color: Colors.grey.withOpacity(0.6),
-                        fontSize: 12,
-                      ),
-                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: AppText.onPageMuted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.grey,
-              size: 14,
-            ),
+            if (status != null)
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(left: AppSpace.sm),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: status!
+                      ? const Color(0xFF2E9E5B)
+                      : Colors.grey.shade400,
+                ),
+              ),
+            const SizedBox(width: AppSpace.sm),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 22,
+                ),
           ],
         ),
       ),

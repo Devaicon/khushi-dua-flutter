@@ -11,10 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
 import '../../widgets/salahBanner.dart';
+import '../../widgets/skeleton.dart';
 import '../qiblaDirection.dart';
 
 class PrayerScreen extends StatefulWidget {
@@ -644,158 +646,154 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
           ),
 
-          SafeArea(
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Minimal Header
+          // The dashboard already applies the system SafeArea; a second one
+          // here added nothing, and the header sat flush against the top.
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Minimal Header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.lg,
+                    AppSpace.xl,
+                    AppSpace.lg,
+                    0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [_buildLocationHeader(), _buildCompassButton()],
+                  ),
+                ),
+              ),
+
+              // Salah time banner
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: SalahBanner(bottomGap: AppSpace.md),
+                ),
+              ),
+
+              // Date Selector
+              SliverToBoxAdapter(
+                child: _buildDateSelector().paddingSymmetric(vertical: 20),
+              ),
+
+              // Next Prayer Highlights
+              if (locationAllowed &&
+                  !isLoadingPrayerTimes &&
+                  _nextPrayerName.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [_buildLocationHeader(), _buildCompassButton()],
-                    ),
-                  ),
+                  child: FadeInAnimationTTB(
+                    delay: 0.3,
+                    child: _buildNextPrayerCard(),
+                  ).paddingSymmetric(horizontal: 20, vertical: 10),
                 ),
 
-                // Salah time banner
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: SalahBanner(),
-                  ),
+              // Prayer Times List
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
                 ),
-
-                // Date Selector
-                SliverToBoxAdapter(
-                  child: _buildDateSelector().paddingSymmetric(vertical: 20),
-                ),
-
-                // Next Prayer Highlights
-                if (locationAllowed &&
-                    !isLoadingPrayerTimes &&
-                    _nextPrayerName.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: FadeInAnimationTTB(
-                      delay: 0.3,
-                      child: _buildNextPrayerCard(),
-                    ).paddingSymmetric(horizontal: 20, vertical: 10),
-                  ),
-
-                // Prayer Times List
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  sliver: locationAllowed
-                      ? isLoadingPrayerTimes
-                            ? const SliverFillRemaining(
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
+                // The skeleton comes first: locationAllowed is still false
+                // while the position is being fetched, which used to flash
+                // "Location is not enabled" before the times appeared.
+                sliver: isLoadingPrayerTimes
+                    ? const SliverToBoxAdapter(child: _PrayerListSkeleton())
+                    : locationAllowed
+                    ? _namazList.isEmpty
+                          ? SliverToBoxAdapter(
+                              child: Center(
+                                child: Text(
+                                  "Unable to load prayer times".tr,
+                                  style: TextStyle(color: Colors.white70),
                                 ),
-                              )
-                            : _namazList.isEmpty
-                            ? const SliverToBoxAdapter(
-                                child: Center(
-                                  child: Text(
-                                    "Unable to load prayer times",
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                ),
-                              )
-                            : SliverList(
-                                delegate: SliverChildBuilderDelegate((
-                                  context,
-                                  index,
-                                ) {
-                                  final namaz = _namazList[index];
-                                  final isNext = namaz.name == _nextPrayerName;
-                                  return FadeInAnimationBTT(
-                                    delay: 0.1 * index,
-                                    child: NamazTile(
-                                      namaz,
-                                      index != _namazList.length - 1,
-                                      isNext: isNext,
-                                    ),
-                                  );
-                                }, childCount: _namazList.length),
-                              )
-                      : const SliverToBoxAdapter(
-                          child: Center(
-                            child: Text(
-                              "Location is not enabled",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
                               ),
-                            ),
+                            )
+                          : SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final namaz = _namazList[index];
+                                final isNext = namaz.name == _nextPrayerName;
+                                return FadeInAnimationBTT(
+                                  delay: 0.1 * index,
+                                  child: NamazTile(
+                                    namaz,
+                                    index != _namazList.length - 1,
+                                    isNext: isNext,
+                                  ),
+                                );
+                              }, childCount: _namazList.length),
+                            )
+                    : SliverToBoxAdapter(
+                        child: Center(
+                          child: Text(
+                            "Location is not enabled".tr,
+                            style: TextStyle(color: Colors.white, fontSize: 16),
                           ),
                         ),
-                ),
+                      ),
+              ),
 
-                // Calculation Methods
-                if (locationAllowed)
-                  SliverToBoxAdapter(
-                    child: FadeInAnimationBTT(
-                      delay: 0.8,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _CalculationMethodDropdown(
-                                selectedValue: selectedCalculationMethod,
-                                onChanged: (String value) async {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString(
-                                    "calculationMethod",
-                                    value,
-                                  );
-                                  setState(() {
-                                    selectedCalculationMethod = value;
-                                  });
-                                  _updateCalculationParams();
-                                  await _calculatePrayerTimes(
-                                    selectedEnglishDate,
-                                  );
-                                },
-                              ),
+              // Calculation Methods
+              if (locationAllowed)
+                SliverToBoxAdapter(
+                  child: FadeInAnimationBTT(
+                    delay: 0.8,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _CalculationMethodDropdown(
+                              selectedValue: selectedCalculationMethod,
+                              onChanged: (String value) async {
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                  "calculationMethod",
+                                  value,
+                                );
+                                setState(() {
+                                  selectedCalculationMethod = value;
+                                });
+                                _updateCalculationParams();
+                                await _calculatePrayerTimes(
+                                  selectedEnglishDate,
+                                );
+                              },
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _JuristicMethodDropdown(
-                                selectedValue: selectedJuristicMethod,
-                                onChanged: (String value) async {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString(
-                                    "juristicMethod",
-                                    value,
-                                  );
-                                  setState(() {
-                                    selectedJuristicMethod = value;
-                                  });
-                                  _updateCalculationParams();
-                                  await _calculatePrayerTimes(
-                                    selectedEnglishDate,
-                                  );
-                                },
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _JuristicMethodDropdown(
+                              selectedValue: selectedJuristicMethod,
+                              onChanged: (String value) async {
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString("juristicMethod", value);
+                                setState(() {
+                                  selectedJuristicMethod = value;
+                                });
+                                _updateCalculationParams();
+                                await _calculatePrayerTimes(
+                                  selectedEnglishDate,
+                                );
+                              },
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                ),
 
-                const SliverToBoxAdapter(child: SizedBox(height: 30)),
-              ],
-            ),
+              const SliverToBoxAdapter(child: SizedBox(height: 30)),
+            ],
           ),
         ],
       ),
@@ -856,8 +854,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
         } else {
           if (Get.context != null) {
             Get.snackbar(
-              "Location required",
-              "Please enable location",
+              "Location required".tr,
+              "Please enable location".tr,
               backgroundColor: Colors.red,
             );
           }
@@ -869,7 +867,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.12),
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
         ),
         child: const Icon(Icons.explore_rounded, color: Colors.white, size: 24),
       ),
@@ -883,7 +880,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1042,6 +1038,48 @@ class _PrayerScreenState extends State<PrayerScreen> {
   }
 }
 
+/// Stands in for the prayer list while the location and times are worked
+/// out. Rows match [NamazTile]'s size so nothing jumps when the times land.
+class _PrayerListSkeleton extends StatelessWidget {
+  const _PrayerListSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton(
+      onDark: true,
+      child: Column(
+        children: [
+          for (int i = 0; i < 6; i++)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                // Faint enough that only the shapes inside read as solid.
+                color: Colors.white.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                children: [
+                  SkeletonBox(width: 40, height: 40, radius: 15),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SkeletonBox(width: 90, height: 14, radius: 6),
+                    ),
+                  ),
+                  SkeletonBox(width: 64, height: 14, radius: 6),
+                  SizedBox(width: 16),
+                  SkeletonBox(width: 24, height: 24, radius: 12),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class NamazTile extends StatefulWidget {
   final NamazModel _namazModel;
   final bool bottomLine;
@@ -1070,12 +1108,6 @@ class _NamazTileState extends State<NamazTile> {
             ? Colors.white.withOpacity(0.12)
             : Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: widget.isNext
-              ? Colors.white.withOpacity(0.3)
-              : Colors.white.withOpacity(0.05),
-          width: widget.isNext ? 1.5 : 1.0,
-        ),
       ),
       child: Row(
         children: [
@@ -1101,7 +1133,7 @@ class _NamazTileState extends State<NamazTile> {
                 Row(
                   children: [
                     Text(
-                      widget._namazModel.name,
+                      widget._namazModel.name.tr,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: widget.isNext
@@ -1134,8 +1166,8 @@ class _NamazTileState extends State<NamazTile> {
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
-                          "NEXT",
+                        child: Text(
+                          "NEXT".tr,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 8,
@@ -1163,35 +1195,38 @@ class _NamazTileState extends State<NamazTile> {
   }
 
   Widget _buildVolumeAction() {
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        setState(() {
-          if (widget._namazModel.speakerEnabled == "on") {
-            widget._namazModel.speakerEnabled = "off";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "off");
-          } else if (widget._namazModel.speakerEnabled == "off") {
-            widget._namazModel.speakerEnabled = "vibrate";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "vibrate");
-          } else {
-            widget._namazModel.speakerEnabled = "on";
-            _saveSpeakerSetting(prefs, widget._namazModel.name, "on");
-          }
-        });
+        final prefs = await SharedPreferences.getInstance();
+        final next = switch (widget._namazModel.speakerEnabled) {
+          "on" => "off",
+          "off" => "vibrate",
+          _ => "on",
+        };
+        await prefs.setString(
+          salahSpeakerKeyFor(widget._namazModel.name),
+          next,
+        );
+        if (mounted) {
+          setState(() => widget._namazModel.speakerEnabled = next);
+        }
+        // Without this the scheduler keeps the alarm it armed at launch, so
+        // the change would not take effect until the app restarts.
+        await Get.find<ReminderController>().syncSalahReminders(const {});
       },
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpace.sm),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: AppRadius.smAll,
         ),
         child: Icon(
-          widget._namazModel.speakerEnabled == "on"
-              ? Icons.notifications_active_rounded
-              : widget._namazModel.speakerEnabled == "off"
-              ? Icons.notifications_off_rounded
-              : Icons.vibration_rounded,
+          switch (widget._namazModel.speakerEnabled) {
+            "on" => Icons.notifications_active_rounded,
+            "off" => Icons.notifications_off_rounded,
+            _ => Icons.vibration_rounded,
+          },
           color: Colors.white,
           size: 18,
         ),
@@ -1217,36 +1252,6 @@ class _NamazTileState extends State<NamazTile> {
         return Icons.nightlight_round;
       default:
         return Icons.access_time_filled_rounded;
-    }
-  }
-
-  void _saveSpeakerSetting(SharedPreferences prefs, String name, String value) {
-    String key = "";
-    switch (name) {
-      case "Fajr":
-        key = "fajrSpeaker";
-        break;
-      case "Sunrise":
-        key = "sunriseSpeaker";
-        break;
-      case "Dhuhr":
-        key = "dhuhrSpeaker";
-        break;
-      case "Asr":
-        key = "asrSpeaker";
-        break;
-      case "Maghrib":
-        key = "maghribSpeaker";
-        break;
-      case "Sunset":
-        key = "sunsetSpeaker";
-        break;
-      case "Ishaa":
-        key = "ishaSpeaker";
-        break;
-    }
-    if (key.isNotEmpty) {
-      prefs.setString(key, value);
     }
   }
 }
@@ -1288,7 +1293,6 @@ class _CalculationMethodDropdown extends StatelessWidget {
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: rwhite),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1296,7 +1300,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Calculation Method",
+              "Calculation Method".tr,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1353,7 +1357,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Calculation Method",
+                        "Calculation Method".tr,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1363,7 +1367,7 @@ class _CalculationMethodDropdown extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          "Done",
+                          "Done".tr,
                           style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.bold,
@@ -1445,7 +1449,6 @@ class _JuristicMethodDropdown extends StatelessWidget {
         decoration: BoxDecoration(
           color: rwhite.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: rwhite),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1453,7 +1456,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Juristic Method",
+              "Juristic Method".tr,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1510,7 +1513,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Juristic Method",
+                        "Juristic Method".tr,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1520,7 +1523,7 @@ class _JuristicMethodDropdown extends StatelessWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: Text(
-                          "Done",
+                          "Done".tr,
                           style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.bold,

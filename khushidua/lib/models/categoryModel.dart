@@ -63,7 +63,26 @@ class CategoryModel {
     required this.olderKids,
   });
 
+  /// The category's name in [languageCode].
+  ///
+  /// Falls back to English, then to any non-empty field. A category the admin
+  /// panel never translated then renders *something* rather than a blank tile
+  /// — it does not make it render the right language; that needs the Firestore
+  /// document filling in.
   String getName(String languageCode) {
+    final exact = _nameFor(languageCode);
+    if (exact.isNotEmpty) return exact;
+    if (english.isNotEmpty) return english;
+    return _allNames.firstWhere((n) => n.isNotEmpty, orElse: () => '');
+  }
+
+  List<String> get _allNames => [
+    english, urdu, arabic, hindi, bengali, french, german, gujrati,
+    indonesian, japanese, malay, mandrain, marathi, portugese, punjabi,
+    russian, sindhi, spanish, tamil, telgu, turkish,
+  ];
+
+  String _nameFor(String languageCode) {
     switch (languageCode) {
       case 'Arabic':
         return arabic;
@@ -108,7 +127,7 @@ class CategoryModel {
       case 'Urdu':
         return urdu;
       default:
-        return english; // fallback
+        return english;
     }
   }
 

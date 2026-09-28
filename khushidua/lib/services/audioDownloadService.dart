@@ -41,7 +41,7 @@ class DownloadTask {
       case AudioType.olderKids:
         return "Older Kids";
       case AudioType.grownUps:
-        return "Grown-Up's";
+        return "Grown ups";
       case AudioType.english:
         return "English Translation";
       case AudioType.urdu:
@@ -230,7 +230,7 @@ class AudioDownloadService extends GetxService {
       case AudioType.olderKids:
         return "Older Kids".tr;
       case AudioType.grownUps:
-        return "Grown-Up's".tr;
+        return "Grown ups".tr;
       case AudioType.english:
         return "English Translation".tr;
       case AudioType.urdu:

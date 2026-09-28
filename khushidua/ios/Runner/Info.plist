@@ -26,6 +26,8 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>GADApplicationIdentifier</key>
 		<string>ca-app-pub-7984236421784231~5552144030</string>
+		<key>GADDelayAppMeasurementInit</key>
+		<true/>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>This app needs access to your location to provide accurate prayer times and Qibla direction.</string>
 		<key>NSLocationAlwaysUsageDescription</key>

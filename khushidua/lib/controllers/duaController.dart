@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
-import 'package:khushidua/services/duaService.dart';
 
+import '../helpers/sectionProgress.dart';
 import '../models/duaModel.dart';
 
 class DuaController extends GetxController {
@@ -59,8 +59,29 @@ class DuaController extends GetxController {
     update();
   }
 
-  getAllDuas() {
-    DuaService().getAllDuas();
+  /// Replaces every dua in one pass, with a single sort and rebuild.
+  void replaceDuas(List<DuaModel> duas) {
+    _allDuas
+      ..clear()
+      ..addAll(duas);
+    _sortDuas(_allDuas);
+    if (_lastSubCategoryId != null) refreshFilteredDuas();
+    update();
+  }
+
+  /// The duas the reader sees in [subCategoryId], in display order.
+  ///
+  /// Computed on demand rather than read from [filteredDuas], which still
+  /// holds the previous section for a frame after a new one opens.
+  List<DuaModel> duasFor(String subCategoryId) {
+    final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
+    return _allDuas
+        .where(
+          (dua) =>
+              dua.subCategoryIds.contains(subCategoryId) &&
+              isDuaShownFor(dua, ageGroup),
+        )
+        .toList();
   }
 
   getFilteredDuas(SubCategoryModel subCategoryModel) {
@@ -74,17 +95,15 @@ class DuaController extends GetxController {
 
     final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
 
-    _filteredDuas = _allDuas.where((dua) {
-      if (!dua.subCategoryIds.contains(_lastSubCategoryId)) return false;
-      if (!dua.isEnabled) return false;
-
-      // Honour the per-dua age flags. These exist on every Dua document but
-      // were never consulted, so a dua restricted to one book still showed
-      // up in all three.
-      if (ageGroup == 0) return dua.littleKids;
-      if (ageGroup == 1) return dua.olderKids;
-      return dua.grownUps;
-    }).toList();
+    _filteredDuas = _allDuas
+        .where(
+          (dua) =>
+              dua.subCategoryIds.contains(_lastSubCategoryId) &&
+              // Shared with the section unlock check, so a dua counts towards
+              // unlocking exactly when the reader can see it.
+              isDuaShownFor(dua, ageGroup),
+        )
+        .toList();
 
     _sortDuas(_filteredDuas);
 

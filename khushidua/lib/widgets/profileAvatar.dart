@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/constants/colors.dart';
+import 'package:khushidua/constants/theme.dart';
 import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
+
+/// Whether an avatar asset is the girl's.
+///
+/// Matched on the file name: "female.png" contains "male", so the substring
+/// check this replaces labelled both avatars "Boy".
+bool isGirlAvatar(String path) => path.split('/').last.startsWith('female');
 
 class ProfileAvatar extends StatelessWidget {
   final double size;
@@ -30,21 +37,10 @@ class ProfileAvatar extends StatelessWidget {
                 border: showBorder
                     ? Border.all(color: borderColor, width: 3)
                     : null,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-                gradient: LinearGradient(
-                  colors: [
-                    borderColor.withOpacity(0.8),
-                    borderColor.withOpacity(0.4),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                boxShadow: AppElevation.card,
+                // A plain fill: the avatar art is transparent, so this is the
+                // colour that shows around the character.
+                color: borderColor,
               ),
               child: userController.avatar != ""
                   ? ClipOval(

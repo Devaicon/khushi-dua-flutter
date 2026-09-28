@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/userData.dart' as ud;
 import '../models/userModel.dart';
 import 'localization.dart';
+import 'notificationController.dart';
 
 class UserController extends GetxController {
   String _userName = "";
@@ -72,8 +73,19 @@ class UserController extends GetxController {
     await AuthService().getUserData(userId);
   }
 
+  /// Back to guest: no user record, so nothing is locked or counted.
+  clearUserModel() {
+    _userModel = null;
+    Get.find<NotificationController>().bindUser(null);
+    update();
+  }
+
   setUserModel(UserModel user) {
+    final changed = _userModel?.id != user.id;
     _userModel = user;
+    // The inbox follows whoever is signed in. This is the first point the
+    // user id is known, so it is where the personal listener gets bound.
+    if (changed) Get.find<NotificationController>().bindUser(user.id);
     setUserName(user.name);
     setPoints(user.points);
     setLoggedIn(user.isLoggedIn);
