@@ -40,6 +40,8 @@ class ContentRepository {
   Future<void> load({bool forceServer = false}) {
     return _inFlight ??= _load(forceServer).whenComplete(() {
       _inFlight = null;
+      // Also on failure, so the home grid never waits on a skeleton forever.
+      Get.find<CategoryController>().setLoading(false);
     });
   }
 

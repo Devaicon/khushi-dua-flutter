@@ -16,6 +16,7 @@ import '../../models/categoryModel.dart';
 import 'categoryDetailScreen.dart';
 import '../../widgets/profileAvatar.dart';
 import '../../widgets/salahBanner.dart';
+import '../../widgets/skeleton.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -100,22 +101,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       AppSpace.lg,
                       AppSpace.lg,
                     ),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: AppSpace.md,
-                            mainAxisSpacing: AppSpace.md,
-                            childAspectRatio: 0.82,
+                    sliver:
+                        categoryController.isLoading &&
+                            filteredCategories.isEmpty
+                        ? const SliverToBoxAdapter(child: _CategoryGridSkeleton())
+                        : SliverGrid(
+                            gridDelegate: _gridDelegate,
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final category = filteredCategories[index];
+                              return CategoryTile(
+                                colors[index % colors.length],
+                                category,
+                                ageGroup: themeController.selectedAgeGroup,
+                              );
+                            }, childCount: filteredCategories.length),
                           ),
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final category = filteredCategories[index];
-                        return CategoryTile(
-                          colors[index % colors.length],
-                          category,
-                        );
-                      }, childCount: filteredCategories.length),
-                    ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
@@ -485,11 +488,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+const _gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: 3,
+  crossAxisSpacing: AppSpace.md,
+  mainAxisSpacing: AppSpace.md,
+  childAspectRatio: 0.82,
+);
+
+/// Stands in for the category grid until the first content load finishes.
+class _CategoryGridSkeleton extends StatelessWidget {
+  const _CategoryGridSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton(
+      child: GridView.builder(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: _gridDelegate,
+        itemCount: 9,
+        itemBuilder: (context, index) =>
+            const SkeletonBox(radius: AppRadius.card),
+      ),
+    );
+  }
+}
+
 class CategoryTile extends StatefulWidget {
   final Color color;
   final CategoryModel categoryModel;
 
-  const CategoryTile(this.color, this.categoryModel, {super.key});
+  /// The home screen's selected age group, which sets the tile's palette.
+  final int ageGroup;
+
+  const CategoryTile(
+    this.color,
+    this.categoryModel, {
+    super.key,
+    this.ageGroup = 0,
+  });
 
   @override
   State<CategoryTile> createState() => _CategoryTileState();
@@ -540,7 +578,10 @@ class _CategoryTileState extends State<CategoryTile>
         scale: _scaleAnimation,
         child: Container(
           padding: const EdgeInsets.all(AppSpace.sm),
-          decoration: cardDecoration(widget.color),
+          decoration: CategoryPalette.tileDecoration(
+            widget.color,
+            widget.ageGroup,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -552,7 +593,9 @@ class _CategoryTileState extends State<CategoryTile>
                   height: iconSize,
                   errorBuilder: (context, error, stackTrace) => Icon(
                     Icons.category_rounded,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: CategoryPalette.contentColor(
+                      widget.ageGroup,
+                    ).withValues(alpha: 0.7),
                     size: iconSize * 0.8,
                   ),
                 ),
@@ -567,8 +610,8 @@ class _CategoryTileState extends State<CategoryTile>
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppText.onSurface,
+                style: TextStyle(
+                  color: CategoryPalette.contentColor(widget.ageGroup),
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
                   height: 1.15,

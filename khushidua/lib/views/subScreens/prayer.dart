@@ -16,6 +16,7 @@ import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
 import '../../widgets/salahBanner.dart';
+import '../../widgets/skeleton.dart';
 import '../qiblaDirection.dart';
 
 class PrayerScreen extends StatefulWidget {
@@ -696,16 +697,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   horizontal: 20,
                   vertical: 10,
                 ),
-                sliver: locationAllowed
-                    ? isLoadingPrayerTimes
-                          ? const SliverFillRemaining(
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            )
-                          : _namazList.isEmpty
+                // The skeleton comes first: locationAllowed is still false
+                // while the position is being fetched, which used to flash
+                // "Location is not enabled" before the times appeared.
+                sliver: isLoadingPrayerTimes
+                    ? const SliverToBoxAdapter(child: _PrayerListSkeleton())
+                    : locationAllowed
+                    ? _namazList.isEmpty
                           ? SliverToBoxAdapter(
                               child: Center(
                                 child: Text(
@@ -1035,6 +1033,48 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Stands in for the prayer list while the location and times are worked
+/// out. Rows match [NamazTile]'s size so nothing jumps when the times land.
+class _PrayerListSkeleton extends StatelessWidget {
+  const _PrayerListSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Skeleton(
+      onDark: true,
+      child: Column(
+        children: [
+          for (int i = 0; i < 6; i++)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                // Faint enough that only the shapes inside read as solid.
+                color: Colors.white.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(
+                children: [
+                  SkeletonBox(width: 40, height: 40, radius: 15),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SkeletonBox(width: 90, height: 14, radius: 6),
+                    ),
+                  ),
+                  SkeletonBox(width: 64, height: 14, radius: 6),
+                  SizedBox(width: 16),
+                  SkeletonBox(width: 24, height: 24, radius: 12),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

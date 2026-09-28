@@ -9,11 +9,12 @@ import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
 import '../../constants/theme.dart';
+import '../../controllers/localization.dart';
 import '../../controllers/reminderController.dart';
 import '../../controllers/userController.dart';
 import '../auth/signupScreen.dart';
+import '../legalScreen.dart';
 import '../../services/authService.dart';
-import '../subSettings/languageSettings.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
@@ -32,8 +33,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Get.to(const AudioDownloadSettings(), transition: Transition.fade);
   }
 
-  void languageSettings() {
-    Get.to(const LanguageSettings(), transition: Transition.fade);
+  static const List<Map<String, String>> _languages = [
+    {"name": "Arabic", "flag": "🇸🇦"},
+    {"name": "Bengali", "flag": "🇧🇩"},
+    {"name": "English", "flag": "🇺🇸"},
+    {"name": "French", "flag": "🇫🇷"},
+    {"name": "German", "flag": "🇩🇪"},
+    {"name": "Gujarati", "flag": "🇮🇳"},
+    {"name": "Hindi", "flag": "🇮🇳"},
+    {"name": "Indonesian", "flag": "🇮🇩"},
+    {"name": "Japanese", "flag": "🇯🇵"},
+    {"name": "Malay", "flag": "🇲🇾"},
+    {"name": "Mandarin", "flag": "🇨🇳"},
+    {"name": "Marathi", "flag": "🇮🇳"},
+    {"name": "Portuguese", "flag": "🇵🇹"},
+    {"name": "Punjabi", "flag": "🇮🇳"},
+    {"name": "Russian", "flag": "🇷🇺"},
+    {"name": "Spanish", "flag": "🇪🇸"},
+    {"name": "Tamil", "flag": "🇮🇳"},
+    {"name": "Telugu", "flag": "🇮🇳"},
+    {"name": "Turkish", "flag": "🇹🇷"},
+    {"name": "Urdu", "flag": "🇵🇰"},
+  ];
+
+  Future<void> changeLanguage(String language) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString("selectedLanguage", language);
+    Localization.changeLocale(language);
+    Get.find<UserController>().setSelectedLanguage(language);
+  }
+
+  void openTermsAndPrivacy() {
+    Get.to(() => const LegalScreen());
+  }
+
+  /// Asks once more, then deletes the account; the auth service handles the
+  /// identity check and the deletion itself.
+  Future<void> confirmDeleteAccount() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text("Delete your account?".tr),
+        content: Text(
+          "This permanently deletes your account, points and listening progress. It cannot be undone."
+              .tr,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text("Cancel".tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+            ),
+            child: Text("Delete".tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await AuthService().deleteAccount();
   }
 
   void azkarReminderSettings() {
@@ -144,8 +203,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               seed: const Color(0xFF5C6BC0),
                               title: "Language".tr,
                               subtitle: "Change app language".tr,
-                              trailingText: userController.selectedLanguage,
-                              onTap: languageSettings,
+                              trailing: _buildLanguageDropdown(
+                                userController.selectedLanguage,
+                              ),
                             ),
                           ],
                         ),
@@ -180,10 +240,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               subtitle: "Share with friends".tr,
                               onTap: shareApp,
                             ),
+                            _SettingsRow(
+                              icon: Icons.privacy_tip_rounded,
+                              seed: const Color(0xFF78909C),
+                              title: "Terms & Privacy".tr,
+                              subtitle: "Terms of use and privacy policy".tr,
+                              onTap: openTermsAndPrivacy,
+                            ),
                           ],
                         ),
                         const SizedBox(height: AppSpace.xl),
                         _buildAccountButton(userController),
+                        if (userController.isLoggedIn) ...[
+                          const SizedBox(height: AppSpace.sm),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: confirmDeleteAccount,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFFE53935),
+                              ),
+                              icon: const Icon(
+                                Icons.delete_forever_rounded,
+                                size: 18,
+                              ),
+                              label: Text("Delete account".tr),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: AppSpace.xl),
                         Center(
                           child: Text(
@@ -201,6 +284,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             },
           );
+        },
+      ),
+    );
+  }
+
+  /// The language picker, inline in its settings row rather than on a
+  /// screen of its own.
+  Widget _buildLanguageDropdown(String selected) {
+    final isKnown = _languages.any((l) => l["name"] == selected);
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: isKnown ? selected : null,
+        // Keeps the row the same height as its neighbours.
+        isDense: true,
+        icon: Icon(
+          Icons.expand_more_rounded,
+          color: Colors.grey.shade400,
+          size: 22,
+        ),
+        dropdownColor: Colors.white,
+        borderRadius: AppRadius.cardAll,
+        menuMaxHeight: 420,
+        style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
+        // The closed button shows just the flag and name; the menu adds a
+        // check against the current choice.
+        selectedItemBuilder: (context) => [
+          for (final language in _languages)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text("${language['flag']} ${language['name']}"),
+            ),
+        ],
+        items: [
+          for (final language in _languages)
+            DropdownMenuItem<String>(
+              value: language['name'],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "${language['flag']} ${language['name']}",
+                    style: const TextStyle(color: AppText.onPage, fontSize: 15),
+                  ),
+                  if (language['name'] == selected) ...[
+                    const SizedBox(width: AppSpace.sm),
+                    const Icon(
+                      Icons.check_rounded,
+                      color: Color(0xFF2E9E5B),
+                      size: 18,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+        onChanged: (value) {
+          if (value != null && value != selected) changeLanguage(value);
         },
       ),
     );
@@ -534,8 +674,8 @@ class _SettingsRow extends StatelessWidget {
     required this.seed,
     required this.title,
     required this.subtitle,
-    required this.onTap,
-    this.trailingText,
+    this.onTap,
+    this.trailing,
     this.status,
   });
 
@@ -543,10 +683,12 @@ class _SettingsRow extends StatelessWidget {
   final Color seed;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
 
-  /// A current value shown before the chevron, such as the language.
-  final String? trailingText;
+  /// Null for a row whose [trailing] control handles the interaction.
+  final VoidCallback? onTap;
+
+  /// A control shown in place of the chevron, such as a dropdown.
+  final Widget? trailing;
 
   /// When set, a dot showing whether the feature is switched on.
   final bool? status;
@@ -594,14 +736,6 @@ class _SettingsRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (trailingText != null)
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpace.sm),
-                child: Text(
-                  trailingText!,
-                  style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
-                ),
-              ),
             if (status != null)
               Container(
                 width: 8,
@@ -615,11 +749,12 @@ class _SettingsRow extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: AppSpace.sm),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.grey.shade400,
-              size: 22,
-            ),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 22,
+                ),
           ],
         ),
       ),

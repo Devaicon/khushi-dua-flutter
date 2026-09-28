@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
 
-import '../animations/fadeInAnimationBTT.dart';
-import '../constants/colors.dart';
-import '../controllers/userController.dart';
-import 'openDuasScreen.dart';
-
+/// A section's illustration, full screen. Pinch or double-tap to zoom.
+/// Opened from the image at the top of the dua list.
 class ImageScreen extends StatefulWidget {
   final SubCategoryModel subCategoryModel;
   const ImageScreen({super.key, required this.subCategoryModel});
@@ -16,146 +14,96 @@ class ImageScreen extends StatefulWidget {
 }
 
 class _ImageScreenState extends State<ImageScreen> {
+  static const double _doubleTapScale = 2.5;
+
+  final TransformationController _transform = TransformationController();
+  TapDownDetails? _doubleTapDown;
+
+  @override
+  void dispose() {
+    _transform.dispose();
+    super.dispose();
+  }
+
+  /// Zooms in on the tapped point, or back out if already zoomed.
+  void _onDoubleTap() {
+    if (_transform.value.getMaxScaleOnAxis() > 1.01) {
+      _transform.value = Matrix4.identity();
+      return;
+    }
+    final point = _doubleTapDown?.localPosition ?? Offset.zero;
+    _transform.value = Matrix4.identity()
+      ..translateByDouble(
+        -point.dx * (_doubleTapScale - 1),
+        -point.dy * (_doubleTapScale - 1),
+        0,
+        1,
+      )
+      ..scaleByDouble(_doubleTapScale, _doubleTapScale, 1, 1);
+  }
+
   @override
   Widget build(BuildContext context) {
-    Color accentColor = rpink; // Default
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: rbluedark),
-          onPressed: () {
-            debugPrint("ImageScreen: Back button pressed");
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              debugPrint("ImageScreen: Cannot pop, using Get.back()");
-              Get.back();
-            }
-          },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        // The Stack must fill the screen itself: sized by its children, it
+        // shrank to the close button and squeezed the image into that corner.
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onDoubleTapDown: (details) => _doubleTapDown = details,
+                onDoubleTap: _onDoubleTap,
+                child: InteractiveViewer(
+                  transformationController: _transform,
+                  maxScale: 4,
+                  // The Hero fills the screen so the picture grows smoothly
+                  // from the card into place, instead of flying into a
+                  // zero-sized box while the image lays out.
+                  child: Hero(
+                    tag: 'section_image_${widget.subCategoryModel.id}',
+                    child: SizedBox.expand(
+                      child: Image.network(
+                        widget.subCategoryModel.image,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) =>
+                            progress == null
+                            ? child
+                            : const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Center(
+                              child: Icon(
+                                Icons.image_not_supported_rounded,
+                                size: 50,
+                                color: Colors.white54,
+                              ),
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 8,
+              left: 8,
+              child: IconButton(
+                onPressed: () => Get.back(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.4),
+                ),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+              ),
+            ),
+          ],
         ),
-        title: Text(
-          widget.subCategoryModel.getName(
-            Get.find<UserController>().selectedLanguage,
-          ),
-          style: const TextStyle(
-            color: rbluedark,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            child: Image.network(
-              widget.subCategoryModel.image,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                        : null,
-                    color: accentColor,
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.withOpacity(0.1),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.image_not_supported_rounded,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      "Failed to load background",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Gradient Overlay for better contrast
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.5),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 30,
-            right: 24,
-            left: 24,
-            child: FadeInAnimationBTT(
-              delay: 0.5,
-              child: InkWell(
-                onTap: () {
-                  Get.to(OpenDuasScreen(widget.subCategoryModel));
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  height: 60,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      colors: [accentColor, accentColor.withOpacity(0.8)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withOpacity(0.4),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.menu_book_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "GO TO DUA".tr,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

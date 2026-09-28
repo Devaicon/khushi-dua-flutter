@@ -15,7 +15,9 @@ class CategoryController extends GetxController {
 
   List<SubCategoryModel> get filteredSubCategories => _filteredSubCategories;
 
-  bool _isLoading = false;
+  /// True until the first content load finishes, so the home grid can show
+  /// a skeleton instead of an empty screen.
+  bool _isLoading = true;
 
   bool get isLoading => _isLoading;
 

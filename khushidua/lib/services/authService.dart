@@ -214,18 +214,10 @@ class AuthService {
   /// password once and the Google credential is linked to the same account.
   Future<void> signInWithGoogle() async {
     final auth = FirebaseAuth.instance;
-    final google = GoogleSignIn.instance;
 
     final AuthCredential credential;
     try {
-      if (!_googleInitialised) {
-        await google.initialize();
-        _googleInitialised = true;
-      }
-      final account = await google.authenticate();
-      final idToken = account.authentication.idToken;
-      if (idToken == null) throw StateError('Google returned no ID token');
-      credential = GoogleAuthProvider.credential(idToken: idToken);
+      credential = await _googleCredential();
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) return;
       debugPrint("Google sign-in error: ${e.code} ${e.description}");
@@ -268,6 +260,21 @@ class AuthService {
     }
   }
 
+  /// Shows Google's account picker and returns a Firebase credential for the
+  /// chosen account. Throws [GoogleSignInException], including when the user
+  /// cancels (code `canceled`).
+  Future<AuthCredential> _googleCredential() async {
+    final google = GoogleSignIn.instance;
+    if (!_googleInitialised) {
+      await google.initialize();
+      _googleInitialised = true;
+    }
+    final account = await google.authenticate();
+    final idToken = account.authentication.idToken;
+    if (idToken == null) throw StateError('Google returned no ID token');
+    return GoogleAuthProvider.credential(idToken: idToken);
+  }
+
   /// A missing web client id surfaces as a configuration error rather than a
   /// user-facing failure; this is what happens until Google is enabled in the
   /// Firebase console and the config files are downloaded again.
@@ -301,18 +308,24 @@ class AuthService {
     }
   }
 
-  Future<String?> _askForPassword(String email) {
+  Future<String?> _askForPassword(
+    String email, {
+    String? title,
+    String? message,
+    String? action,
+  }) {
     final controller = TextEditingController();
     return Get.dialog<String>(
       AlertDialog(
-        title: Text("Link your Google account".tr),
+        title: Text(title ?? "Link your Google account".tr),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "You already have an account with this email. Enter its password to use Google sign-in with it too."
-                  .tr,
+              message ??
+                  "You already have an account with this email. Enter its password to use Google sign-in with it too."
+                      .tr,
             ),
             const SizedBox(height: 8),
             Text(email, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -330,7 +343,7 @@ class AuthService {
           TextButton(onPressed: () => Get.back(), child: Text("Cancel".tr)),
           TextButton(
             onPressed: () => Get.back(result: controller.text),
-            child: Text("Link account".tr),
+            child: Text(action ?? "Link account".tr),
           ),
         ],
       ),
@@ -395,6 +408,11 @@ class AuthService {
         return "Too many failed attempts. Please try again later.".tr;
       case 'credential-already-in-use':
         return "This Google account is already linked to another user.".tr;
+      case 'user-mismatch':
+        return "That Google account does not match the one you are signed in with."
+            .tr;
+      case 'requires-recent-login':
+        return "Please sign in again, then try deleting your account.".tr;
       default:
         return "Something went wrong. Try again later".tr;
     }
@@ -437,6 +455,130 @@ class AuthService {
       debugPrint("Sign out error: $e");
     }
     _userController.clearUserModel();
+  }
+
+  /// Permanently deletes the signed-in account, as the privacy policy
+  /// promises: the Users document (name, email, points, listening progress,
+  /// push token) and the Firebase login, straight away. The
+  /// `cleanUpDeletedUser` Cloud Function then removes messages sent to them.
+  ///
+  /// Firebase only deletes a login that signed in recently, and the profile
+  /// can only be deleted while signed in, so the reader confirms who they are
+  /// first. Returns true once the account is gone.
+  Future<bool> deleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      CustomSnackbar.show(
+        "Error",
+        "Please sign in again, then try deleting your account.".tr,
+        isSuccess: false,
+      );
+      return false;
+    }
+
+    try {
+      if (!await _confirmIdentity(user)) return false;
+
+      Get.dialog(
+        const PopScope(
+          canPop: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Stop listening first, or the deletion arrives as an empty snapshot.
+      await _userSubscription?.cancel();
+      _userSubscription = null;
+      _subscribedUserId = null;
+
+      await userRef.doc(user.uid).delete();
+      await user.delete();
+      if (_googleInitialised) {
+        try {
+          await GoogleSignIn.instance.disconnect();
+        } catch (_) {
+          // Revoking Google's grant is best effort; the account is gone.
+        }
+      }
+      await _forgetAccountOnDevice();
+
+      if (Get.isDialogOpen ?? false) Get.back();
+      CustomSnackbar.show("Success", "Your account has been deleted.".tr);
+      return true;
+    } on GoogleSignInException catch (e) {
+      if (e.code != GoogleSignInExceptionCode.canceled) {
+        debugPrint("Delete account Google error: ${e.code}");
+        CustomSnackbar.show(
+          "Error",
+          "Google sign-in failed. Please try again.".tr,
+          isSuccess: false,
+        );
+      }
+      return false;
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Delete account error: ${e.code}");
+      if (Get.isDialogOpen ?? false) Get.back();
+      CustomSnackbar.show("Error", _authErrorMessage(e), isSuccess: false);
+      return false;
+    } catch (e) {
+      debugPrint("Delete account error: $e");
+      if (Get.isDialogOpen ?? false) Get.back();
+      CustomSnackbar.show(
+        "Error",
+        "Could not delete your account. Please try again.".tr,
+        isSuccess: false,
+      );
+      return false;
+    }
+  }
+
+  /// Re-authenticates with the account's own sign-in method. Returns false if
+  /// the reader backs out of the password prompt.
+  Future<bool> _confirmIdentity(User user) async {
+    final providers = {for (final p in user.providerData) p.providerId};
+    final AuthCredential credential;
+    if (providers.contains('password') && user.email != null) {
+      final password = await _askForPassword(
+        user.email!,
+        title: "Confirm it's you".tr,
+        message: "Enter your password to delete your account.".tr,
+        action: "Continue".tr,
+      );
+      if (password == null || password.isEmpty) return false;
+      credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+    } else if (providers.contains('google.com')) {
+      credential = await _googleCredential();
+    } else {
+      // No method we can re-run; Firebase will say if it needs a fresh login.
+      return true;
+    }
+    await user.reauthenticateWithCredential(credential);
+    return true;
+  }
+
+  /// Back to a guest on this device. App settings such as language and age
+  /// group are the device's, not the account's, so they stay.
+  Future<void> _forgetAccountOnDevice() async {
+    await FirebaseAuth.instance.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in [
+      "userId",
+      "isLoggedIn",
+      "userPoints",
+      "userName",
+      "userAvatar",
+    ]) {
+      await prefs.remove(key);
+    }
+    _userController.clearUserModel();
+    _userController.setLoggedIn(false);
+    _userController.setUserName("Guest User");
+    await _userController.setPoints(0);
+    await _userController.setAvatar("");
   }
 
   Future<void> sendPasswordResetEmail(String email) async {

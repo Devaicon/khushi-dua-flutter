@@ -69,6 +69,21 @@ class DuaController extends GetxController {
     update();
   }
 
+  /// The duas the reader sees in [subCategoryId], in display order.
+  ///
+  /// Computed on demand rather than read from [filteredDuas], which still
+  /// holds the previous section for a frame after a new one opens.
+  List<DuaModel> duasFor(String subCategoryId) {
+    final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
+    return _allDuas
+        .where(
+          (dua) =>
+              dua.subCategoryIds.contains(subCategoryId) &&
+              isDuaShownFor(dua, ageGroup),
+        )
+        .toList();
+  }
+
   getFilteredDuas(SubCategoryModel subCategoryModel) {
     _lastSubCategoryId = subCategoryModel.id;
     refreshFilteredDuas();

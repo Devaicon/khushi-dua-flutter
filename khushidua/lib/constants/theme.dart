@@ -93,6 +93,13 @@ extension ColorShade on Color {
     return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 0.95)).toColor();
   }
 
+  /// A deep shade of this colour, for text and icons drawn on a light tint
+  /// of it. Light seeds such as the pastel blues would be unreadable as-is.
+  Color get ink {
+    final hsl = HSLColor.fromColor(this);
+    return hsl.withLightness(hsl.lightness.clamp(0.0, 0.36)).toColor();
+  }
+
   /// Pulls a colour down until white text sits legibly on it.
   ///
   /// The home palette carries some very light seeds (the yellow and the light
@@ -127,6 +134,40 @@ abstract final class AppGradient {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+}
+
+/// The home screen's category tiles, by age group
+/// (0 little kids, 1 older kids, 2 grown ups).
+///
+/// Little kids get solid, softly graded tiles with white text. Older kids and
+/// grown ups share a quieter look: a light fill of the colour, a stronger
+/// border of it, and dark text.
+abstract final class CategoryPalette {
+  static bool isVivid(int ageGroup) => ageGroup == 0;
+
+  static BoxDecoration tileDecoration(Color seed, int ageGroup) {
+    if (isVivid(ageGroup)) {
+      final base = seed.seedForWhiteText.lightenBy(0.03);
+      return BoxDecoration(
+        gradient: LinearGradient(
+          colors: [base, base.darkenBy(0.09)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadius.cardAll,
+        boxShadow: AppElevation.card,
+      );
+    }
+    return BoxDecoration(
+      color: seed.withValues(alpha: 0.3),
+      borderRadius: AppRadius.cardAll,
+      border: Border.all(color: seed.withValues(alpha: 0.5), width: 1.5),
+    );
+  }
+
+  /// Label and fallback-icon colour for a tile.
+  static Color contentColor(int ageGroup) =>
+      isVivid(ageGroup) ? AppText.onSurface : AppText.onPage;
 }
 
 /// The one decoration every card in the app uses.
