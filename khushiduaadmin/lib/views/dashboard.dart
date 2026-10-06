@@ -13,7 +13,7 @@ import 'package:khushiduaadmin/views/tabs/notifications.dart';
 import 'package:khushiduaadmin/views/tabs/profile.dart';
 import 'package:khushiduaadmin/views/tabs/users.dart';
 import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
-import 'package:khushiduaadmin/views/tabs/homeBanner.dart';
+import 'package:khushiduaadmin/views/tabs/donations.dart';
 import 'package:khushiduaadmin/views/tabs/dataTransfer.dart';
 import '../constants/colors.dart';
 import '../controllers/authController.dart';
@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     NotificationTab(),
     ProfileTab(),
     MLSettingsTab(),
-    HomeBannerTab(),
+    DonationsTab(),
     DataTransferTab(),
   ];
 
@@ -116,8 +116,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _buildSidebarItem(5, 'Profile', 'assets/svgs/user.svg'),
               _buildSidebarItem(8, 'Import / Export', null,
                   iconData: Icons.import_export_rounded),
-              _buildSidebarItem(7, 'Home Banner', null,
-                  iconData: Icons.view_carousel_outlined),
+              _buildSidebarItem(7, 'Donations', null,
+                  iconData: Icons.volunteer_activism_outlined),
               _buildSidebarItem(6, 'ML Settings', null,
                   iconData: Icons.settings_applications),
               _buildSidebarItem(99, 'Logout', 'assets/svgs/logout.svg',

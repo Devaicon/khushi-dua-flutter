@@ -6,6 +6,7 @@ import 'package:khushidua/controllers/userController.dart';
 import 'package:khushidua/controllers/audioController.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
 
+import 'donationController.dart';
 import 'notificationController.dart';
 import 'prayerSettingsController.dart';
 import 'reminderController.dart';
@@ -22,5 +23,7 @@ class InitControllers extends Bindings {
     Get.put(AudioDownloadService(), permanent: true);
     Get.put(PrayerSettingsController(), permanent: true);
     Get.put(ReminderController(), permanent: true);
+    // After the reminders, whose weekly support reminder it can switch off.
+    Get.put(DonationController(), permanent: true);
   }
 }

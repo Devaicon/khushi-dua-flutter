@@ -620,7 +620,11 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
           ),
 
-          _section(const DonateCard()),
+          DonationPlacement(
+            placement: 'prayer',
+            hidden: const SliverToBoxAdapter(),
+            child: _section(const DonateCard()),
+          ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpace.xxl)),
         ],
       ),

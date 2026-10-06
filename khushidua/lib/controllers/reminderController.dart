@@ -35,6 +35,11 @@ class ReminderController extends GetxController {
   bool _supportEnabled = true;
   bool get supportEnabled => _supportEnabled;
 
+  /// The admin panel's switch for the weekly reminder. Off, the reminder is
+  /// neither scheduled nor offered, whatever the reader chose.
+  bool _supportAllowed = true;
+  bool get supportAllowed => _supportAllowed;
+
   TimeOfDay _morningTime = const TimeOfDay(
     hour: kDefaultMorningHour,
     minute: kDefaultMorningMinute,
@@ -88,7 +93,20 @@ class ReminderController extends GetxController {
     // Also moves reminders scheduled before the Salah sound was added onto
     // the new channel; the old channel is deleted, so they would not show.
     if (_salahEnabled) await syncSalahReminders(const {});
-    if (_supportEnabled) await _scheduleSupport();
+    if (_supportEnabled && _supportAllowed) await _scheduleSupport();
+  }
+
+  /// Called when the admin turns the weekly reminder on or off for everyone.
+  /// The reader's own choice is kept, ready for when it is allowed again.
+  Future<void> setSupportAllowed(bool allowed) async {
+    if (allowed == _supportAllowed) return;
+    _supportAllowed = allowed;
+    update();
+    if (allowed && _supportEnabled) {
+      await _scheduleSupport();
+    } else if (!allowed) {
+      await ReminderService.instance.cancel(kSupportNotificationId);
+    }
   }
 
   /// Turns the weekly donation reminder on or off. Returns false when the
@@ -103,9 +121,9 @@ class ReminderController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kSupportEnabled, value);
 
-    if (value) {
+    if (value && _supportAllowed) {
       await _scheduleSupport();
-    } else {
+    } else if (!value) {
       await ReminderService.instance.cancel(kSupportNotificationId);
     }
     update();
