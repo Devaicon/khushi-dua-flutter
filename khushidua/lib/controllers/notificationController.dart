@@ -7,6 +7,7 @@ import '../models/notificationModel.dart';
 class NotificationController extends GetxController {
   static const _kLastSeen = 'inboxLastSeenMillis';
   static const _kClearedAt = 'inboxClearedAtMillis';
+  static const _kDeleted = 'inboxDeletedIds';
 
   final List<NotificationModel> _allNotifications = [];
 
@@ -17,12 +18,19 @@ class NotificationController extends GetxController {
   /// just memory, so cleared notifications stay cleared after a restart.
   DateTime? _clearedAt;
 
-  /// Newest first, without the ones the user cleared.
+  /// Notifications the user deleted one by one. Hidden on this device only:
+  /// broadcasts are shared by every user, so the document itself stays.
+  final Set<String> _deletedIds = {};
+
+  /// Newest first, without the ones the user cleared or deleted.
   List<NotificationModel> get allNotifications {
     final clearedAt = _clearedAt;
-    if (clearedAt == null) return _allNotifications;
     return _allNotifications
-        .where((n) => n.createdAt.isAfter(clearedAt))
+        .where(
+          (n) =>
+              !_deletedIds.contains(n.id) &&
+              (clearedAt == null || n.createdAt.isAfter(clearedAt)),
+        )
         .toList();
   }
 
@@ -54,6 +62,7 @@ class NotificationController extends GetxController {
     if (clearedAt != null) {
       _clearedAt = DateTime.fromMillisecondsSinceEpoch(clearedAt);
     }
+    _deletedIds.addAll(prefs.getStringList(_kDeleted) ?? const []);
     update();
   }
 
@@ -95,6 +104,19 @@ class NotificationController extends GetxController {
     update();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kLastSeen, _lastSeen!.millisecondsSinceEpoch);
+  }
+
+  Future<void> deleteNotification(String id) async {
+    if (!_deletedIds.add(id)) return;
+    update();
+    final prefs = await SharedPreferences.getInstance();
+    // Only ids still in the inbox are worth remembering, so the list does not
+    // grow forever.
+    final live = _allNotifications.map((n) => n.id).toSet();
+    await prefs.setStringList(
+      _kDeleted,
+      _deletedIds.where(live.contains).toList(),
+    );
   }
 
   Future<void> clearNotifications() async {

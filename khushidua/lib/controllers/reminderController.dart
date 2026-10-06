@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/azkarReminders.dart';
 import '../helpers/reminderSchedule.dart';
+import '../services/alertPreview.dart';
 import '../services/reminderService.dart';
 
 /// User-facing reminder settings, persisted to SharedPreferences.
@@ -124,16 +125,11 @@ class ReminderController extends GetxController {
   }
 
   /// Plays a Salah alert now, so the user knows what they are choosing.
-  Future<bool> previewSalah(SalahChannel channel) async {
-    final granted = await ReminderService.instance.requestPermissions();
-    if (!granted) return false;
-    await ReminderService.instance.previewSalah(
-      channel,
-      title: 'Preview'.tr,
-      body: 'This is how your Salah reminder will arrive'.tr,
-    );
-    return true;
-  }
+  Future<bool> previewSalah(SalahChannel channel) => AlertPreview.play(
+    channel,
+    title: 'Preview'.tr,
+    body: 'This is how your Salah reminder will arrive'.tr,
+  );
 
   /// Prayer times are stored as minutes-since-midnight and rehydrated onto
   /// today's date, so the banner works before the prayer screen has run. They
@@ -285,8 +281,8 @@ class ReminderController extends GetxController {
       final alert = salahAlertFor(prefs.getString(salahSpeakerKeyFor(prayer)));
       final sound = salahSoundFor(prefs.getString(salahSoundKeyFor(prayer)));
       final channel = salahChannelFor(alert, sound);
-      final wanted = _salahEnabled && channel != SalahChannel.none &&
-          time != null;
+      final wanted =
+          _salahEnabled && channel != SalahChannel.none && time != null;
 
       if (!wanted) {
         await ReminderService.instance.cancel(id);

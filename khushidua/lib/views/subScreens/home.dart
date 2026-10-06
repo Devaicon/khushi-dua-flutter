@@ -9,8 +9,6 @@ import '../../constants/theme.dart';
 import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../controllers/reminderController.dart';
-import '../../controllers/homeBannerController.dart';
-import '../../models/homeBannerModel.dart';
 import '../subSettings/azkarReminderSettings.dart';
 import '../../models/categoryModel.dart';
 import 'categoryDetailScreen.dart';
@@ -79,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     top: AppSpace.lg,
                   ),
-                  _section(_buildBanner(themeController)),
                   // SalahBanner renders nothing outside its window, so it
                   // carries its own gap instead of leaving an empty one.
                   const SliverToBoxAdapter(
@@ -88,8 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: SalahBanner(topGap: AppSpace.lg),
                     ),
                   ),
-                  _section(_buildAzkarCard()),
                   _section(const DonateCard()),
+                  _section(_buildAzkarCard()),
                   SliverPadding(
                     padding: const EdgeInsets.only(top: AppSpace.lg),
                     sliver: SliverToBoxAdapter(
@@ -146,20 +143,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(ThemeController themeController) {
-    Color accentColor = themeController.selectedAgeGroup == 0
-        ? rpink
-        : themeController.selectedAgeGroup == 1
-        ? rblue
-        : rgreen;
-
     return GetBuilder<UserController>(
       builder: (userController) {
         return Row(
           children: [
             const ProfileAvatar(size: 52),
             const SizedBox(width: AppSpace.md),
-            // Expanded, so a long name ellipsises instead of pushing the
-            // points badge and bell off the screen.
+            // Expanded, so a long name ellipsises instead of pushing the bell
+            // off the screen.
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,177 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: AppSpace.sm),
-            _buildPointsBadge(accentColor, userController.points),
-            const SizedBox(width: AppSpace.sm),
             const _InboxBell(),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildPointsBadge(Color accentColor, int userPoints) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.md,
-        vertical: AppSpace.sm,
-      ),
-      decoration: BoxDecoration(
-        gradient: AppGradient.forSeed(accentColor),
-        borderRadius: AppRadius.pillAll,
-        boxShadow: AppElevation.card,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.stars_rounded, color: Colors.white, size: 18),
-          const SizedBox(width: 4),
-          Text(
-            "$userPoints",
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBanner(ThemeController themeController) {
-    return GetBuilder<HomeBannerController>(
-      builder: (bannerController) {
-        final banner = bannerController.banner;
-        final language = Get.find<UserController>().selectedLanguage;
-
-        // Until an admin publishes a banner, keep the copy the app shipped
-        // with so the home screen never looks empty.
-        final title = banner.hasContent(language)
-            ? banner.titleFor(language)
-            : "Ready to learn and play?".tr;
-        final subtitle = banner.hasContent(language)
-            ? banner.subtitleFor(language)
-            : "Listen to available duas to UNLOCK remaining duas".tr;
-
-        final content = _bannerBody(themeController, banner, title, subtitle);
-
-        if (!banner.hasLink) return content;
-
-        return InkWell(
-          onTap: () => _openBannerLink(banner.linkCategoryId),
-          borderRadius: AppRadius.cardAll,
-          child: content,
-        );
-      },
-    );
-  }
-
-  /// Opens the category the admin linked the banner to. Does nothing when the
-  /// id no longer matches a category, rather than pushing a blank screen.
-  void _openBannerLink(String categoryId) {
-    final categories = Get.find<CategoryController>().filteredCategories;
-    final match = categories.where((c) => c.id == categoryId);
-    if (match.isEmpty) return;
-    Get.to(
-      () => CategoryDetailScreen(match.first, rpurple),
-      transition: Transition.rightToLeft,
-    );
-  }
-
-  Widget _bannerBody(
-    ThemeController themeController,
-    HomeBannerModel banner,
-    String title,
-    String subtitle,
-  ) {
-    Color accentColor = themeController.selectedAgeGroup == 0
-        ? rpink
-        : themeController.selectedAgeGroup == 1
-        ? rblue
-        : rgreen;
-
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: cardDecoration(accentColor),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20,
-            bottom: -20,
-            child: Icon(
-              Icons.auto_awesome,
-              size: 100,
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpace.lg),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: AppText.onSurfaceMuted,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: AppText.onSurface,
-                          fontWeight: FontWeight.w900,
-                          fontSize: MediaQuery.of(context).size.width < 360
-                              ? 14
-                              : 18,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: 0.35,
-                          minHeight: 8,
-                          backgroundColor: Colors.white.withValues(alpha: 0.25),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // An admin-uploaded image replaces the bundled one; a broken
-                // or slow URL falls back to the asset rather than a grey box.
-                banner.hasImage
-                    ? Image.network(
-                        banner.imageUrl,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          "assets/images/homeBannerImage.png",
-                          width: 80,
-                          height: 80,
-                        ),
-                      )
-                    : Image.asset(
-                        "assets/images/homeBannerImage.png",
-                        width: 80,
-                        height: 80,
-                      ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

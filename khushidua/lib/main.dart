@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/views/dashboard.dart';
 
@@ -58,6 +59,16 @@ class MyApp extends StatelessWidget {
       fallbackLocale: Locale('en', 'US'),
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // Every route sits on the page colour, so no edge of the screen — the
+      // strip a SafeArea leaves, or a route mid-transition — ever shows the
+      // window's black dark-mode background.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: kAppOverlayStyle,
+        child: ColoredBox(
+          color: AppSurface.page,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       defaultTransition: Transition.cupertino,
       transitionDuration: AppMotion.base,
       home: Dashboard(),

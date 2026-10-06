@@ -233,28 +233,27 @@ class _DashboardState extends State<Dashboard> {
             vertical: AppSpace.sm,
           ),
           decoration: BoxDecoration(
-            color: isSelected
-                ? rbluedark.withValues(alpha: 0.10)
-                : Colors.transparent,
+            color: isSelected ? rbluedark : Colors.transparent,
             borderRadius: AppRadius.pillAll,
           ),
           child: AnimatedScale(
             duration: AppMotion.base,
             curve: AppMotion.curve,
             scale: isSelected ? 1.1 : 1.0,
-            // Unselected tabs use the brand ink, muted, rather than a light
-            // grey that read as disabled.
+            // Every tab is drawn in full brand ink — any muted or grey tint
+            // read as disabled. The selected one inverts to white on a solid
+            // pill instead.
             child: icon is IconData
                 ? Icon(
                     icon,
                     size: 26,
-                    color: isSelected ? rbluedark : AppText.onPageMuted,
+                    color: isSelected ? Colors.white : rbluedark,
                   )
                 : Image.asset(
                     icon as String,
                     width: 24,
                     height: 24,
-                    color: isSelected ? rbluedark : AppText.onPageMuted,
+                    color: isSelected ? Colors.white : rbluedark,
                   ),
           ),
         ),

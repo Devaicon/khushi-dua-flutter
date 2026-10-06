@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'colors.dart';
 
@@ -186,6 +187,19 @@ BoxDecoration plainCardDecoration({double? radius}) => BoxDecoration(
 
 /// Material's own surfaces — dialogs, switches, app bars, fields — read from
 /// this, so they stop looking like they belong to a different app.
+/// Dark status- and navigation-bar icons on transparent bars, for every
+/// screen. The app's pages are light, but with the phone in dark mode Android
+/// drew light icons on them — unreadable — and left the strip behind a
+/// SafeArea black.
+const SystemUiOverlayStyle kAppOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.dark,
+  statusBarBrightness: Brightness.light,
+  systemNavigationBarColor: Colors.transparent,
+  systemNavigationBarIconBrightness: Brightness.dark,
+  systemNavigationBarContrastEnforced: false,
+);
+
 ThemeData buildAppTheme() {
   final scheme = ColorScheme.fromSeed(
     seedColor: rbluedark,
@@ -199,6 +213,7 @@ ThemeData buildAppTheme() {
     splashFactory: InkRipple.splashFactory,
     fontFamily: null,
     appBarTheme: const AppBarTheme(
+      systemOverlayStyle: kAppOverlayStyle,
       backgroundColor: AppSurface.page,
       surfaceTintColor: Colors.transparent,
       elevation: 0,

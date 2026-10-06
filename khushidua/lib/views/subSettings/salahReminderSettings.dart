@@ -7,11 +7,12 @@ import '../../constants/theme.dart';
 import '../../constants/prayerNames.dart';
 import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
+import '../../services/alertPreview.dart';
 import '../../widgets/customSnackbar.dart';
 
-/// The one place every Salah reminder setting lives: the master switch, each
-/// prayer's alert (sound, vibrate or off) and sound, and a preview of each
-/// alert. The prayer screen's bells only show the state and open this screen.
+/// The one place every Salah reminder setting lives: the master switch, and
+/// each prayer's alert (sound, vibrate or off) and sound. Choosing an alert or
+/// sound plays it. The prayer screen's bells only show the state and open this screen.
 ///
 /// Per-prayer state is stored under the `<prayer>Speaker` and `<prayer>Sound`
 /// preferences, which the scheduler reads.
@@ -49,7 +50,18 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
     });
   }
 
+  @override
+  void dispose() {
+    // A long sound should not keep playing after the screen is closed.
+    AlertPreview.stop();
+    super.dispose();
+  }
+
+  /// Choosing an option plays it, so the user knows what they picked. Tapping
+  /// the selected option again replays it.
   Future<void> _setPrayerMode(String prayer, String mode) async {
+    _preview(prayer, mode: mode);
+    if (_modes[prayer] == mode) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(salahSpeakerKeyFor(prayer), mode);
     setState(() => _modes[prayer] = mode);
@@ -58,10 +70,31 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
   }
 
   Future<void> _setPrayerSound(String prayer, SalahSound sound) async {
+    _preview(prayer, sound: sound);
+    if (_sounds[prayer] == sound) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(salahSoundKeyFor(prayer), salahSoundValue(sound));
     setState(() => _sounds[prayer] = sound);
     await Get.find<ReminderController>().syncSalahReminders(const {});
+  }
+
+  Future<void> _preview(
+    String prayer, {
+    String? mode,
+    SalahSound? sound,
+  }) async {
+    final channel = salahChannelFor(
+      salahAlertFor(mode ?? _modes[prayer]),
+      sound ?? _sounds[prayer] ?? SalahSound.haya,
+    );
+    final ok = await Get.find<ReminderController>().previewSalah(channel);
+    if (!ok && mounted) {
+      CustomSnackbar.show(
+        "Error".tr,
+        "Notification permission is required for reminders".tr,
+        isSuccess: false,
+      );
+    }
   }
 
   @override
@@ -118,8 +151,6 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
                     },
                   ),
                 ),
-                const SizedBox(height: AppSpace.lg),
-                _buildPreviewCard(controller),
                 if (controller.salahEnabled && !_loading) ...[
                   const SizedBox(height: AppSpace.lg),
                   _card(
@@ -137,99 +168,6 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-
-  /// Plays each kind of alert on demand, through the real notification
-  /// channel, so choosing one is not guesswork.
-  Widget _buildPreviewCard(ReminderController controller) {
-    Future<void> preview(SalahChannel channel) async {
-      final ok = await controller.previewSalah(channel);
-      if (!ok) {
-        CustomSnackbar.show(
-          "Error".tr,
-          "Notification permission is required for reminders".tr,
-          isSuccess: false,
-        );
-      }
-    }
-
-    return _card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Preview alerts".tr,
-              style: const TextStyle(
-                color: rbluedark,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              "Tap to hear or feel each alert before you choose".tr,
-              style: TextStyle(color: AppText.onPageMuted, fontSize: 12),
-            ),
-            const SizedBox(height: AppSpace.md),
-            _previewRow(
-              icon: Icons.mosque_rounded,
-              label: "Haya al-Salah".tr,
-              onTap: () => preview(SalahChannel.haya),
-            ),
-            _previewRow(
-              icon: Icons.notifications_active_rounded,
-              label: "Notification sound".tr,
-              onTap: () => preview(SalahChannel.deviceDefault),
-            ),
-            _previewRow(
-              icon: Icons.vibration_rounded,
-              label: "Vibrate".tr,
-              onTap: () => preview(SalahChannel.vibrate),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _previewRow({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadius.smAll,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
-        child: Row(
-          children: [
-            Icon(icon, color: rbluedark, size: 20),
-            const SizedBox(width: AppSpace.md),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(color: rtext, fontSize: 14),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(AppSpace.xs),
-              decoration: BoxDecoration(
-                color: rbluedark.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: rbluedark,
-                size: 20,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -319,7 +257,7 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: selected ? null : onTap,
+      onTap: onTap,
       child: AnimatedContainer(
         duration: AppMotion.base,
         curve: AppMotion.curve,
@@ -354,38 +292,16 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
     );
   }
 
+  /// Same look as the alert chips: the unselected sound used to be grey text
+  /// on grey, which read as disabled rather than as the other choice.
   Widget _soundChip(String prayer, SalahSound sound, String label) {
-    final selected = (_sounds[prayer] ?? SalahSound.haya) == sound;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: selected ? null : () => _setPrayerSound(prayer, sound),
-      child: AnimatedContainer(
-        duration: AppMotion.base,
-        curve: AppMotion.curve,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.md,
-          vertical: AppSpace.sm,
-        ),
-        decoration: BoxDecoration(
-          gradient: selected
-              ? AppGradient.forSeed(rbluedark)
-              : AppGradient.neutral,
-          borderRadius: AppRadius.pillAll,
-          boxShadow: selected ? AppElevation.card : null,
-        ),
-        child: Center(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected ? AppText.onSurface : AppText.onPageMuted,
-            ),
-          ),
-        ),
-      ),
+    return _choiceChip(
+      label: label,
+      icon: sound == SalahSound.haya
+          ? Icons.mosque_rounded
+          : Icons.music_note_rounded,
+      selected: (_sounds[prayer] ?? SalahSound.haya) == sound,
+      onTap: () => _setPrayerSound(prayer, sound),
     );
   }
 

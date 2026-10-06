@@ -45,7 +45,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         iconTheme: const IconThemeData(color: rbluedark),
         actions: [
           TextButton(
-            onPressed: () => Get.find<NotificationController>().clearNotifications(),
+            onPressed: _confirmClearAll,
             child: Text(
               "Clear All".tr,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -68,14 +68,60 @@ class _NotificationScreenState extends State<NotificationScreen> {
             itemCount: activeNotifications.length,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
-              return NotificationTile(
-                notificationModel: activeNotifications[index],
-                index: index,
+              final notification = activeNotifications[index];
+              // Swipe either way to delete.
+              return Dismissible(
+                key: ValueKey(notification.id),
+                onDismissed: (_) =>
+                    notificationController.deleteNotification(notification.id),
+                background: _deleteBackground(Alignment.centerLeft),
+                secondaryBackground: _deleteBackground(Alignment.centerRight),
+                child: NotificationTile(
+                  notificationModel: notification,
+                  index: index,
+                ),
               );
             },
           );
         },
       ),
+    );
+  }
+
+  Future<void> _confirmClearAll() async {
+    if (_controller.allNotifications.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Delete all notifications?".tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel".tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+            ),
+            child: Text("Delete".tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _controller.clearNotifications();
+  }
+
+  Widget _deleteBackground(Alignment alignment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl),
+      alignment: alignment,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE53935),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: const Icon(Icons.delete_rounded, color: Colors.white),
     );
   }
 

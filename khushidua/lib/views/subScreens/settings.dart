@@ -14,6 +14,7 @@ import '../../controllers/reminderController.dart';
 import '../../controllers/userController.dart';
 import '../auth/signupScreen.dart';
 import '../legalScreen.dart';
+import 'notifications.dart';
 import '../../services/authService.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
@@ -192,6 +193,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _SettingsGroup(
                           title: "PREFERENCES".tr,
                           rows: [
+                            _SettingsRow(
+                              icon: Icons.notifications_rounded,
+                              seed: const Color(0xFF7E57C2),
+                              title: "Notifications".tr,
+                              subtitle: "View or delete notifications".tr,
+                              onTap: () => Get.to(
+                                () => const NotificationScreen(),
+                                transition: Transition.fade,
+                              ),
+                            ),
                             _SettingsRow(
                               icon: Icons.download_rounded,
                               seed: const Color(0xFF26A69A),
