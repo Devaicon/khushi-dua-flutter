@@ -17,7 +17,9 @@ import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
 import '../../widgets/salahBanner.dart';
 import '../../widgets/skeleton.dart';
-import '../qiblaDirection.dart';
+import '../dashboard.dart';
+import '../subSettings/salahReminderSettings.dart';
+import '../../widgets/donateCard.dart';
 
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
@@ -792,6 +794,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ),
                 ),
 
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: DonateCard(onDark: true),
+                ),
+              ),
+
               const SliverToBoxAdapter(child: SizedBox(height: 30)),
             ],
           ),
@@ -842,25 +851,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Widget _buildCompassButton() {
     return InkWell(
-      onTap: () {
-        if (locationAllowed) {
-          Get.to(
-            CompassScreen(
-              latitude: currentPosition?.latitude ?? coordinates.latitude,
-              longitude: currentPosition?.longitude ?? coordinates.longitude,
-            ),
-            transition: Transition.cupertino,
-          );
-        } else {
-          if (Get.context != null) {
-            Get.snackbar(
-              "Location required".tr,
-              "Please enable location".tr,
-              backgroundColor: Colors.red,
-            );
-          }
-        }
-      },
+      // The Qibla compass is a tab of its own; this is a shortcut to it.
+      onTap: () => AppTabs.go(AppTabs.qibla),
       borderRadius: BorderRadius.circular(15),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -1194,43 +1186,54 @@ class _NamazTileState extends State<NamazTile> {
     );
   }
 
+  /// Shows how this prayer's reminder will alert. Changing it happens on the
+  /// Salah Reminders screen, the one place those settings live, so a tap here
+  /// opens it rather than silently cycling through modes.
   Widget _buildVolumeAction() {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () async {
-        final prefs = await SharedPreferences.getInstance();
-        final next = switch (widget._namazModel.speakerEnabled) {
-          "on" => "off",
-          "off" => "vibrate",
-          _ => "on",
-        };
-        await prefs.setString(
-          salahSpeakerKeyFor(widget._namazModel.name),
-          next,
-        );
-        if (mounted) {
-          setState(() => widget._namazModel.speakerEnabled = next);
-        }
-        // Without this the scheduler keeps the alarm it armed at launch, so
-        // the change would not take effect until the app restarts.
-        await Get.find<ReminderController>().syncSalahReminders(const {});
-      },
-      child: Container(
-        padding: const EdgeInsets.all(AppSpace.sm),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.12),
-          borderRadius: AppRadius.smAll,
-        ),
-        child: Icon(
-          switch (widget._namazModel.speakerEnabled) {
-            "on" => Icons.notifications_active_rounded,
-            "off" => Icons.notifications_off_rounded,
-            _ => Icons.vibration_rounded,
+    // Sunrise and Sunset are listed for reference but carry no reminder.
+    if (!kSchedulablePrayers.contains(widget._namazModel.name)) {
+      return const SizedBox(width: 34);
+    }
+    return GetBuilder<ReminderController>(
+      builder: (reminders) {
+        final alert = reminders.salahEnabled
+            ? salahAlertFor(widget._namazModel.speakerEnabled)
+            : SalahAlert.off;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            await Get.to(
+              () => const SalahReminderSettings(),
+              transition: Transition.fade,
+            );
+            final prefs = await SharedPreferences.getInstance();
+            final mode =
+                prefs.getString(salahSpeakerKeyFor(widget._namazModel.name)) ??
+                "on";
+            if (mounted) {
+              setState(() => widget._namazModel.speakerEnabled = mode);
+            }
           },
-          color: Colors.white,
-          size: 18,
-        ),
-      ),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpace.sm),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: AppRadius.smAll,
+            ),
+            child: Icon(
+              switch (alert) {
+                SalahAlert.sound => Icons.notifications_active_rounded,
+                SalahAlert.vibrate => Icons.vibration_rounded,
+                SalahAlert.off => Icons.notifications_off_rounded,
+              },
+              color: alert == SalahAlert.off
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.white,
+              size: 18,
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -18,10 +18,15 @@ const Duration _kCompassTimeout = Duration(seconds: 6);
 
 class CompassScreen extends StatefulWidget {
   final double latitude, longitude;
+
+  /// True when shown as a dashboard tab, where there is nothing to close.
+  final bool embedded;
+
   const CompassScreen({
     super.key,
     required this.latitude,
     required this.longitude,
+    this.embedded = false,
   });
 
   @override
@@ -105,16 +110,17 @@ class _CompassScreenState extends State<CompassScreen> {
   /// Keeps iOS location updates flowing so `trueHeading` stays valid.
   void _keepTrueHeadingAlive() {
     if (!Platform.isIOS) return;
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 50,
-      ),
-    ).listen(
-      (_) {},
-      onError: (Object e) =>
-          debugPrint('🧭 QiblaScreen: position stream error - $e'),
-    );
+    _positionSub =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 50,
+          ),
+        ).listen(
+          (_) {},
+          onError: (Object e) =>
+              debugPrint('🧭 QiblaScreen: position stream error - $e'),
+        );
   }
 
   @override
@@ -141,24 +147,32 @@ class _CompassScreenState extends State<CompassScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Align(
-                alignment: Alignment.topLeft,
-                child: InkWell(
-                  onTap: () {
-                    debugPrint("🧭 QiblaScreen: Back button pressed");
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    } else {
-                      Get.back();
-                    }
-                  },
-                  child: const Icon(Icons.close, color: Colors.black),
-                ),
-              ).marginSymmetric(horizontal: 20).marginOnly(top: 12),
+              // As a tab the nav bar takes some height, so the header shrinks
+              // to leave the compass its full size.
+              if (widget.embedded)
+                const SizedBox(height: 4)
+              else
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: InkWell(
+                    onTap: () {
+                      debugPrint("🧭 QiblaScreen: Back button pressed");
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        Get.back();
+                      }
+                    },
+                    child: const Icon(Icons.close, color: Colors.black),
+                  ),
+                ).marginSymmetric(horizontal: 20).marginOnly(top: 12),
 
               const SizedBox(height: 16),
 
-              Image.asset("assets/images/kaaba.png", height: 140),
+              Image.asset(
+                "assets/images/kaaba.png",
+                height: widget.embedded ? 100 : 140,
+              ),
 
               const Spacer(),
 
@@ -211,8 +225,11 @@ class _CompassScreenState extends State<CompassScreen> {
         '${env.declination.abs().toStringAsFixed(1)}°$sign';
   }
 
-  Widget _panel(String message,
-      {required IconData icon, required Color color}) {
+  Widget _panel(
+    String message, {
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 32),
@@ -226,7 +243,11 @@ class _CompassScreenState extends State<CompassScreen> {
           const SizedBox(height: 12),
           Text(
             message,
-            style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.4,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -234,7 +255,11 @@ class _CompassScreenState extends State<CompassScreen> {
     );
   }
 
-  Widget _notice(String message, {required IconData icon, required Color color}) {
+  Widget _notice(
+    String message, {
+    required IconData icon,
+    required Color color,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(top: 12, left: 28, right: 28),
       child: Row(
@@ -265,46 +290,52 @@ class _CompassScreenState extends State<CompassScreen> {
     final List<Widget> notices = <Widget>[];
 
     if (env.isBlackoutZone) {
-      notices.add(_notice(
-        'You are close to the magnetic pole, where Earth\'s horizontal field is '
-        'too weak for any magnetic compass to be reliable.',
-        icon: Icons.public_off,
-        color: Colors.redAccent,
-      ));
+      notices.add(
+        _notice(
+          'You are close to the magnetic pole, where Earth\'s horizontal field is '
+          'too weak for any magnetic compass to be reliable.',
+          icon: Icons.public_off,
+          color: Colors.redAccent,
+        ),
+      );
     } else if (env.isCautionZone) {
-      notices.add(_notice(
-        'Near the magnetic pole the horizontal field is weak, so compass '
-        'accuracy is reduced at this location.',
-        icon: Icons.public,
-        color: Colors.orangeAccent,
-      ));
+      notices.add(
+        _notice(
+          'Near the magnetic pole the horizontal field is weak, so compass '
+          'accuracy is reduced at this location.',
+          icon: Icons.public,
+          color: Colors.orangeAccent,
+        ),
+      );
     }
 
     final String? hardware = CompassQualityMessage.forQuality(env.quality);
     if (hardware != null) {
-      notices.add(_notice(
-        hardware,
-        icon: Icons.sensors_off,
-        color: Colors.orangeAccent,
-      ));
+      notices.add(
+        _notice(hardware, icon: Icons.sensors_off, color: Colors.orangeAccent),
+      );
     }
 
     // Android maps its sensor status to 45/30/15 degrees, and null when unknown.
     if (accuracy == null || accuracy > 30) {
-      notices.add(_notice(
-        'Low compass accuracy. Move your phone in a figure-8 to calibrate.',
-        icon: Icons.warning_amber_rounded,
-        color: Colors.orangeAccent,
-      ));
+      notices.add(
+        _notice(
+          'Low compass accuracy. Move your phone in a figure-8 to calibrate.',
+          icon: Icons.warning_amber_rounded,
+          color: Colors.orangeAccent,
+        ),
+      );
     }
 
     if (!env.modelIsCurrent) {
-      notices.add(_notice(
-        'The bundled ${env.modelName} magnetic model is past its validity '
-        'period. Update the app for the latest correction.',
-        icon: Icons.update,
-        color: Colors.orangeAccent,
-      ));
+      notices.add(
+        _notice(
+          'The bundled ${env.modelName} magnetic model is past its validity '
+          'period. Update the app for the latest correction.',
+          icon: Icons.update,
+          color: Colors.orangeAccent,
+        ),
+      );
     }
 
     return notices;
@@ -312,14 +343,19 @@ class _CompassScreenState extends State<CompassScreen> {
 
   Widget _buildCompassContent() {
     if (_isError) {
-      return _panel(_errorMsg,
-          icon: Icons.error_outline, color: Colors.redAccent);
+      return _panel(
+        _errorMsg,
+        icon: Icons.error_outline,
+        color: Colors.redAccent,
+      );
     }
 
     // Wait for the model and sensor inventory so the needle is never drawn
     // against a heading that has not yet been corrected to true north.
     if (!_envResolved) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     // A device with no magnetometer physically cannot produce a heading.
@@ -335,8 +371,11 @@ class _CompassScreenState extends State<CompassScreen> {
       stream: FlutterCompass.events,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return _panel('Error reading compass sensor.',
-              icon: Icons.explore_off, color: Colors.redAccent);
+          return _panel(
+            'Error reading compass sensor.',
+            icon: Icons.explore_off,
+            color: Colors.redAccent,
+          );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting ||
@@ -350,7 +389,8 @@ class _CompassScreenState extends State<CompassScreen> {
             );
           }
           return const Center(
-              child: CircularProgressIndicator(color: Colors.white));
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
 
         final double? rawHeading = snapshot.data?.heading;
@@ -385,12 +425,16 @@ class _CompassScreenState extends State<CompassScreen> {
         // Android reports a MAGNETIC heading; iOS reports a TRUE heading and
         // resolves declination to 0. Adding declination puts both on true north,
         // which is the reference the Qibla bearing already uses.
-        final double heading =
-            QiblaMath.magneticToTrue(rawHeading!, _env!.declination);
+        final double heading = QiblaMath.magneticToTrue(
+          rawHeading!,
+          _env!.declination,
+        );
 
         final double dialAngleRad = -QiblaMath.toRadians(heading);
-        final double needleAngle =
-            QiblaMath.needleAngle(_qiblaDirection, heading);
+        final double needleAngle = QiblaMath.needleAngle(
+          _qiblaDirection,
+          heading,
+        );
         final double needleAngleRad = QiblaMath.toRadians(needleAngle);
         final bool isPointingToQibla = QiblaMath.isAligned(needleAngle);
 
@@ -428,18 +472,21 @@ class _CompassScreenState extends State<CompassScreen> {
                             ),
                           ),
                         Positioned(
-                            top: 24,
-                            child:
-                                Text("N", style: _textStyle(Colors.redAccent))),
+                          top: 24,
+                          child: Text("N", style: _textStyle(Colors.redAccent)),
+                        ),
                         Positioned(
-                            bottom: 24,
-                            child: Text("S", style: _textStyle(Colors.white))),
+                          bottom: 24,
+                          child: Text("S", style: _textStyle(Colors.white)),
+                        ),
                         Positioned(
-                            left: 24,
-                            child: Text("W", style: _textStyle(Colors.white))),
+                          left: 24,
+                          child: Text("W", style: _textStyle(Colors.white)),
+                        ),
                         Positioned(
-                            right: 24,
-                            child: Text("E", style: _textStyle(Colors.white))),
+                          right: 24,
+                          child: Text("E", style: _textStyle(Colors.white)),
+                        ),
                       ],
                     ),
                   ),
@@ -450,8 +497,9 @@ class _CompassScreenState extends State<CompassScreen> {
                     width: 110,
                     height: 110,
                     child: CustomPaint(
-                      painter:
-                          QiblaNeedlePainter(color: const Color(0xFFFFB300)),
+                      painter: QiblaNeedlePainter(
+                        color: const Color(0xFFFFB300),
+                      ),
                     ),
                   ),
                 ),
@@ -461,8 +509,10 @@ class _CompassScreenState extends State<CompassScreen> {
                     width: 320,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border:
-                          Border.all(color: const Color(0xFFFFB300), width: 3),
+                      border: Border.all(
+                        color: const Color(0xFFFFB300),
+                        width: 3,
+                      ),
                     ),
                   ),
               ],

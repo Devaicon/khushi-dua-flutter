@@ -41,8 +41,6 @@ void main() async {
   // Before runApp, so ThemeController starts on the reader's last age group.
   await ThemeController.loadSavedAgeGroup();
 
-  // AdMob is not started here: AdService starts it only once an age group
-  // that may see ads is selected, so Little Kids never touches it.
   runApp(const MyApp());
 }
 

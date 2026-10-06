@@ -20,6 +20,7 @@ import '../subSettings/azkarReminderSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/profileAvatar.dart';
 import '../../widgets/customSnackbar.dart';
+import '../../widgets/donateCard.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -228,11 +229,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               status: reminders.salahEnabled,
                               onTap: salahReminderSettings,
                             ),
+                            _SettingsRow(
+                              icon: Icons.favorite_rounded,
+                              seed: kDonateSeed,
+                              title: "Support reminder".tr,
+                              subtitle: "A weekly reminder to donate".tr,
+                              trailing: Switch(
+                                value: reminders.supportEnabled,
+                                onChanged: (value) async {
+                                  final ok = await reminders.setSupportEnabled(
+                                    value,
+                                  );
+                                  if (!ok) {
+                                    CustomSnackbar.show(
+                                      "Error".tr,
+                                      "Notification permission is required for reminders"
+                                          .tr,
+                                      isSuccess: false,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
                           ],
                         ),
                         _SettingsGroup(
                           title: "SUPPORT".tr,
                           rows: [
+                            _SettingsRow(
+                              icon: Icons.volunteer_activism_rounded,
+                              seed: kDonateSeed,
+                              title: "Donate".tr,
+                              subtitle: "Support LearningSouls".tr,
+                              onTap: openDonate,
+                            ),
                             _SettingsRow(
                               icon: Icons.ios_share_rounded,
                               seed: const Color(0xFFEC407A),

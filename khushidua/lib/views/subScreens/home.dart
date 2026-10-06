@@ -14,7 +14,10 @@ import '../../models/homeBannerModel.dart';
 import '../subSettings/azkarReminderSettings.dart';
 import '../../models/categoryModel.dart';
 import 'categoryDetailScreen.dart';
+import '../../controllers/notificationController.dart';
+import '../../widgets/donateCard.dart';
 import '../../widgets/profileAvatar.dart';
+import 'notifications.dart';
 import '../../widgets/salahBanner.dart';
 import '../../widgets/skeleton.dart';
 
@@ -86,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   _section(_buildAzkarCard()),
+                  _section(const DonateCard()),
                   SliverPadding(
                     padding: const EdgeInsets.only(top: AppSpace.lg),
                     sliver: SliverToBoxAdapter(
@@ -104,7 +108,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     sliver:
                         categoryController.isLoading &&
                             filteredCategories.isEmpty
-                        ? const SliverToBoxAdapter(child: _CategoryGridSkeleton())
+                        ? const SliverToBoxAdapter(
+                            child: _CategoryGridSkeleton(),
+                          )
                         : SliverGrid(
                             gridDelegate: _gridDelegate,
                             delegate: SliverChildBuilderDelegate((
@@ -152,31 +158,39 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const ProfileAvatar(size: 52),
             const SizedBox(width: AppSpace.md),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Assalam o Alaikum".tr,
-                  style: TextStyle(
-                    color: AppText.onPageMuted,
-                    fontSize: 13,
-                    letterSpacing: 0.5,
+            // Expanded, so a long name ellipsises instead of pushing the
+            // points badge and bell off the screen.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Assalam o Alaikum".tr,
+                    style: TextStyle(
+                      color: AppText.onPageMuted,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-                Text(
-                  userController.isLoggedIn
-                      ? userController.userName
-                      : "Guest User".tr,
-                  style: const TextStyle(
-                    color: rtext,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    userController.isLoggedIn
+                        ? userController.userName
+                        : "Guest User".tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: rtext,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: AppSpace.sm),
             _buildPointsBadge(accentColor, userController.points),
+            const SizedBox(width: AppSpace.sm),
+            const _InboxBell(),
           ],
         );
       },
@@ -541,10 +555,7 @@ class _CategoryTileState extends State<CategoryTile>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppMotion.fast,
-    );
+    _controller = AnimationController(vsync: this, duration: AppMotion.fast);
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
@@ -621,6 +632,72 @@ class _CategoryTileState extends State<CategoryTile>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Opens the announcements inbox, with a badge for anything not yet seen.
+/// The inbox used to be a tab of its own.
+class _InboxBell extends StatelessWidget {
+  const _InboxBell();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<NotificationController>(
+      builder: (inbox) {
+        final unread = inbox.unreadCount;
+        return InkWell(
+          onTap: () => Get.to(
+            () => const NotificationScreen(),
+            transition: Transition.rightToLeft,
+          ),
+          borderRadius: AppRadius.pillAll,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpace.sm),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: AppElevation.card,
+                ),
+                child: Icon(
+                  unread > 0
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  color: rbluedark,
+                  size: 22,
+                ),
+              ),
+              if (unread > 0)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    constraints: const BoxConstraints(minWidth: 18),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 18,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE53935),
+                      borderRadius: AppRadius.pillAll,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    child: Text(
+                      unread > 9 ? "9+" : "$unread",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

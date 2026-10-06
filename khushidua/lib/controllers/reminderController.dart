@@ -20,12 +20,19 @@ class ReminderController extends GetxController {
   static const _kEveningMinute = 'azkarEveningMinute';
   static const _kSalahEnabled = 'salahReminderEnabled';
   static const _kPrayerTimes = 'lastKnownPrayerTimes';
+  static const _kSupportEnabled = 'supportReminderEnabled';
 
   bool _azkarEnabled = false;
   bool get azkarEnabled => _azkarEnabled;
 
   bool _salahEnabled = false;
   bool get salahEnabled => _salahEnabled;
+
+  /// The weekly LearningSouls donation reminder. On unless the user turns it
+  /// off; it needs no permission prompt of its own, because push already
+  /// asks for notification permission at start-up.
+  bool _supportEnabled = true;
+  bool get supportEnabled => _supportEnabled;
 
   TimeOfDay _morningTime = const TimeOfDay(
     hour: kDefaultMorningHour,
@@ -60,6 +67,7 @@ class ReminderController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     _azkarEnabled = prefs.getBool(_kAzkarEnabled) ?? false;
     _salahEnabled = prefs.getBool(_kSalahEnabled) ?? false;
+    _supportEnabled = prefs.getBool(_kSupportEnabled) ?? true;
     _morningTime = TimeOfDay(
       hour: prefs.getInt(_kMorningHour) ?? kDefaultMorningHour,
       minute: prefs.getInt(_kMorningMinute) ?? kDefaultMorningMinute,
@@ -79,6 +87,52 @@ class ReminderController extends GetxController {
     // Also moves reminders scheduled before the Salah sound was added onto
     // the new channel; the old channel is deleted, so they would not show.
     if (_salahEnabled) await syncSalahReminders(const {});
+    if (_supportEnabled) await _scheduleSupport();
+  }
+
+  /// Turns the weekly donation reminder on or off. Returns false when the
+  /// user declined the notification permission.
+  Future<bool> setSupportEnabled(bool value) async {
+    if (value) {
+      final granted = await ReminderService.instance.requestPermissions();
+      if (!granted) return false;
+    }
+
+    _supportEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kSupportEnabled, value);
+
+    if (value) {
+      await _scheduleSupport();
+    } else {
+      await ReminderService.instance.cancel(kSupportNotificationId);
+    }
+    update();
+    return true;
+  }
+
+  Future<void> _scheduleSupport() async {
+    await ReminderService.instance.scheduleWeekly(
+      id: kSupportNotificationId,
+      title: 'Support LearningSouls'.tr,
+      body: 'Your donation keeps Khushi Dua free for every child'.tr,
+      weekday: kSupportReminderWeekday,
+      hour: kSupportReminderHour,
+      minute: kSupportReminderMinute,
+      payload: 'donate',
+    );
+  }
+
+  /// Plays a Salah alert now, so the user knows what they are choosing.
+  Future<bool> previewSalah(SalahChannel channel) async {
+    final granted = await ReminderService.instance.requestPermissions();
+    if (!granted) return false;
+    await ReminderService.instance.previewSalah(
+      channel,
+      title: 'Preview'.tr,
+      body: 'This is how your Salah reminder will arrive'.tr,
+    );
+    return true;
   }
 
   /// Prayer times are stored as minutes-since-midnight and rehydrated onto

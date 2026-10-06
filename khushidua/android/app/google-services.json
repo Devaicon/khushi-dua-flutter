@@ -12,7 +12,12 @@
           "package_name": "com.khushiDua.app.khushidua"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAZjNhZjNUW-G_MDZbFNmytvUiMp5KXwYM"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "29248066052-4ejpo0lrgdoju3j2aujjaqr2bggrsqls.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.khushii.khushiikidzdua"
+              }
+            }
+          ]
         }
       }
     },
@@ -28,10 +45,15 @@
       "client_info": {
         "mobilesdk_app_id": "1:29248066052:android:cb8651bc17188ea17bdb51",
         "android_client_info": {
-          "package_name": "com.khushiidua.app"
+          "package_name": "com.khushidua.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAZjNhZjNUW-G_MDZbFNmytvUiMp5KXwYM"
@@ -39,7 +61,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "29248066052-4ejpo0lrgdoju3j2aujjaqr2bggrsqls.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.khushii.khushiikidzdua"
+              }
+            }
+          ]
         }
       }
     },
@@ -47,10 +81,15 @@
       "client_info": {
         "mobilesdk_app_id": "1:29248066052:android:b3669e74ab923f097bdb51",
         "android_client_info": {
-          "package_name": "com.khushidua.app"
+          "package_name": "com.khushidua.app.khushidua"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAZjNhZjNUW-G_MDZbFNmytvUiMp5KXwYM"
@@ -58,7 +97,71 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "29248066052-4ejpo0lrgdoju3j2aujjaqr2bggrsqls.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.khushii.khushiikidzdua"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:29248066052:android:2420010b171cbe207bdb51",
+        "android_client_info": {
+          "package_name": "com.khushiidua.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "29248066052-nbo3hfloqkp2bvb4dh65040to7jc6224.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khushiidua.app",
+            "certificate_hash": "47f7da83b91f2cdda0ca8232b01c7f3ecaf36daf"
+          }
+        },
+        {
+          "client_id": "29248066052-us9h56dbmb5mtmkf2rj8djphoeoajnbe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khushiidua.app",
+            "certificate_hash": "f12d3362dc15ac41b7486015fd2f5bdcd86b9c23"
+          }
+        },
+        {
+          "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZjNhZjNUW-G_MDZbFNmytvUiMp5KXwYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29248066052-tg1h7fig8g1j0sheentg95prs3gfvit3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "29248066052-4ejpo0lrgdoju3j2aujjaqr2bggrsqls.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.khushii.khushiikidzdua"
+              }
+            }
+          ]
         }
       }
     }

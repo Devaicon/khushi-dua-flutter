@@ -8,6 +8,17 @@ library;
 /// alarm instead of stacking a second one on top of it.
 const int kAzkarMorningNotificationId = 100;
 const int kAzkarEveningNotificationId = 101;
+const int kSupportNotificationId = 102;
+
+/// Fired on demand from the Salah settings so the user can hear or feel an
+/// alert before choosing it. One id, so repeated taps replace each other.
+const int kSalahPreviewNotificationId = 299;
+
+/// The weekly LearningSouls donation reminder: Friday afternoon, after
+/// Jumu'ah. [DateTime.friday] is 5.
+const int kSupportReminderWeekday = DateTime.friday;
+const int kSupportReminderHour = 15;
+const int kSupportReminderMinute = 0;
 
 /// Base for the Salah ids; each prayer takes `_kSalahIdBase + its index`.
 const int _kSalahIdBase = 200;
@@ -39,6 +50,26 @@ DateTime nextOccurrence({
   if (today.isAfter(now)) return today;
   // Adding to the day component rolls months, years and leap days correctly.
   return DateTime(now.year, now.month, now.day + 1, hour, minute);
+}
+
+/// The next [weekday] at [hour]:[minute] strictly after [now], with the same
+/// rule as [nextOccurrence] for a time falling exactly on [now].
+DateTime nextWeekdayOccurrence({
+  required int weekday,
+  required int hour,
+  required int minute,
+  required DateTime now,
+}) {
+  final daysAhead = (weekday - now.weekday) % 7;
+  final candidate = DateTime(
+    now.year,
+    now.month,
+    now.day + daysAhead,
+    hour,
+    minute,
+  );
+  if (candidate.isAfter(now)) return candidate;
+  return DateTime(now.year, now.month, now.day + daysAhead + 7, hour, minute);
 }
 
 /// Whether the in-app banner for a prayer at [prayerTime] should be showing.

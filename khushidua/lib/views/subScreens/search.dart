@@ -7,6 +7,7 @@ import '../../constants/theme.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../controllers/userController.dart';
 import '../../models/subCategoryModel.dart';
+import '../../widgets/donateCard.dart';
 import '../openDuasScreen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -228,6 +229,12 @@ class _SearchScreenState extends State<SearchScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
+          const SizedBox(height: AppSpace.xxl),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: DonateCard(),
+          ),
+          const SizedBox(height: AppSpace.xl),
         ],
       ),
     );

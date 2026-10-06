@@ -13,7 +13,23 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
+/// The announcements inbox, opened from the bell on the home screen.
 class _NotificationScreenState extends State<NotificationScreen> {
+  final _controller = Get.find<NotificationController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.markAllSeen();
+  }
+
+  @override
+  void dispose() {
+    // Anything that arrived while the inbox was open has been seen too.
+    _controller.markAllSeen();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,6 +42,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: rbluedark),
         actions: [
           TextButton(
             onPressed: () => Get.find<NotificationController>().clearNotifications(),
@@ -39,13 +56,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: GetBuilder<NotificationController>(
         builder: (notificationController) {
-          // Filter out "test" notifications to satisfy user request
-          final activeNotifications =
-              notificationController.allNotifications.where((n) {
-                final title = n.title.toLowerCase();
-                final msg = n.message.toLowerCase();
-                return !title.contains("test") && !msg.contains("test");
-              }).toList();
+          // Everything is shown. Notifications mentioning "test" used to be
+          // hidden here, so an admin's test send never reached the inbox.
+          final activeNotifications = notificationController.allNotifications;
 
           if (activeNotifications.isEmpty) {
             return _buildEmptyState();
