@@ -5,7 +5,9 @@ import '../../constants/colors.dart';
 import '../../constants/theme.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
+import '../../controllers/duaController.dart';
 import '../../controllers/themeController.dart';
+import '../../helpers/duaNumberSearch.dart';
 import '../../controllers/userController.dart';
 import '../../models/subCategoryModel.dart';
 import '../../widgets/donateCard.dart';
@@ -22,6 +24,10 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<SubCategoryModel> filteredSubCategories = [];
 
+  /// Sections holding the dua asked for by number ("morning 3"), each with
+  /// how many duas it has. Shown instead of the name matches when not empty.
+  List<({SubCategoryModel section, int number, int total})> _numberHits = [];
+
   @override
   void initState() {
     super.initState();
@@ -34,7 +40,13 @@ class _SearchScreenState extends State<SearchScreen> {
     final userController = Get.find<UserController>();
     String selectedLanguage = userController.selectedLanguage;
 
+    final numberQuery = DuaNumberQuery.parse(query);
+    final hits = numberQuery == null
+        ? <({SubCategoryModel section, int number, int total})>[]
+        : _numberSearch(numberQuery, categoryController, selectedLanguage);
+
     setState(() {
+      _numberHits = hits;
       filteredSubCategories = categoryController.allSubCategories.where((
         subCategory,
       ) {
@@ -59,6 +71,34 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  /// Every section the reader can open whose name or category matches
+  /// [query]'s text and that has a dua at [query]'s number.
+  List<({SubCategoryModel section, int number, int total})> _numberSearch(
+    DuaNumberQuery query,
+    CategoryController categories,
+    String language,
+  ) {
+    final duas = Get.find<DuaController>();
+    final hits = <({SubCategoryModel section, int number, int total})>[];
+    for (final section in _browseList(categories)) {
+      if (query.text.isNotEmpty) {
+        final category = categories.allCategories.firstWhereOrNull(
+          (c) => c.id == section.categoryId,
+        );
+        final names = [
+          section.getName(language),
+          category?.getName(language) ?? '',
+        ].join(' ').toLowerCase();
+        if (!names.contains(query.text)) continue;
+      }
+      final total = duas.duasFor(section.id).length;
+      if (total >= query.number) {
+        hits.add((section: section, number: query.number, total: total));
+      }
+    }
+    return hits;
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -72,20 +112,43 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
       backgroundColor: AppSurface.page,
-      appBar: AppBar(
-        title: Text(
-          "Explore Duas".tr,
-          style: TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        centerTitle: false,
-      ),
       body: Column(
         children: [
+          // The same title, size and gutter as the other tabs' headers.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.lg,
+              AppSpace.lg,
+              0,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Explore Duas".tr,
+                    style: TextStyle(
+                      color: rtext,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const DonationPlacement(
+                  placement: 'searchPill',
+                  child: _DonatePill(),
+                ),
+              ],
+            ),
+          ),
           // Search Bar Container
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.md,
+              AppSpace.lg,
+              AppSpace.xs,
+            ),
             child: Container(
               decoration: BoxDecoration(
                 color: AppSurface.card,
@@ -103,7 +166,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 onChanged: (_) => _filterSubCategories(),
                 style: TextStyle(color: rbluedark, fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
-                  hintText: "Search for Duas...".tr,
+                  hintText: "Search by name or dua number".tr,
                   hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
                   prefixIcon: Icon(
                     Icons.search_rounded,
@@ -137,7 +200,7 @@ class _SearchScreenState extends State<SearchScreen> {
           SizedBox(
             height: 60,
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg - 5),
               scrollDirection: Axis.horizontal,
               itemCount: categoryController.allCategories.length,
               itemBuilder: (context, index) {
@@ -175,36 +238,63 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpace.xs),
 
           // Results Section
           Expanded(
-            child:
-                filteredSubCategories.isEmpty &&
-                    _searchController.text.isNotEmpty
-                ? _buildEmptyState()
-                : _searchController.text.isEmpty
+            child: _searchController.text.isEmpty
                 ? _buildInitialState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: filteredSubCategories.length,
-                    physics: const BouncingScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final subCategory = filteredSubCategories[index];
-                      final categoryName =
-                          categoryController.allCategories
-                              .firstWhereOrNull(
-                                (c) => c.id == subCategory.categoryId,
-                              )
-                              ?.getName(userController.selectedLanguage) ??
-                          "";
-
-                      return _buildResultTile(subCategory, categoryName);
-                    },
-                  ),
+                : _numberHits.isNotEmpty
+                ? _buildResults([
+                    for (final hit in _numberHits)
+                      _buildResultTile(
+                        hit.section,
+                        _categoryName(hit.section, categoryController),
+                        number: hit.number,
+                        total: hit.total,
+                      ),
+                  ])
+                : filteredSubCategories.isEmpty
+                ? _buildEmptyState()
+                : _buildResults([
+                    for (final subCategory in filteredSubCategories)
+                      _buildResultTile(
+                        subCategory,
+                        _categoryName(subCategory, categoryController),
+                      ),
+                  ]),
           ),
         ],
       ),
+    );
+  }
+
+  String _categoryName(SubCategoryModel section, CategoryController c) =>
+      c.allCategories
+          .firstWhereOrNull((cat) => cat.id == section.categoryId)
+          ?.getName(Get.find<UserController>().selectedLanguage) ??
+      "";
+
+  /// The donation card leads every list, just under the quick filters, and
+  /// scrolls away with it.
+  Widget get _donateCard => const DonationPlacement(
+    placement: 'search',
+    child: Padding(
+      padding: EdgeInsets.only(bottom: AppSpace.lg),
+      child: DonateCard(),
+    ),
+  );
+
+  Widget _buildResults(List<Widget> tiles) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.sm,
+        AppSpace.lg,
+        AppSpace.xl,
+      ),
+      physics: const BouncingScrollPhysics(),
+      children: [_donateCard, ...tiles],
     );
   }
 
@@ -249,9 +339,15 @@ class _SearchScreenState extends State<SearchScreen> {
           final hasMore = all.length > shown.length;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, AppSpace.xl),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.sm,
+              AppSpace.lg,
+              AppSpace.xl,
+            ),
             physics: const BouncingScrollPhysics(),
             children: [
+              _donateCard,
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpace.md),
                 child: Text(
@@ -283,8 +379,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     label: Text("Load more".tr),
                   ),
                 ),
-              const SizedBox(height: AppSpace.lg),
-              const DonateCard(),
             ],
           );
         },
@@ -326,7 +420,22 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildResultTile(SubCategoryModel subCategory, String categoryName) {
+  /// A section to open. With [number], it is a hit for a dua number: the
+  /// number leads the tile, and opening it scrolls to that dua.
+  Widget _buildResultTile(
+    SubCategoryModel subCategory,
+    String categoryName, {
+    int? number,
+    int? total,
+  }) {
+    final subtitle = [
+      if (number != null)
+        "Dua @index of @total".trParams({
+          'index': '$number',
+          'total': '$total',
+        }),
+      if (categoryName.isNotEmpty) categoryName,
+    ].join("  •  ");
     return FadeInAnimationBTT(
       delay: 1,
       child: Container(
@@ -347,7 +456,9 @@ class _SearchScreenState extends State<SearchScreen> {
           child: InkWell(
             // Straight to the duas; a kids' section shows its illustration
             // at the top of that list.
-            onTap: () => Get.to(() => OpenDuasScreen(subCategory)),
+            onTap: () => Get.to(
+              () => OpenDuasScreen(subCategory, scrollToNumber: number),
+            ),
             borderRadius: BorderRadius.circular(25),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -364,11 +475,21 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Icon(
-                      Icons.book_rounded,
-                      color: Colors.white,
-                      size: 26,
-                    ),
+                    alignment: Alignment.center,
+                    child: number == null
+                        ? const Icon(
+                            Icons.book_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          )
+                        : Text(
+                            '$number',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -387,11 +508,11 @@ class _SearchScreenState extends State<SearchScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (categoryName.isNotEmpty)
+                        if (subtitle.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              categoryName,
+                              subtitle,
                               style: TextStyle(
                                 color: rbluedark.withOpacity(0.5),
                                 fontSize: 12,
@@ -416,6 +537,53 @@ class _SearchScreenState extends State<SearchScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The small Donate button in the header, for readers who never scroll down
+/// to the card.
+class _DonatePill extends StatelessWidget {
+  const _DonatePill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: openDonate,
+        borderRadius: AppRadius.pillAll,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.md,
+            vertical: AppSpace.sm,
+          ),
+          decoration: BoxDecoration(
+            gradient: AppGradient.forSeed(kDonateSeed),
+            borderRadius: AppRadius.pillAll,
+            boxShadow: AppElevation.card,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.volunteer_activism_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "Donate".tr,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
       ),

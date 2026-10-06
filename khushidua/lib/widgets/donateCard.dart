@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../constants/colors.dart';
 import '../constants/theme.dart';
+import '../controllers/donationController.dart';
 import '../views/donateScreen.dart';
 
 /// The donation colour: warm, and distinct from every category and reminder
@@ -96,6 +97,31 @@ class DonateCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows [child] only while the admin panel has [placement] switched on (see
+/// DonationSettings.placements). Wraps the padding as well as the card, so a
+/// hidden card leaves no gap; works in a sliver list too, with [hidden]
+/// standing in.
+class DonationPlacement extends StatelessWidget {
+  const DonationPlacement({
+    super.key,
+    required this.placement,
+    required this.child,
+    this.hidden = const SizedBox.shrink(),
+  });
+
+  final String placement;
+  final Widget child;
+  final Widget hidden;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<DonationController>(
+      builder: (donations) =>
+          donations.settings.shows(placement) ? child : hidden,
     );
   }
 }

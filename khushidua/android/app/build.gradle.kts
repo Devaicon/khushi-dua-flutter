@@ -60,7 +60,11 @@ android {
                 signingConfigs.getByName("debug")
             }
 
-            isMinifyEnabled = false
+            // R8: shrinks and obfuscates the Java/Kotlin code, which Play
+            // requires. Resources are not shrunk: the notification sounds and
+            // icons are looked up by name at run time, invisible to the
+            // shrinker.
+            isMinifyEnabled = true
             isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

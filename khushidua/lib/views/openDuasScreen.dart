@@ -46,10 +46,15 @@ class OpenDuasScreen extends StatefulWidget {
   /// the category it was opened from.
   final Color color;
 
+  /// Opens scrolled to this dua (its number in the section, from 1), as
+  /// when a search for "morning 3" is tapped.
+  final int? scrollToNumber;
+
   const OpenDuasScreen(
     this._subCategoryModel, {
     super.key,
     this.color = rpurple,
+    this.scrollToNumber,
   });
 
   @override
@@ -58,6 +63,28 @@ class OpenDuasScreen extends StatefulWidget {
 
 class _OpenDuasScreenState extends State<OpenDuasScreen> {
   String? _expandedBenefitsDuaId; // Track which dua has benefits expanded
+
+  /// On the dua to scroll to, when there is one.
+  final GlobalKey _targetKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.scrollToNumber != null) {
+      // After the first layout, when the tile exists to scroll to.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _targetKey.currentContext;
+        if (target != null && target.mounted) {
+          Scrollable.ensureVisible(
+            target,
+            duration: AppMotion.slow,
+            curve: AppMotion.curve,
+            alignment: 0.1,
+          );
+        }
+      });
+    }
+  }
 
   SubCategoryModel get _section => widget._subCategoryModel;
 
@@ -88,6 +115,9 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
 
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
+                // Builds the whole section when scrolling to a dua in it, so
+                // the target exists to scroll to; sections hold few duas.
+                cacheExtent: widget.scrollToNumber != null ? 100000 : null,
                 slivers: [
                   SliverAppBar(
                     pinned: true,
@@ -150,7 +180,9 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) => DuaTile(
-                            key: ValueKey(duas[index].id),
+                            key: index + 1 == widget.scrollToNumber
+                                ? _targetKey
+                                : ValueKey(duas[index].id),
                             dua: duas[index],
                             number: index + 1,
                             total: duas.length,

@@ -85,7 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: SalahBanner(topGap: AppSpace.lg),
                     ),
                   ),
-                  _section(const DonateCard()),
+                  DonationPlacement(
+                    placement: 'home',
+                    hidden: const SliverToBoxAdapter(),
+                    child: _section(const DonateCard()),
+                  ),
                   _section(_buildAzkarCard()),
                   SliverPadding(
                     padding: const EdgeInsets.only(top: AppSpace.lg),

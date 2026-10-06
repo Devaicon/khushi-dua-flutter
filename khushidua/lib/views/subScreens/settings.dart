@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/appearanceController.dart';
+import '../../controllers/donationController.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -208,8 +209,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: GetBuilder<UserController>(
         builder: (userController) {
           return GetBuilder<ReminderController>(
-            builder: (reminders) {
-              return ListView(
+            builder: (reminders) => GetBuilder<DonationController>(
+              builder: (donations) => ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: AppSpace.xxl),
                 children: [
@@ -291,40 +292,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               status: reminders.salahEnabled,
                               onTap: salahReminderSettings,
                             ),
-                            _SettingsRow(
-                              icon: Icons.favorite_rounded,
-                              seed: kDonateSeed,
-                              title: "Support reminder".tr,
-                              subtitle: "A weekly reminder to donate".tr,
-                              trailing: Switch(
-                                value: reminders.supportEnabled,
-                                onChanged: (value) async {
-                                  final ok = await reminders.setSupportEnabled(
-                                    value,
-                                  );
-                                  if (!ok) {
-                                    CustomSnackbar.show(
-                                      "Error".tr,
-                                      "Notification permission is required for reminders"
-                                          .tr,
-                                      isSuccess: false,
-                                    );
-                                  }
-                                },
+                            // Hidden while the admin has switched it off.
+                            if (reminders.supportAllowed)
+                              _SettingsRow(
+                                icon: Icons.favorite_rounded,
+                                seed: kDonateSeed,
+                                title: "Support reminder".tr,
+                                subtitle: "A weekly reminder to donate".tr,
+                                trailing: Switch(
+                                  value: reminders.supportEnabled,
+                                  onChanged: (value) async {
+                                    final ok = await reminders
+                                        .setSupportEnabled(value);
+                                    if (!ok) {
+                                      CustomSnackbar.show(
+                                        "Error".tr,
+                                        "Notification permission is required for reminders"
+                                            .tr,
+                                        isSuccess: false,
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
-                            ),
                           ],
                         ),
                         _SettingsGroup(
                           title: "SUPPORT".tr,
                           rows: [
-                            _SettingsRow(
-                              icon: Icons.volunteer_activism_rounded,
-                              seed: kDonateSeed,
-                              title: "Donate".tr,
-                              subtitle: "Support LearningSouls".tr,
-                              onTap: openDonate,
-                            ),
+                            if (donations.settings.settings)
+                              _SettingsRow(
+                                icon: Icons.volunteer_activism_rounded,
+                                seed: kDonateSeed,
+                                title: "Donate".tr,
+                                subtitle: "Support LearningSouls".tr,
+                                onTap: openDonate,
+                              ),
                             _SettingsRow(
                               icon: Icons.ios_share_rounded,
                               seed: const Color(0xFFEC407A),
@@ -388,8 +391,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+            ),
           );
         },
       ),

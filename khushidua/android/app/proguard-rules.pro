@@ -1,47 +1,32 @@
-# Flutter wrapper
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.**  { *; }
--keep class io.flutter.util.**  { *; }
--keep class io.flutter.view.**  { *; }
--keep class io.flutter.**  { *; }
--keep class io.flutter.plugins.**  { *; }
+# R8 shrinks and obfuscates the release build. Flutter's Gradle plugin adds
+# the engine's own rules, and Firebase, Play services, AndroidX and Kotlin
+# ship theirs inside their libraries, so this file only covers what those do
+# not: code reached by reflection, or data stored under class or field names.
+#
+# Keep rules here sparingly: every package kept whole stays unobfuscated,
+# which is what Play's "DEX code optimization" check measures.
 
-# Keep Flutter engine classes
--keep class io.flutter.embedding.** { *; }
-
-# Keep Firebase classes
--keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; }
-
-# Keep audio player classes
--keep class xyz.luan.audioplayers.** { *; }
-
-# Keep geolocator classes
--keep class com.baseflow.geolocator.** { *; }
-
-# Keep shared preferences
--keep class androidx.preference.** { *; }
-
-# Keep prayers_times
--keep class com.prayers_times.** { *; }
-
-# Keep hijri calendar
--keep class com.hijri.** { *; }
-
-# Keep flutter_sound_record
--keep class com.josephcrowell.flutter_sound_record.** { *; }
-
-# Keep Google Mobile Ads
--keep class com.google.android.gms.ads.** { *; }
--dontwarn com.google.android.gms.ads.**
-
-# Keep GetX
--keep class com.get.** { *; }
-
-# Keep all native methods
--keepclasseswithmembernames class * {
-    native <methods>;
+# flutter_local_notifications saves scheduled notifications as Gson JSON and
+# reads them back after a reboot or an app update. Renamed fields would
+# break reading the ones saved by an earlier version.
+-keep class com.dexterous.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn sun.misc.**
+-keep class * extends com.google.gson.TypeAdapter
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+-keepclassmembers,allowobfuscation class * {
+  @com.google.gson.annotations.SerializedName <fields>;
 }
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
 
-# Keep custom application class
--keep class com.khushidua.app.khushidua.** { *; }
+# background_downloader persists queued tasks and hands them to WorkManager;
+# downloads queued by one version must still run after an update.
+-keep class com.bbflight.background_downloader.** { *; }
+
+# Flutter's engine refers to Play Core for deferred components, which this
+# app does not use.
+-dontwarn com.google.android.play.core.**
