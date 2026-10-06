@@ -10,9 +10,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PrayerSettingsController extends GetxController {
   static const _kMethod = 'calculationMethod';
   static const _kMadhab = 'juristicMethod';
+  static const _kCardStyle = 'nextPrayerCardStyle';
 
   static const String defaultMethod = 'karachi';
   static const String defaultMadhab = 'shafi';
+  static const String defaultCardStyle = 'progress';
 
   /// Stored value → label, in the order the picker lists them. The stored
   /// values are the names the app has always saved, so existing choices
@@ -31,11 +33,20 @@ class PrayerSettingsController extends GetxController {
     'hanafi': 'Hanafi',
   };
 
+  /// What the next-prayer card shows under its countdown.
+  static const Map<String, String> cardStyles = {
+    'progress': 'Progress bar',
+    'sun': 'Sun path',
+  };
+
   String _method = defaultMethod;
   String get method => _method;
 
   String _madhab = defaultMadhab;
   String get madhab => _madhab;
+
+  String _cardStyle = defaultCardStyle;
+  String get cardStyle => _cardStyle;
 
   /// Becomes true once the stored choices are read, so the prayer screen does
   /// not calculate once with the defaults and again with the real values.
@@ -54,6 +65,9 @@ class PrayerSettingsController extends GetxController {
     _madhab = madhabs.containsKey(prefs.getString(_kMadhab))
         ? prefs.getString(_kMadhab)!
         : defaultMadhab;
+    _cardStyle = cardStyles.containsKey(prefs.getString(_kCardStyle))
+        ? prefs.getString(_kCardStyle)!
+        : defaultCardStyle;
     _loaded = true;
     update();
   }
@@ -77,6 +91,14 @@ class PrayerSettingsController extends GetxController {
     update();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kMadhab, value);
+  }
+
+  Future<void> setCardStyle(String value) async {
+    if (!cardStyles.containsKey(value) || value == _cardStyle) return;
+    _cardStyle = value;
+    update();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCardStyle, value);
   }
 
   /// Fresh parameters for the current choices. A new object every call: the
