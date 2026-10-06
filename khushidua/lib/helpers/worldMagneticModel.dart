@@ -86,8 +86,10 @@ class WorldMagneticModel {
   bool isValidFor(double decimalYear) =>
       decimalYear >= epoch && decimalYear < expiry;
 
-  static List<List<double>> _matrix() =>
-      List<List<double>>.generate(_size, (_) => List<double>.filled(_size, 0.0));
+  static List<List<double>> _matrix() => List<List<double>>.generate(
+    _size,
+    (_) => List<double>.filled(_size, 0.0),
+  );
 
   static WorldMagneticModel _build() {
     final List<List<double>> c = _matrix();
@@ -183,13 +185,11 @@ class WorldMagneticModel {
     // Geodetic to geocentric spherical coordinates.
     final double q = math.sqrt(a2 - c2 * srlat2);
     final double q1 = altitudeKm * q;
-    final double q2 =
-        ((q1 + a2) / (q1 + b2)) * ((q1 + a2) / (q1 + b2));
+    final double q2 = ((q1 + a2) / (q1 + b2)) * ((q1 + a2) / (q1 + b2));
     final double ct = srlat / math.sqrt(q2 * crlat2 + srlat2);
     final double st = math.sqrt(1.0 - (ct * ct));
-    final double r2 = (altitudeKm * altitudeKm) +
-        2.0 * q1 +
-        (a4 - c4 * srlat2) / (q * q);
+    final double r2 =
+        (altitudeKm * altitudeKm) + 2.0 * q1 + (a4 - c4 * srlat2) / (q * q);
     final double r = math.sqrt(r2);
     final double d = math.sqrt(a2 * crlat2 + b2 * srlat2);
     final double ca = (altitudeKm + d) / r;
@@ -224,7 +224,8 @@ class WorldMagneticModel {
           }
           p[n + m * _size] =
               ct * p[n - 1 + m * _size] - _k[m][n] * p[n - 2 + m * _size];
-          dp[m][n] = ct * dp[m][n - 1] -
+          dp[m][n] =
+              ct * dp[m][n - 1] -
               st * p[n - 1 + m * _size] -
               _k[m][n] * dp[m][n - 2];
         }
@@ -287,8 +288,8 @@ class WorldMagneticModel {
     final int year = utc.year;
     final DateTime start = DateTime.utc(year);
     final DateTime end = DateTime.utc(year + 1);
-    final double fraction = utc.difference(start).inSeconds /
-        end.difference(start).inSeconds;
+    final double fraction =
+        utc.difference(start).inSeconds / end.difference(start).inSeconds;
     return year + fraction;
   }
 }

@@ -2,6 +2,8 @@ package com.khushiidua.app
 
 import android.content.Context
 import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.AudioAttributes
 import android.media.Ringtone
@@ -13,13 +15,19 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private companion object {
         const val COMPASS_CHANNEL = "com.khushiidua.app/compass"
         const val ALERT_PREVIEW_CHANNEL = "com.khushiidua.app/alertPreview"
+        const val COMPASS_ACCURACY_CHANNEL = "com.khushiidua.app/compassAccuracy"
     }
+
+    /// Listens to the magnetometer only for its calibration status while the
+    /// Qibla screen is open.
+    private var accuracyListener: SensorEventListener? = null
 
     /// The sound currently previewing, so a new choice or leaving the screen
     /// can stop it.
@@ -41,6 +49,42 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // The magnetometer's calibration status (SensorManager.SENSOR_STATUS_*)
+        // for the Qibla screen. flutter_compass reports "unreliable" as -1 and
+        // mixes in the accelerometer's status, so its accuracy cannot tell the
+        // screen when to ask for the figure-8 calibration.
+        EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            COMPASS_ACCURACY_CHANNEL,
+        ).setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+                stopAccuracyUpdates()
+                val sensorManager =
+                    getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
+                val magnetometer =
+                    sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) ?: return
+                var last = Int.MIN_VALUE
+                fun report(status: Int) {
+                    if (status == last) return
+                    last = status
+                    events.success(status)
+                }
+                val listener = object : SensorEventListener {
+                    override fun onSensorChanged(event: SensorEvent) = report(event.accuracy)
+                    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) =
+                        report(accuracy)
+                }
+                accuracyListener = listener
+                sensorManager.registerListener(
+                    listener,
+                    magnetometer,
+                    SensorManager.SENSOR_DELAY_UI,
+                )
+            }
+
+            override fun onCancel(arguments: Any?) = stopAccuracyUpdates()
+        })
 
         // Lets the Salah settings play an alert the moment it is chosen. A
         // preview posted as a notification was unreliable: Android's
@@ -65,7 +109,15 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun stopAccuracyUpdates() {
+        val listener = accuracyListener ?: return
+        (getSystemService(Context.SENSOR_SERVICE) as? SensorManager)
+            ?.unregisterListener(listener)
+        accuracyListener = null
+    }
+
     override fun onDestroy() {
+        stopAccuracyUpdates()
         stopPreview()
         super.onDestroy()
     }

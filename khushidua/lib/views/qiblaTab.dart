@@ -34,7 +34,8 @@ class _QiblaTabState extends State<QiblaTab> {
   @override
   void initState() {
     super.initState();
-    if (_position == null) _locate();
+    // Also with a cached fix, which may be from before a journey.
+    _locate();
   }
 
   Future<void> _locate() async {
@@ -54,29 +55,58 @@ class _QiblaTabState extends State<QiblaTab> {
       return;
     }
 
+    // The last known fix shows a compass at once; a fresh one follows.
     Position? position;
     try {
-      position =
-          await Geolocator.getLastKnownPosition() ??
-          await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.medium,
-              timeLimit: Duration(seconds: 15),
-            ),
-          );
+      position = await Geolocator.getLastKnownPosition();
     } catch (e) {
-      debugPrint('🧭 QiblaTab: locating failed: $e');
+      debugPrint('🧭 QiblaTab: last known position failed: $e');
+    }
+    if (position != null && mounted) {
+      setState(() {
+        _loading = false;
+        _position = _cached = position;
+      });
     }
 
+    final fresh = await _freshPosition();
     if (!mounted) return;
     setState(() {
       _loading = false;
-      if (position == null) {
+      if (fresh != null && _movedEnough(_position, fresh)) {
+        _position = _cached = fresh;
+      } else if (_position == null) {
         _problem = _LocationProblem.failed;
-      } else {
-        _position = _cached = position;
       }
     });
+  }
+
+  Future<Position?> _freshPosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+    } catch (e) {
+      debugPrint('🧭 QiblaTab: fresh position failed: $e');
+      return null;
+    }
+  }
+
+  /// The last known fix can be from another city after a journey; within a
+  /// few kilometres the bearing does not change, so the compass is only
+  /// rebuilt for a real move.
+  bool _movedEnough(Position? from, Position to) {
+    if (from == null) return true;
+    return Geolocator.distanceBetween(
+          from.latitude,
+          from.longitude,
+          to.latitude,
+          to.longitude,
+        ) >
+        5000;
   }
 
   Future<_LocationProblem?> _checkAccess() async {
@@ -106,6 +136,8 @@ class _QiblaTabState extends State<QiblaTab> {
     final position = _position;
     if (position != null) {
       return CompassScreen(
+        // A new position starts a new compass with the new bearing.
+        key: ValueKey('${position.latitude},${position.longitude}'),
         latitude: position.latitude,
         longitude: position.longitude,
         embedded: true,
