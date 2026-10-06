@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:khushidua/views/dashboard.dart';
 
 import 'constants/theme.dart';
+import 'controllers/appearanceController.dart';
 import 'controllers/initController.dart';
 import 'controllers/themeController.dart';
 import 'services/reminderService.dart';
@@ -41,6 +42,9 @@ void main() async {
 
   // Before runApp, so ThemeController starts on the reader's last age group.
   await ThemeController.loadSavedAgeGroup();
+  // Likewise the appearance, so a dark-mode reader never sees a light flash.
+  await AppearanceController.loadSaved();
+  Get.put(AppearanceController(), permanent: true);
 
   runApp(const MyApp());
 }
@@ -50,6 +54,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilt when the appearance changes, for the new theme.
+    return GetBuilder<AppearanceController>(builder: (_) => _buildApp());
+  }
+
+  Widget _buildApp() {
     return GetMaterialApp(
       title: 'Khushi Dua Book',
       navigatorKey: Get.key,

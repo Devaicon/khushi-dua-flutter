@@ -34,6 +34,11 @@ import 'imageScreen.dart';
 String duaCountLabel(int count) =>
     count == 1 ? "1 dua".tr : "@count duas".trParams({'count': '$count'});
 
+/// The recording dialog's purple, as text and icons: deep on the light theme,
+/// lightened on the dark one where the deep shade would disappear.
+Color get _recordInk =>
+    AppPalette.isDark ? const Color(0xFFB39DDB) : const Color(0xff2A158F);
+
 class OpenDuasScreen extends StatefulWidget {
   final SubCategoryModel _subCategoryModel;
 
@@ -90,7 +95,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                     surfaceTintColor: Colors.transparent,
                     scrolledUnderElevation: 0,
                     leading: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: rbluedark,
                         size: 20,
@@ -104,7 +109,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                           _section.getName(language),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
@@ -129,10 +134,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                       IconButton(
                         tooltip: "Reading options".tr,
                         onPressed: showTextOptionsPopup,
-                        icon: const Icon(
-                          Icons.text_fields_rounded,
-                          color: rbluedark,
-                        ),
+                        icon: Icon(Icons.text_fields_rounded, color: rbluedark),
                       ),
                       const SizedBox(width: AppSpace.xs),
                     ],
@@ -288,8 +290,8 @@ class _ReadingOptionsSheet extends StatelessWidget {
           AppSpace.xl,
           AppSpace.lg,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppSurface.card,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: GetBuilder<ThemeController>(
@@ -310,7 +312,7 @@ class _ReadingOptionsSheet extends StatelessWidget {
               const SizedBox(height: AppSpace.lg),
               Text(
                 "Reading options".tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: rbluedark,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -319,10 +321,7 @@ class _ReadingOptionsSheet extends StatelessWidget {
               const SizedBox(height: AppSpace.lg),
               Text(
                 "Font Size".tr,
-                style: const TextStyle(
-                  color: rtext,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(color: rtext, fontWeight: FontWeight.w600),
               ),
               Row(
                 children: [
@@ -344,7 +343,7 @@ class _ReadingOptionsSheet extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   "Show transliteration".tr,
-                  style: const TextStyle(color: rtext),
+                  style: TextStyle(color: rtext),
                 ),
                 value: theme.showTransliteration,
                 onChanged: theme.setShowTransliteration,
@@ -353,7 +352,7 @@ class _ReadingOptionsSheet extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   "Show translation".tr,
-                  style: const TextStyle(color: rtext),
+                  style: TextStyle(color: rtext),
                 ),
                 value: theme.showTranslation,
                 onChanged: theme.setShowTranslation,
@@ -901,7 +900,7 @@ class _DuaTileState extends State<DuaTile> {
               ),
               title: Row(
                 children: [
-                  Icon(Icons.mic, color: Color(0xff2A158F)),
+                  Icon(Icons.mic, color: _recordInk),
                   const SizedBox(width: 8),
                   const Text(
                     "Check Recitation",
@@ -922,7 +921,7 @@ class _DuaTileState extends State<DuaTile> {
                             Icon(
                               Icons.info_outline,
                               size: 16,
-                              color: Color(0xff2A158F),
+                              color: _recordInk,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -939,7 +938,7 @@ class _DuaTileState extends State<DuaTile> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Color(0xff2A158F).withValues(alpha: 0.1),
+                            color: _recordInk.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Directionality(
@@ -949,7 +948,7 @@ class _DuaTileState extends State<DuaTile> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 22,
-                                color: Color(0xff2A158F),
+                                color: _recordInk,
                                 fontFamily: 'arabic',
                               ),
                               textAlign: TextAlign.center,
@@ -1032,10 +1031,8 @@ class _DuaTileState extends State<DuaTile> {
                     // Loading indicator
                     if (dialogIsLoading) ...[
                       const SizedBox(height: 24),
-                      const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xff2A158F),
-                        ),
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(_recordInk),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -1106,12 +1103,12 @@ class _DuaTileState extends State<DuaTile> {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Color(0xff2A158F).withValues(alpha: 0.1),
+                          color: _recordInk.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.mic_none,
-                          color: Color(0xff2A158F),
+                          color: _recordInk,
                           size: 40,
                         ),
                       ),
@@ -1166,7 +1163,7 @@ class _DuaTileState extends State<DuaTile> {
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: const Color(0xff2A158F).withOpacity(0.3),
+                      color: _recordInk.withOpacity(0.3),
                       width: 1.5,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -1180,7 +1177,7 @@ class _DuaTileState extends State<DuaTile> {
                   child: Text(
                     "Close",
                     style: TextStyle(
-                      color: const Color(0xff2A158F).withOpacity(0.7),
+                      color: _recordInk.withOpacity(0.7),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1327,7 +1324,7 @@ class _DuaTileState extends State<DuaTile> {
                 maxHeight: MediaQuery.of(context).size.height * 0.85,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppSurface.card,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: ClipRRect(
@@ -1420,9 +1417,9 @@ class _DuaTileState extends State<DuaTile> {
                     // Action Footer
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        border: Border(top: BorderSide(color: Colors.black12)),
+                      decoration: BoxDecoration(
+                        color: AppSurface.card,
+                        border: Border(top: BorderSide(color: AppSurface.line)),
                       ),
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -1592,7 +1589,7 @@ class _DuaTileState extends State<DuaTile> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xff2A158F).withOpacity(0.05),
+        color: _recordInk.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1661,7 +1658,7 @@ class _DuaTileState extends State<DuaTile> {
                     AppSpace.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppSurface.card,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: isPlayingAudio
@@ -1692,7 +1689,7 @@ class _DuaTileState extends State<DuaTile> {
                             textAlign: TextAlign.center,
                             textDirection: TextDirection.rtl,
                             style: TextStyle(
-                              color: Colors.black,
+                              color: rtext,
                               fontSize: isNarrow
                                   ? themeController.textSize
                                   : themeController.textSize * 1.15,
@@ -1984,7 +1981,6 @@ class _DuaTileState extends State<DuaTile> {
       ],
     );
   }
-
 }
 
 /// A dua card action. Filled for the primary one (Listen), tinted for the

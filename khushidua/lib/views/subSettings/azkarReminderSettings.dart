@@ -43,14 +43,14 @@ class AzkarReminderSettings extends StatelessWidget {
           elevation: 0,
           title: Text(
             "Azkar Reminders".tr,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           centerTitle: true,
-          iconTheme: const IconThemeData(color: rbluedark),
+          iconTheme: IconThemeData(color: rbluedark),
         ),
         body: GetBuilder<ReminderController>(
           builder: (controller) {
@@ -60,11 +60,10 @@ class AzkarReminderSettings extends StatelessWidget {
                 _card(
                   child: SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: rbluedark,
                     value: controller.azkarEnabled,
                     title: Text(
                       "Daily Azkar reminders".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: rbluedark,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -128,7 +127,7 @@ class AzkarReminderSettings extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSurface.card,
         borderRadius: BorderRadius.circular(20),
         boxShadow: AppElevation.card,
       ),
@@ -163,7 +162,7 @@ class AzkarReminderSettings extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   color: rbluedark,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -172,7 +171,7 @@ class AzkarReminderSettings extends StatelessWidget {
             ),
             Text(
               time.format(context),
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,

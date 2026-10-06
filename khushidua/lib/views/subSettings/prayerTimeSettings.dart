@@ -113,7 +113,7 @@ class _SettingCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: rbluedark,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -172,10 +172,10 @@ class _Dropdown extends StatelessWidget {
             color: Colors.grey.shade400,
             size: 22,
           ),
-          dropdownColor: Colors.white,
+          dropdownColor: AppSurface.card,
           borderRadius: AppRadius.cardAll,
           menuMaxHeight: 420,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppText.onPage,
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -200,7 +200,7 @@ class _Dropdown extends StatelessWidget {
                     Expanded(
                       child: Text(
                         label.tr,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppText.onPage,
                           fontSize: 15,
                           fontWeight: FontWeight.normal,
@@ -272,7 +272,7 @@ class _StyleOption extends StatelessWidget {
                 vertical: AppSpace.sm,
               ),
               alignment: Alignment.center,
-              decoration: cardDecoration(rbluedark, radius: AppRadius.sm),
+              decoration: cardDecoration(kBrandNavy, radius: AppRadius.sm),
               child: style == 'sun'
                   ? SunPathView(
                       now: DateTime(2000, 1, 1, 10, 30),
@@ -296,11 +296,7 @@ class _StyleOption extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (selected) ...[
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 16,
-                    color: rbluedark,
-                  ),
+                  Icon(Icons.check_circle_rounded, size: 16, color: rbluedark),
                   const SizedBox(width: AppSpace.xs),
                 ],
                 Flexible(

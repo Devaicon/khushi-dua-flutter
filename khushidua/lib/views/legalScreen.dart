@@ -127,7 +127,8 @@ abstract final class _MarkdownBlocks {
   static final _bullet = RegExp(r'^(\s*)- (.*)$');
   static final _heading = RegExp(r'^(#{1,3}) (.*)$');
 
-  static const _body = TextStyle(color: rtext, fontSize: 14.5, height: 1.5);
+  static TextStyle get _body =>
+      TextStyle(color: rtext, fontSize: 14.5, height: 1.5);
 
   static List<Widget> parse(String markdown) {
     final widgets = <Widget>[];
@@ -302,8 +303,10 @@ class _InlineTextState extends State<_InlineText> {
           TextSpan(
             text: url,
             recognizer: recognizer,
-            style: const TextStyle(
-              color: Color(0xFF3949AB),
+            style: TextStyle(
+              color: AppPalette.isDark
+                  ? const Color(0xFF9FA8DA)
+                  : const Color(0xFF3949AB),
               decoration: TextDecoration.underline,
             ),
           ),

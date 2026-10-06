@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 import 'package:khushidua/controllers/duaController.dart';
@@ -74,10 +73,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
               final stats = [
                 for (final sub in subCategories)
-                  _SectionStats.of(
-                    duaController.duasFor(sub.id),
-                    listened,
-                  ),
+                  _SectionStats.of(duaController.duasFor(sub.id), listened),
               ];
               final totalDuas = stats.fold<int>(0, (n, s) => n + s.total);
 
@@ -140,16 +136,16 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      systemOverlayStyle: kAppOverlayStyle,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: rbluedark),
+        icon: Icon(Icons.arrow_back_ios_new_rounded, color: rbluedark),
         onPressed: () => Get.back(),
       ),
       actions: [
         if (progress.restricted)
           IconButton(
             tooltip: "How to unlock sections".tr,
-            icon: const Icon(Icons.info_outline_rounded, color: rbluedark),
+            icon: Icon(Icons.info_outline_rounded, color: rbluedark),
             onPressed: () => showSectionUnlockHelp(progress),
           ),
       ],
@@ -166,7 +162,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: rbluedark,
             fontWeight: FontWeight.bold,
             fontSize: 17,
@@ -247,9 +243,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 icon: Icons.layers_rounded,
                 label: sectionCount == 1
                     ? "1 section".tr
-                    : "@count sections".trParams({
-                        'count': '$sectionCount',
-                      }),
+                    : "@count sections".trParams({'count': '$sectionCount'}),
                 color: widget.color,
               ),
               _InfoChip(
@@ -322,12 +316,9 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.md,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.md, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSurface.card,
         borderRadius: AppRadius.pillAll,
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
@@ -338,7 +329,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: rtext,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -377,7 +368,7 @@ class _UnlockCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   "Unlock more sections".tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: rtext,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -470,7 +461,7 @@ class _SectionTile extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(AppSpace.md + 2),
             decoration: BoxDecoration(
-              color: isUnlocked ? Colors.white : const Color(0xffEEEFF4),
+              color: isUnlocked ? AppSurface.card : AppSurface.raised,
               borderRadius: AppRadius.cardAll,
               border: Border.all(
                 color: isUnlocked
@@ -524,9 +515,7 @@ class _SectionTile extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpace.sm),
                 Icon(
-                  isUnlocked
-                      ? Icons.chevron_right_rounded
-                      : Icons.lock_rounded,
+                  isUnlocked ? Icons.chevron_right_rounded : Icons.lock_rounded,
                   color: isUnlocked ? ink : AppText.onPageMuted,
                   size: isUnlocked ? 24 : 18,
                 ),

@@ -75,7 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: Text(
           "Explore Duas".tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
+          style: TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -88,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppSurface.card,
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
                   BoxShadow(
@@ -101,14 +101,11 @@ class _SearchScreenState extends State<SearchScreen> {
               child: TextFormField(
                 controller: _searchController,
                 onChanged: (_) => _filterSubCategories(),
-                style: const TextStyle(
-                  color: rbluedark,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: rbluedark, fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
                   hintText: "Search for Duas...".tr,
                   hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search_rounded,
                     color: rbluedark,
                     size: 22,
@@ -164,8 +161,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       );
                       _filterSubCategories();
                     },
-                    backgroundColor: Colors.white,
-                    surfaceTintColor: Colors.white,
+                    backgroundColor: AppSurface.card,
+                    surfaceTintColor: AppSurface.card,
                     elevation: 2,
                     shadowColor: Colors.black12,
                     shape: RoundedRectangleBorder(
@@ -314,7 +311,7 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(height: 20),
         Text(
           "No results found".tr,
-          style: const TextStyle(
+          style: TextStyle(
             color: rbluedark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -335,7 +332,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -384,7 +381,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: rbluedark,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -410,7 +407,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: rbluedark.withOpacity(0.05),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_forward_ios_rounded,
                       color: rbluedark,
                       size: 14,

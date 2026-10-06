@@ -645,7 +645,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             children: [
               Text(
                 "Prayer Times".tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: rtext,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -711,7 +711,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         child: Container(
           padding: const EdgeInsets.all(AppSpace.sm + 2),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppSurface.card,
             shape: BoxShape.circle,
             boxShadow: AppElevation.card,
           ),
@@ -751,7 +751,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 Text(
                   selectedHijriDate.toFormat("dd MMMM yyyy"),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: rbluedark,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -785,7 +785,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                               ),
                               child: Text(
                                 "Today".tr,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: rbluedark,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -829,7 +829,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpace.xl - 4),
-      decoration: cardDecoration(rbluedark),
+      decoration: cardDecoration(kBrandNavy),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -992,7 +992,7 @@ class _NextPrayerSkeleton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpace.xl - 4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: AppRadius.cardAll,
         ),
         child: Column(
@@ -1109,7 +1109,7 @@ class _NamazTileState extends State<NamazTile> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isNext ? rbluedark : rbluedark.withValues(alpha: 0.06),
+                  color: isNext ? brandFill : rbluedark.withValues(alpha: 0.06),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -1157,7 +1157,7 @@ class _NamazTileState extends State<NamazTile> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: rbluedark,
+                          color: brandFill,
                           borderRadius: AppRadius.pillAll,
                         ),
                         child: Text(

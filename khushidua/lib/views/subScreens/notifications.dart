@@ -37,12 +37,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
       appBar: AppBar(
         title: Text(
           "Notifications".tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
+          style: TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
         ),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: rbluedark),
+        iconTheme: IconThemeData(color: rbluedark),
         actions: [
           TextButton(
             onPressed: _confirmClearAll,
@@ -145,7 +145,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           const SizedBox(height: 24),
           Text(
             "All caught up!".tr,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -178,7 +178,7 @@ class NotificationTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -215,7 +215,7 @@ class NotificationTile extends StatelessWidget {
                             color: rbluedark.withOpacity(0.05),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.notifications_active_rounded,
                             color: rbluedark,
                             size: 22,
@@ -233,7 +233,7 @@ class NotificationTile extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       notificationModel.title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: rbluedark,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -253,7 +253,7 @@ class NotificationTile extends StatelessWidget {
                               Text(
                                 notificationModel.message,
                                 style: TextStyle(
-                                  color: rblack.withOpacity(0.6),
+                                  color: rtext.withValues(alpha: 0.6),
                                   fontSize: 14,
                                   height: 1.5,
                                 ),

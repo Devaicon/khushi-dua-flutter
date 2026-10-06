@@ -115,13 +115,13 @@ class _DonateScreenState extends State<DonateScreen> {
       child: Scaffold(
         backgroundColor: AppSurface.page,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: AppSurface.page,
           elevation: 0,
           centerTitle: true,
-          iconTheme: const IconThemeData(color: rbluedark),
+          iconTheme: IconThemeData(color: rbluedark),
           title: Text(
             "Support LearningSouls".tr,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -142,7 +142,7 @@ class _DonateScreenState extends State<DonateScreen> {
                     value: _progress == 0 ? null : _progress / 100,
                     minHeight: 3,
                     backgroundColor: Colors.transparent,
-                    valueColor: const AlwaysStoppedAnimation(rbluedark),
+                    valueColor: AlwaysStoppedAnimation(rbluedark),
                   ),
                 ),
         ),
@@ -174,7 +174,7 @@ class _DonateScreenState extends State<DonateScreen> {
             Text(
               "The donation page could not load".tr,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -198,12 +198,12 @@ class _DonateScreenState extends State<DonateScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.link_rounded, color: rbluedark, size: 18),
+                  Icon(Icons.link_rounded, color: rbluedark, size: 18),
                   const SizedBox(width: AppSpace.sm),
                   Flexible(
                     child: SelectableText(
                       kDonationUrl,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: rbluedark,
                         fontWeight: FontWeight.w600,
                       ),
@@ -234,7 +234,7 @@ class _DonateScreenState extends State<DonateScreen> {
               child: FilledButton.icon(
                 onPressed: _openInBrowser,
                 style: FilledButton.styleFrom(
-                  backgroundColor: rbluedark,
+                  backgroundColor: brandFill,
                   padding: const EdgeInsets.symmetric(vertical: AppSpace.md),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppRadius.pillAll,

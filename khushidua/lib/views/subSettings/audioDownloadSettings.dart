@@ -108,7 +108,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
   Widget _buildIntro() {
     return Container(
       padding: const EdgeInsets.all(AppSpace.lg),
-      decoration: cardDecoration(rbluedark),
+      decoration: cardDecoration(kBrandNavy),
       child: Row(
         children: [
           const Icon(
@@ -185,7 +185,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
                   children: [
                     Text(
                       _service.groupLabel(type),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: rbluedark,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -275,7 +275,7 @@ class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
     final download = FilledButton(
       onPressed: group.total == 0 ? null : () => _service.downloadGroup(type),
       style: FilledButton.styleFrom(
-        backgroundColor: rbluedark,
+        backgroundColor: brandFill,
         visualDensity: VisualDensity.compact,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
       ),

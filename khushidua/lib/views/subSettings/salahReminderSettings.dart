@@ -105,14 +105,14 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
         appBar: AppBar(
           title: Text(
             "Salah Reminders".tr,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           centerTitle: true,
-          iconTheme: const IconThemeData(color: rbluedark),
+          iconTheme: IconThemeData(color: rbluedark),
         ),
         body: GetBuilder<ReminderController>(
           builder: (controller) {
@@ -125,7 +125,7 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
                     value: controller.salahEnabled,
                     title: Text(
                       "Salah reminders".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: rbluedark,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -184,7 +184,7 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
             children: [
               Text(
                 prayer.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: rbluedark,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -266,7 +266,7 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
           vertical: AppSpace.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? rbluedark : rbluedark.withValues(alpha: 0.06),
+          color: selected ? brandFill : rbluedark.withValues(alpha: 0.06),
           borderRadius: AppRadius.smAll,
         ),
         child: Row(

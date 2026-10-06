@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../constants/colors.dart';
 import '../constants/theme.dart';
 import '../views/donateScreen.dart';
 
@@ -86,7 +87,7 @@ class DonateCard extends StatelessWidget {
               child: Text(
                 "Donate".tr,
                 style: TextStyle(
-                  color: onDark ? const Color(0xFF1A237E) : kDonateSeed.ink,
+                  color: onDark ? kBrandNavy : kDonateSeed.inkOnWhite,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../controllers/appearanceController.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -258,6 +260,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 userController.selectedLanguage,
                               ),
                             ),
+                            _SettingsRow(
+                              icon: Icons.dark_mode_rounded,
+                              seed: const Color(0xFF455A64),
+                              title: "Appearance".tr,
+                              subtitle: "Light, dark or match your phone".tr,
+                              trailing: GetBuilder<AppearanceController>(
+                                builder: (appearance) =>
+                                    _buildAppearanceDropdown(appearance),
+                              ),
+                            ),
                           ],
                         ),
                         _SettingsGroup(
@@ -398,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: Colors.grey.shade400,
           size: 22,
         ),
-        dropdownColor: Colors.white,
+        dropdownColor: AppSurface.card,
         borderRadius: AppRadius.cardAll,
         menuMaxHeight: 420,
         style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
@@ -420,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     "${language['flag']} ${language['name']}",
-                    style: const TextStyle(color: AppText.onPage, fontSize: 15),
+                    style: TextStyle(color: AppText.onPage, fontSize: 15),
                   ),
                   if (language['name'] == selected) ...[
                     const SizedBox(width: AppSpace.sm),
@@ -436,6 +448,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
         onChanged: (value) {
           if (value != null && value != selected) changeLanguage(value);
+        },
+      ),
+    );
+  }
+
+  /// Light, dark or the phone's setting, in the language picker's style.
+  Widget _buildAppearanceDropdown(AppearanceController appearance) {
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: appearance.mode,
+        isDense: true,
+        icon: Icon(
+          Icons.expand_more_rounded,
+          color: Colors.grey.shade400,
+          size: 22,
+        ),
+        dropdownColor: AppSurface.card,
+        borderRadius: AppRadius.cardAll,
+        style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
+        selectedItemBuilder: (context) => [
+          for (final label in AppearanceController.modes.values)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(label.tr),
+            ),
+        ],
+        items: [
+          for (final MapEntry(key: mode, value: label)
+              in AppearanceController.modes.entries)
+            DropdownMenuItem<String>(
+              value: mode,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label.tr,
+                    style: TextStyle(color: AppText.onPage, fontSize: 15),
+                  ),
+                  if (mode == appearance.mode) ...[
+                    const SizedBox(width: AppSpace.sm),
+                    const Icon(
+                      Icons.check_rounded,
+                      color: Color(0xFF2E9E5B),
+                      size: 18,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+        onChanged: (value) {
+          if (value != null) appearance.setMode(value);
         },
       ),
     );
@@ -457,7 +521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         AppSpace.sm,
       ),
       padding: const EdgeInsets.all(AppSpace.xl),
-      decoration: cardDecoration(rbluedark, radius: 28),
+      decoration: cardDecoration(kBrandNavy, radius: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -477,11 +541,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppSurface.card,
                             shape: BoxShape.circle,
                             boxShadow: AppElevation.card,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.edit_rounded,
                             size: 13,
                             color: rbluedark,
@@ -647,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Center(
             child: Text(
               "Select Your Avatar".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -696,7 +760,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             Text(
               isGirlAvatar(imagePath) ? "Girl".tr : "Boy".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -815,7 +879,7 @@ class _SettingsRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppText.onPage,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

@@ -305,7 +305,7 @@ class _CompassScreenState extends State<CompassScreen> {
             children: [
               Text(
                 "Qibla Direction".tr,
-                style: const TextStyle(
+                style: TextStyle(
                   color: rtext,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -362,7 +362,7 @@ class _CompassScreenState extends State<CompassScreen> {
           const SizedBox(height: AppSpace.md),
           Text(
             message,
-            style: const TextStyle(color: rtext, fontSize: 14, height: 1.4),
+            style: TextStyle(color: rtext, fontSize: 14, height: 1.4),
             textAlign: TextAlign.center,
           ),
         ],
@@ -399,7 +399,7 @@ class _CompassScreenState extends State<CompassScreen> {
           Flexible(
             child: Text(
               message,
-              style: const TextStyle(color: rtext, fontSize: 12, height: 1.35),
+              style: TextStyle(color: rtext, fontSize: 12, height: 1.35),
             ),
           ),
         ],
@@ -481,7 +481,7 @@ class _CompassScreenState extends State<CompassScreen> {
     // Wait for the model and sensor inventory so the needle is never drawn
     // against a heading that has not yet been corrected to true north.
     if (!_envResolved) {
-      return const CircularProgressIndicator(color: rbluedark);
+      return CircularProgressIndicator(color: rbluedark);
     }
 
     // A device with no magnetometer physically cannot produce a heading.
@@ -527,7 +527,7 @@ class _CompassScreenState extends State<CompassScreen> {
           color: _kWarnAmber,
         );
       }
-      return const CircularProgressIndicator(color: rbluedark);
+      return CircularProgressIndicator(color: rbluedark);
     }
 
     // Android reports a MAGNETIC heading; iOS reports a TRUE heading and
@@ -607,7 +607,7 @@ class _CompassScreenState extends State<CompassScreen> {
             turn > 0
                 ? "Turn right @degrees°".trParams({'degrees': degrees})
                 : "Turn left @degrees°".trParams({'degrees': degrees}),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: rbluedark,
@@ -626,7 +626,7 @@ class _CompassScreenState extends State<CompassScreen> {
       children: [
         Text(
           '${"Qibla".tr}: ${_qiblaDirection.toStringAsFixed(0)}°',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: rbluedark,
@@ -696,8 +696,8 @@ class CompassPainter extends CustomPainter {
       center,
       r,
       Paint()
-        ..shader = const RadialGradient(
-          colors: [Colors.white, Color(0xFFF1F2F8)],
+        ..shader = RadialGradient(
+          colors: [AppSurface.card, AppSurface.raised],
           stops: [0.62, 1],
         ).createShader(face),
     );
@@ -796,7 +796,7 @@ class CompassPainter extends CustomPainter {
         ..color = Colors.black.withValues(alpha: 0.12)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
-    canvas.drawCircle(Offset.zero, 14, Paint()..color = _gold(Colors.white));
+    canvas.drawCircle(Offset.zero, 14, Paint()..color = _gold(AppSurface.card));
     canvas.rotate(q);
     final Rect kaaba = Rect.fromCenter(
       center: Offset.zero,
@@ -853,7 +853,13 @@ class CompassPainter extends CustomPainter {
       ..lineTo(-length * 0.26, length * 0.34)
       ..close();
     canvas.drawShadow(needle, Colors.black, 3, false);
-    canvas.drawPath(needle, Paint()..color = _gold(const Color(0xFF3949AB)));
+    canvas.drawPath(
+      needle,
+      Paint()
+        ..color = _gold(
+          AppPalette.isDark ? const Color(0xFF7986CB) : const Color(0xFF3949AB),
+        ),
+    );
     // A darker half gives the needle some depth.
     canvas.drawPath(
       Path()
@@ -863,7 +869,7 @@ class CompassPainter extends CustomPainter {
         ..close(),
       Paint()..color = Color.lerp(rbluedark, const Color(0xFFE69500), glow)!,
     );
-    canvas.drawCircle(Offset.zero, 7, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset.zero, 7, Paint()..color = AppSurface.card);
     canvas.drawCircle(
       Offset.zero,
       7,

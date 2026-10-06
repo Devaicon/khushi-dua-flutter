@@ -147,7 +147,7 @@ class _QiblaTabState extends State<QiblaTab> {
       backgroundColor: AppSurface.page,
       body: Center(
         child: _loading || _problem == null
-            ? const CircularProgressIndicator(color: rbluedark)
+            ? CircularProgressIndicator(color: rbluedark)
             : _buildProblem(_problem!),
       ),
     );
@@ -197,7 +197,7 @@ class _QiblaTabState extends State<QiblaTab> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -207,7 +207,7 @@ class _QiblaTabState extends State<QiblaTab> {
           FilledButton(
             onPressed: onAction,
             style: FilledButton.styleFrom(
-              backgroundColor: rbluedark,
+              backgroundColor: brandFill,
               shape: RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
             ),
             child: Text(action),

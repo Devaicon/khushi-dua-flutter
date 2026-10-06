@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../services/authService.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rwhite,
+      backgroundColor: AppSurface.page,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -32,13 +33,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Container(
                   width: MediaQuery.of(context).size.width,
                   height: 200,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
-                    ),
-                  ),
+                  decoration: BoxDecoration(gradient: AppGradient.authHeader),
                   child: Stack(
                     children: [
                       Positioned(
@@ -46,9 +41,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         left: 10,
                         child: IconButton(
                           onPressed: () => Get.back(),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: rblack,
+                            color: rtext,
                           ),
                         ),
                       ),
@@ -56,7 +51,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const FadeInAnimationTTB(
+                            FadeInAnimationTTB(
                               delay: 1,
                               child: Icon(
                                 Icons.lock_reset_rounded,
@@ -69,10 +64,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               delay: 1.2,
                               child: Text(
                                 "Reset Password".tr,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 22,
-                                  color: rblack,
+                                  color: rtext,
                                 ),
                               ),
                             ),
@@ -85,7 +80,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -95,10 +93,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         delay: 1.4,
                         child: Text(
                           "Forgot your password?".tr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: rblack,
+                            color: rtext,
                           ),
                         ),
                       ),
@@ -106,7 +104,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       FadeInAnimationBTT(
                         delay: 1.6,
                         child: Text(
-                          "Enter your email address below and we'll send you a link to reset your password.".tr,
+                          "Enter your email address below and we'll send you a link to reset your password."
+                              .tr,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -115,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      
+
                       // Email Field
                       FadeInAnimationBTT(
                         delay: 1.8,
@@ -124,10 +123,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           children: [
                             Text(
                               "Email".tr,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: rblack,
+                                color: rtext,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -138,33 +137,46 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 if (value == null || value.trim().isEmpty) {
                                   return "Email is required".tr;
                                 }
-                                final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                final emailRegex = RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                );
                                 if (!emailRegex.hasMatch(value.trim())) {
-                                  return "Please enter a valid email address".tr;
+                                  return "Please enter a valid email address"
+                                      .tr;
                                 }
                                 return null;
                               },
                               decoration: InputDecoration(
                                 hintText: 'Enter your email'.tr,
-                                prefixIcon: const Icon(Icons.email_outlined, color: rbluedark),
+                                prefixIcon: Icon(
+                                  Icons.email_outlined,
+                                  color: rbluedark,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: rbluedark, width: 2),
+                                  borderSide: BorderSide(
+                                    color: rbluedark,
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
 
                       // Reset Button
@@ -178,7 +190,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
-                              color: _isLoading ? Colors.grey : rbluedark,
+                              color: _isLoading ? Colors.grey : brandFill,
                               boxShadow: [
                                 if (!_isLoading)
                                   BoxShadow(
@@ -216,7 +228,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await AuthService().sendPasswordResetEmail(_emailController.text.trim());
+        await AuthService().sendPasswordResetEmail(
+          _emailController.text.trim(),
+        );
         // Success snackbar is handled within AuthService
         // Optionally navigate back after a short delay
         Future.delayed(const Duration(seconds: 2), () {

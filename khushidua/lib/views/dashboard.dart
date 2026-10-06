@@ -132,7 +132,7 @@ class _DashboardState extends State<Dashboard> {
       (c) => c.id == categoryId,
     );
     if (matches.isEmpty) return;
-    Get.to(() => CategoryDetailScreen(matches.first, rbluedark));
+    Get.to(() => CategoryDetailScreen(matches.first, kBrandNavy));
   }
 
   getSharedPrefs() async {
@@ -201,7 +201,7 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildNavBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppSurface.card,
         boxShadow: AppElevation.raised,
       ),
       child: SafeArea(
@@ -233,7 +233,7 @@ class _DashboardState extends State<Dashboard> {
             vertical: AppSpace.sm,
           ),
           decoration: BoxDecoration(
-            color: isSelected ? rbluedark : Colors.transparent,
+            color: isSelected ? brandFill : Colors.transparent,
             borderRadius: AppRadius.pillAll,
           ),
           child: AnimatedScale(

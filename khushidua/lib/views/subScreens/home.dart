@@ -169,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : "Guest User".tr,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: rtext,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -482,7 +482,7 @@ class _InboxBell extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpace.sm),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppSurface.card,
                   shape: BoxShape.circle,
                   boxShadow: AppElevation.card,
                 ),
@@ -506,7 +506,7 @@ class _InboxBell extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFE53935),
                       borderRadius: AppRadius.pillAll,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: AppSurface.card, width: 1.5),
                     ),
                     child: Text(
                       unread > 9 ? "9+" : "$unread",

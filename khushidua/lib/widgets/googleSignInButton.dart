@@ -51,7 +51,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         ),
         const SizedBox(height: AppSpace.lg),
         Material(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: BorderRadius.circular(12),
           elevation: 0,
           child: InkWell(
@@ -65,7 +65,7 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
               ),
               child: Center(
                 child: _busy
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
