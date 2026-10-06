@@ -56,6 +56,27 @@ class LegalScreen extends StatelessWidget {
   }
 }
 
+/// The references and credits, from `assets/legal/references.md`, rendered
+/// the same way as the legal documents.
+class ReferencesScreen extends StatelessWidget {
+  const ReferencesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppSurface.page,
+      appBar: AppBar(
+        title: Text("References".tr),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
+      body: const _LegalDocument(assetPath: 'assets/legal/references.md'),
+    );
+  }
+}
+
 class _LegalDocument extends StatefulWidget {
   const _LegalDocument({required this.assetPath});
 

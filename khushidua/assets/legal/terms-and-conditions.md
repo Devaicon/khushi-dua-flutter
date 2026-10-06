@@ -26,7 +26,7 @@ Anyone may use the App. If you are under 13 (or the age of digital consent in yo
 
 - We try hard to present duas, translations, transliterations and audio accurately and from reliable sources. Even so, they are provided for learning and personal devotion, **not as religious rulings (fatwa)**. For religious guidance, please consult a qualified scholar.
 - Translations are meanings, not replacements for the original Arabic.
-- If you find an error, please tell us at ghazanfar.shah@learningsouls.org so we can correct it.
+- If you find an error, please tell us at admin@learningsouls.org so we can correct it.
 
 ## 5. Prayer times and Qibla direction
 
@@ -103,4 +103,4 @@ If you downloaded the App from the Apple App Store, you also agree that:
 ## 19. Contact us
 
 Khushi Dua
-Email: ghazanfar.shah@learningsouls.org
+Email: admin@learningsouls.org

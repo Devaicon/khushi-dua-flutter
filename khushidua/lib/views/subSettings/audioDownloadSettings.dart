@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:khushidua/constants/colors.dart';
-import 'package:khushidua/constants/theme.dart';
-import 'package:khushidua/controllers/duaController.dart';
-import 'package:khushidua/models/duaModel.dart';
-import 'package:khushidua/services/audioDownloadService.dart';
 
+import '../../constants/colors.dart';
+import '../../constants/theme.dart';
+import '../../services/audioDownloadService.dart';
+
+/// Download Manager: the four audio groups, each downloaded whole.
+///
+/// Per-dua selection and the "background downloading" switch are gone: every
+/// download now runs in the background natively, and a group is the unit
+/// people actually want offline.
 class AudioDownloadSettings extends StatefulWidget {
   const AudioDownloadSettings({super.key});
 
@@ -14,870 +18,293 @@ class AudioDownloadSettings extends StatefulWidget {
 }
 
 class _AudioDownloadSettingsState extends State<AudioDownloadSettings> {
-  final AudioDownloadService _downloadService =
-      Get.find<AudioDownloadService>();
-  final DuaController _duaController = Get.find<DuaController>();
+  final AudioDownloadService _service = Get.find<AudioDownloadService>();
+  int? _storageUsed;
 
-  final List<AudioType> _bulkSelectedGroups = [];
-  final Map<AudioType, int> _categorySizes = {};
-  bool _isLoadingSizes = true;
-
-  // Per-dua selection
-  final Set<String> _selectedDuaIds = {};
-  final List<AudioType> _duaSelectedTypes = [AudioType.grownUps];
-  final TextEditingController _searchController = TextEditingController();
-  String _search = "";
-
-  // Background downloading is opt-in; this reflects the stored preference.
-  bool _backgroundEnabled = false;
+  static const Map<AudioType, (IconData, Color)> _looks = {
+    AudioType.littleKids: (Icons.child_care_rounded, Color(0xFFF06292)),
+    AudioType.olderKids: (Icons.school_rounded, Color(0xFF64B5F6)),
+    AudioType.grownUps: (Icons.person_rounded, Color(0xFF4DB6AC)),
+    AudioType.english: (Icons.translate_rounded, Color(0xFF7986CB)),
+  };
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    _loadBackgroundPref();
+    _load();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<void> _load() async {
+    await _service.refresh();
+    _updateStorage();
+    await _service.measureGroups();
   }
 
-  Future<void> _loadBackgroundPref() async {
-    final enabled = await _downloadService.isDownloadsEnabled();
-    if (mounted) setState(() => _backgroundEnabled = enabled);
+  Future<void> _updateStorage() async {
+    final used = await _service.storageUsed();
+    if (mounted) setState(() => _storageUsed = used);
   }
 
-  List<DuaModel> get _visibleDuas {
-    final all = _duaController.allDuas;
-    if (_search.trim().isEmpty) return all;
-    final query = _search.toLowerCase().trim();
-    return all
-        .where((d) => d.english.toLowerCase().contains(query))
-        .toList();
-  }
-
-  Future<void> _loadInitialData() async {
-    setState(() => _isLoadingSizes = true);
-    // Pre-calculate all sizes for categories
-    final types = [
-      AudioType.littleKids,
-      AudioType.olderKids,
-      AudioType.grownUps, // This will be labeled as Urdu Translations
-      AudioType.english,
-    ];
-
-    for (var type in types) {
-      final size = await _downloadService.getTotalSizeForDuas(
-        _duaController.allDuas,
-        [type],
-      );
-      _categorySizes[type] = size;
-    }
-
-    if (mounted) setState(() => _isLoadingSizes = false);
-  }
-
-  int get _selectedTotalSize {
-    int total = 0;
-    for (var type in _bulkSelectedGroups) {
-      total += _categorySizes[type] ?? 0;
-    }
-    return total;
+  Future<void> _confirmRemove(AudioType type) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Remove downloaded audio?".tr),
+        content: Text(_service.groupLabel(type)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel".tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+            ),
+            child: Text("Remove".tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _service.removeGroup(type);
+    _updateStorage();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppSurface.page,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          "Download Manager".tr,
-          style: const TextStyle(
-            color: rblack,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: rblack,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Obx(() {
-              final tasks = _downloadService.tasks;
-              final completed = _downloadService.completedCount.value;
-              final total = tasks.length;
-              final progress = _downloadService.totalProgress.value;
-              final statusMessage = _downloadService.currentStatusMessage.value;
-              final currentTitle =
-                  _downloadService.currentlyDownloadingTitle.value;
+      appBar: AppBar(title: Text("Download Manager".tr)),
+      body: Obx(() {
+        final states = Map.of(_service.state);
+        // Keeps the storage figure in step as files land.
+        _scheduleStorageUpdate(
+          states.values.fold<int>(0, (n, s) => n + s.done),
+        );
 
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildStatusCard(
-                            progress,
-                            completed,
-                            total,
-                            statusMessage,
-                            currentTitle,
-                          ),
-                          const SizedBox(height: 24),
-                          _buildBackgroundToggle(),
-                          const SizedBox(height: 24),
-                          _buildBulkDownloadSection(),
-                          const SizedBox(height: 24),
-                          _buildIndividualSection(),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24.0),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.info_outline_rounded,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Download duas to play offline".tr,
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 40)),
-                ],
-              );
-            }),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomActionBar(),
-    );
-  }
-
-  Widget _buildStatusCard(
-    double progress,
-    int completed,
-    int total,
-    String message,
-    String currentTitle,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff4A3AFF), Color(0xff2A158F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xff4A3AFF).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Icon(
-                Icons.cloud_download_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  "${(progress * 100).toInt()}%",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+        return ListView(
+          padding: const EdgeInsets.all(AppSpace.lg),
+          children: [
+            _buildIntro(),
+            const SizedBox(height: AppSpace.lg),
+            for (final type in AudioDownloadService.groups) ...[
+              _buildGroup(type, states[type]!),
+              const SizedBox(height: AppSpace.md),
             ],
-          ),
-          const SizedBox(height: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              minHeight: 12,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      currentTitle.isNotEmpty ? "DOWNLOADING" : "QUEUE STATUS",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      currentTitle.isNotEmpty
-                          ? currentTitle
-                          : (total > 0
-                                ? "$completed / $total Files Completed"
-                                : "Waiting for download selection"),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (currentTitle.isNotEmpty)
-                const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildBulkDownloadSection() {
+  int? _lastDoneTotal;
+  void _scheduleStorageUpdate(int doneTotal) {
+    if (_lastDoneTotal == doneTotal) return;
+    _lastDoneTotal = doneTotal;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateStorage());
+  }
+
+  Widget _buildIntro() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Bulk Download",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: rblack,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildBulkGroupRow(AudioType.littleKids),
-          _buildBulkGroupRow(AudioType.olderKids),
-          _buildBulkGroupRow(AudioType.grownUps),
-          _buildBulkGroupRow(AudioType.english),
-          const Divider(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Total Selection",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    _downloadService.formatSize(_selectedTotalSize),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xff4A3AFF),
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed: _bulkSelectedGroups.isEmpty
-                    ? null
-                    : _startBulkDownload,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4A3AFF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "Bulk Download",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildBackgroundToggle() {
-    return _buildCard(
+      padding: const EdgeInsets.all(AppSpace.lg),
+      decoration: cardDecoration(rbluedark),
       child: Row(
         children: [
+          const Icon(
+            Icons.cloud_download_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
+          const SizedBox(width: AppSpace.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Background downloading",
-                  style: TextStyle(
+                Text(
+                  "Listen offline".tr,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: rblack,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  _backgroundEnabled
-                      ? "Duas download quietly while you use the app."
-                      : "Off. Nothing downloads unless you ask for it.",
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  "Downloads keep going in the background, even if you close the app."
+                      .tr,
+                  style: TextStyle(color: AppText.onSurfaceMuted, fontSize: 12),
                 ),
+                if (_storageUsed != null) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  Text(
+                    "${"Storage used".tr}: ${_service.formatSize(_storageUsed!)}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-          Switch(
-            value: _backgroundEnabled,
-            activeColor: const Color(0xff4A3AFF),
-            onChanged: (value) async {
-              setState(() => _backgroundEnabled = value);
-              await _downloadService.setDownloadsEnabled(value);
-            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIndividualSection() {
-    final duas = _visibleDuas;
+  Widget _buildGroup(AudioType type, GroupState group) {
+    final (icon, seed) = _looks[type]!;
+    final size = group.bytes;
+    final details = [
+      "${group.done} / ${group.total} ${'duas'.tr}",
+      if (size != null && size > 0) _service.formatSize(size),
+    ].join("  •  ");
 
-    return _buildCard(
+    return Container(
+      padding: const EdgeInsets.all(AppSpace.lg),
+      decoration: plainCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
-                child: Text(
-                  "Individual Duas",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: rblack,
-                  ),
+              Container(
+                padding: const EdgeInsets.all(AppSpace.sm),
+                decoration: BoxDecoration(
+                  gradient: AppGradient.forSeed(seed),
+                  borderRadius: AppRadius.smAll,
                 ),
+                child: Icon(icon, color: Colors.white, size: 22),
               ),
-              if (_selectedDuaIds.isNotEmpty)
-                TextButton(
-                  onPressed: () => setState(_selectedDuaIds.clear),
-                  child: const Text("Clear"),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Pick exactly the duas you want offline.",
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _searchController,
-            onChanged: (value) => setState(() => _search = value),
-            decoration: InputDecoration(
-              hintText: "Search duas".tr,
-              prefixIcon: const Icon(Icons.search_rounded, size: 20),
-              isDense: true,
-              filled: true,
-              fillColor: AppSurface.page,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "AUDIO TO DOWNLOAD",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AudioType.littleKids,
-              AudioType.olderKids,
-              AudioType.grownUps,
-              AudioType.english,
-            ].map(_buildTypeChip).toList(),
-          ),
-          const SizedBox(height: 16),
-          if (duas.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text(
-                  _duaController.allDuas.isEmpty
-                      ? "Duas are still loading."
-                      : "No duas match that search.",
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                ),
-              ),
-            )
-          else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const ClampingScrollPhysics(),
-                itemCount: duas.length,
-                itemBuilder: (context, index) => _buildDuaRow(duas[index]),
-              ),
-            ),
-          const Divider(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Selected",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    "${_selectedDuaIds.length} dua(s)",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xff4A3AFF),
-                    ),
-                  ),
-                ],
-              ),
-              ElevatedButton(
-                onPressed:
-                    (_selectedDuaIds.isEmpty || _duaSelectedTypes.isEmpty)
-                    ? null
-                    : _startSelectionDownload,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4A3AFF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "Download Selected",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeChip(AudioType type) {
-    final isSelected = _duaSelectedTypes.contains(type);
-    return ChoiceChip(
-      label: Text(_getTypeLabel(type)),
-      selected: isSelected,
-      showCheckmark: false,
-      selectedColor: const Color(0xff4A3AFF),
-      backgroundColor: AppSurface.page,
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-        color: isSelected ? Colors.white : Colors.grey.shade700,
-      ),
-      side: BorderSide(color: Colors.grey.withOpacity(0.2)),
-      onSelected: (_) {
-        setState(() {
-          if (isSelected) {
-            _duaSelectedTypes.remove(type);
-          } else {
-            _duaSelectedTypes.add(type);
-          }
-        });
-      },
-    );
-  }
-
-  Widget _buildDuaRow(DuaModel dua) {
-    final isSelected = _selectedDuaIds.contains(dua.id);
-
-    // Which of the chosen audio types this dua actually has a recording for.
-    final available = _duaSelectedTypes
-        .where((type) => _urlFor(dua, type).isNotEmpty)
-        .length;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedDuaIds.remove(dua.id);
-          } else {
-            _selectedDuaIds.add(dua.id);
-          }
-        });
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          children: [
-            Icon(
-              isSelected
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              color: isSelected ? const Color(0xff4A3AFF) : Colors.grey,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                dua.english.isEmpty ? "Untitled dua" : dua.english,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? rblack : Colors.grey.shade700,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Tells the user up front when a recording simply does not exist,
-            // instead of silently queueing nothing.
-            Text(
-              "$available/${_duaSelectedTypes.length}",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: available == 0
-                    ? Colors.red.shade300
-                    : Colors.grey.shade500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _urlFor(DuaModel dua, AudioType type) {
-    switch (type) {
-      case AudioType.littleKids:
-        return dua.littleKidsAudio;
-      case AudioType.olderKids:
-        return dua.olderKidsAudio;
-      case AudioType.grownUps:
-        return dua.grownUpsAudio;
-      case AudioType.english:
-        return dua.englishTranslation ?? "";
-      case AudioType.urdu:
-        return dua.urduTranslation ?? "";
-    }
-  }
-
-  void _startSelectionDownload() {
-    final selected = _duaController.allDuas
-        .where((d) => _selectedDuaIds.contains(d.id))
-        .toList();
-
-    final queued = selected
-        .expand((d) => _duaSelectedTypes.map((t) => _urlFor(d, t)))
-        .where((url) => url.isNotEmpty)
-        .length;
-
-    if (queued == 0) {
-      Get.snackbar(
-        "Nothing to download",
-        "None of the selected duas have a recording for those audio types.",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade400,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    _downloadService.processBulkDownload(selected, _duaSelectedTypes);
-    Get.snackbar(
-      "Downloads Queued",
-      "$queued file(s) queued for offline access.",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xff4A3AFF),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
-    );
-  }
-
-  Widget _buildBulkGroupRow(AudioType type) {
-    final isSelected = _bulkSelectedGroups.contains(type);
-    final size = _categorySizes[type];
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _bulkSelectedGroups.remove(type);
-          } else {
-            _bulkSelectedGroups.add(type);
-          }
-        });
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          children: [
-            Icon(
-              isSelected
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              color: isSelected ? const Color(0xff4A3AFF) : Colors.grey,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                _getTypeLabel(type),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? rblack : Colors.grey.shade700,
-                ),
-              ),
-            ),
-            if (_isLoadingSizes)
-              const SizedBox(
-                height: 12,
-                width: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5),
-              )
-            else if (size != null)
-              Text(
-                _downloadService.formatSize(size),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isSelected ? const Color(0xff4A3AFF) : Colors.grey,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getTypeLabel(AudioType type) {
-    switch (type) {
-      case AudioType.littleKids:
-        return "Little Kids".tr;
-      case AudioType.olderKids:
-        return "Older Kids".tr;
-      case AudioType.grownUps:
-        return "Grown ups".tr;
-      case AudioType.english:
-        return "English Translation".tr;
-      case AudioType.urdu:
-        return "Urdu Translation".tr;
-    }
-  }
-
-  Widget? _buildBottomActionBar() {
-    return Obx(() {
-      final isDownloading =
-          _downloadService.totalProgress.value < 1.0 &&
-          _downloadService.tasks.any(
-            (t) => t.status != DownloadStatus.completed,
-          );
-      if (!isDownloading) return const SizedBox.shrink();
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
+              const SizedBox(width: AppSpace.md),
               Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Background Download...",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xff4A3AFF),
+                    Text(
+                      _service.groupLabel(type),
+                      style: const TextStyle(
+                        color: rbluedark,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: _downloadService.totalProgress.value,
-                        backgroundColor: const Color(0xffF1F4FF),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xff4A3AFF),
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      details,
+                      style: TextStyle(
+                        color: AppText.onPageMuted,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              IconButton(
-                onPressed: () => _downloadService.stopAutoDownload(),
-                icon: const Icon(
-                  Icons.stop_circle_rounded,
-                  color: Colors.red,
-                  size: 32,
-                ),
-              ),
+              const SizedBox(width: AppSpace.sm),
+              _buildAction(type, group),
             ],
           ),
-        ),
-      );
-    });
+          if (group.running || (group.done > 0 && !group.complete)) ...[
+            const SizedBox(height: AppSpace.md),
+            ClipRRect(
+              borderRadius: AppRadius.pillAll,
+              child: LinearProgressIndicator(
+                value: group.progress,
+                minHeight: 6,
+                backgroundColor: seed.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation(seed.ink),
+              ),
+            ),
+          ],
+          if (group.running) ...[
+            const SizedBox(height: AppSpace.sm),
+            Text(
+              _speedLine(group),
+              style: TextStyle(
+                color: seed.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (!group.running && group.failed > 0) ...[
+            const SizedBox(height: AppSpace.sm),
+            Text(
+              "${group.failed} ${'files failed to download'.tr}",
+              style: const TextStyle(color: Color(0xFFE53935), fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  void _startBulkDownload() {
-    final queued = _duaController.allDuas
-        .expand((d) => _bulkSelectedGroups.map((t) => _urlFor(d, t)))
-        .where((url) => url.isNotEmpty)
-        .length;
+  /// "1.4 MB/s  •  About 3 min left", or "Starting…" until the first files
+  /// have landed and there is a speed to quote.
+  String _speedLine(GroupState group) {
+    if (group.bytesPerSecond <= 0) return "Starting…".tr;
+    final speed = "${_service.formatSize(group.bytesPerSecond.round())}/s";
+    final left = group.timeLeft;
+    if (left == null) return speed;
+    final String eta;
+    if (left.inSeconds < 60) {
+      eta = "Less than a minute left".tr;
+    } else if (left.inMinutes < 60) {
+      eta = "About @count min left".trParams({
+        'count': '${left.inMinutes + (left.inSeconds % 60 >= 30 ? 1 : 0)}',
+      });
+    } else {
+      eta = "About @hours h @minutes min left".trParams({
+        'hours': '${left.inHours}',
+        'minutes': '${left.inMinutes % 60}',
+      });
+    }
+    return "$speed  •  $eta";
+  }
 
-    _downloadService.processBulkDownload(
-      _duaController.allDuas,
-      _bulkSelectedGroups,
+  Widget _buildAction(AudioType type, GroupState group) {
+    if (group.running) {
+      return TextButton(
+        onPressed: () => _service.cancelGroup(type),
+        style: TextButton.styleFrom(foregroundColor: const Color(0xFFE53935)),
+        child: Text("Cancel".tr),
+      );
+    }
+    final download = FilledButton(
+      onPressed: group.total == 0 ? null : () => _service.downloadGroup(type),
+      style: FilledButton.styleFrom(
+        backgroundColor: rbluedark,
+        visualDensity: VisualDensity.compact,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
+      ),
+      child: Text(
+        group.failed > 0
+            ? "Retry".tr
+            : group.done > 0
+            ? "Resume".tr
+            : "Download".tr,
+      ),
     );
-    Get.snackbar(
-      "Downloads Queued",
-      "$queued file(s) queued for offline access.",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xff4A3AFF),
-      colorText: Colors.white,
-      duration: const Duration(seconds: 3),
+    final remove = IconButton(
+      tooltip: "Remove".tr,
+      onPressed: () => _confirmRemove(type),
+      icon: const Icon(Icons.delete_outline_rounded),
+      color: AppText.onPageMuted,
+    );
+    if (group.complete) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF2E9E5B)),
+          remove,
+        ],
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [if (group.done > 0) remove, download],
     );
   }
 }

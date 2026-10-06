@@ -97,7 +97,7 @@ When you share a dua image, the App uses your device's share sheet. You choose w
 
 - **Delete your account:** you can delete your account at any time from **Settings → Delete account** in the App. Deletion is immediate and cannot be undone. If you can no longer sign in, email us and we will delete it for you.
 - **Permissions:** you can turn off location, microphone and notification access at any time in your device settings.
-- **Access and correction:** you can ask for a copy of your information, or ask us to correct it, by emailing ghazanfar.shah@learningsouls.org.
+- **Access and correction:** you can ask for a copy of your information, or ask us to correct it, by emailing admin@learningsouls.org.
 - Depending on where you live (for example the EU/UK under GDPR, or California under CCPA/CPRA), you may have further rights, such as objecting to processing or data portability. Contact us to use them. You may also complain to your local data protection authority.
 
 ---
@@ -123,4 +123,4 @@ We may update this policy from time to time. We will change the "Effective date"
 ## 10. Contact us
 
 Khushi Dua
-Email: ghazanfar.shah@learningsouls.org
+Email: admin@learningsouls.org

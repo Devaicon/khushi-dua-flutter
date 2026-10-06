@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
@@ -18,6 +19,7 @@ import 'notifications.dart';
 import '../../services/authService.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
+import '../subSettings/prayerTimeSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/profileAvatar.dart';
 import '../../widgets/customSnackbar.dart';
@@ -63,6 +65,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString("selectedLanguage", language);
     Localization.changeLocale(language);
     Get.find<UserController>().setSelectedLanguage(language);
+  }
+
+  static const String _feedbackEmail = 'admin@learningsouls.org';
+
+  /// Opens a new draft in the phone's mail app, addressed and with the
+  /// subject filled in.
+  Future<void> sendFeedback() async {
+    // The query is built by hand: Uri's queryParameters encodes spaces as
+    // "+", which several mail apps show literally in the subject.
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _feedbackEmail,
+      query: 'subject=${Uri.encodeComponent('Khushi Dua Feedback')}',
+    );
+    bool opened = false;
+    try {
+      opened = await launchUrl(uri);
+    } catch (e) {
+      debugPrint('Feedback: could not open mail app: $e');
+    }
+    if (!opened) {
+      CustomSnackbar.show(
+        "No email app found".tr,
+        "${"Write to us at".tr} $_feedbackEmail",
+        isSuccess: false,
+      );
+    }
   }
 
   void openTermsAndPrivacy() {
@@ -204,6 +233,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             _SettingsRow(
+                              icon: Icons.schedule_rounded,
+                              seed: const Color(0xFF3949AB),
+                              title: "Prayer Times".tr,
+                              subtitle: "Calculation and juristic method".tr,
+                              onTap: () => Get.to(
+                                () => const PrayerTimeSettings(),
+                                transition: Transition.fade,
+                              ),
+                            ),
+                            _SettingsRow(
                               icon: Icons.download_rounded,
                               seed: const Color(0xFF26A69A),
                               title: "Downloads".tr,
@@ -280,6 +319,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               title: "Share".tr,
                               subtitle: "Share with friends".tr,
                               onTap: shareApp,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.mail_rounded,
+                              seed: const Color(0xFF26A69A),
+                              title: "Feedback".tr,
+                              subtitle: "Send us an email".tr,
+                              onTap: sendFeedback,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.menu_book_rounded,
+                              seed: const Color(0xFF8D6E63),
+                              title: "References".tr,
+                              subtitle: "Sources and credits".tr,
+                              onTap: () =>
+                                  Get.to(() => const ReferencesScreen()),
                             ),
                             _SettingsRow(
                               icon: Icons.privacy_tip_rounded,

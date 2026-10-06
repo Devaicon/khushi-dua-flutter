@@ -1,599 +1,182 @@
 import 'dart:async';
 import 'dart:io';
+
+import 'package:background_downloader/background_downloader.dart' as bd;
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:khushidua/controllers/duaController.dart';
-import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/models/duaModel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum DownloadStatus { pending, downloading, completed, failed }
+import '../helpers/audioFiles.dart';
 
 enum AudioType { littleKids, olderKids, grownUps, english, urdu }
 
-class DownloadTask {
-  final String id;
-  final String url;
-  final String fileName;
-  final String title;
-  final AudioType type;
-  DownloadStatus status;
-  double progress;
-  int? sizeInBytes;
-
-  DownloadTask({
-    required this.id,
-    required this.url,
-    required this.fileName,
-    required this.title,
-    required this.type,
-    this.status = DownloadStatus.pending,
-    this.progress = 0.0,
-    this.sizeInBytes,
+/// Where one downloadable group stands.
+class GroupState {
+  const GroupState({
+    this.total = 0,
+    this.done = 0,
+    this.failed = 0,
+    this.running = false,
+    this.bytes,
+    this.downloadedBytes = 0,
+    this.bytesPerSecond = 0,
   });
 
-  String get typeLabel {
-    switch (type) {
-      case AudioType.littleKids:
-        return "Little Kids";
-      case AudioType.olderKids:
-        return "Older Kids";
-      case AudioType.grownUps:
-        return "Grown ups";
-      case AudioType.english:
-        return "English Translation";
-      case AudioType.urdu:
-        return "Urdu Translation";
-    }
+  /// Duas in the group that have a recording.
+  final int total;
+
+  /// Of those, how many are saved on this device.
+  final int done;
+
+  /// Files that failed in the current run, after their retries.
+  final int failed;
+
+  /// True while any of the group's files are queued or downloading.
+  final bool running;
+
+  /// Total size of the group's recordings, once known.
+  final int? bytes;
+
+  /// Size of the group's recordings already on the device.
+  final int downloadedBytes;
+
+  /// Recent download speed while [running]; 0 when nothing has finished in
+  /// the last few seconds.
+  final double bytesPerSecond;
+
+  /// Time left at the current speed, when both are known.
+  Duration? get timeLeft {
+    final total = bytes;
+    if (!running || total == null || bytesPerSecond <= 0) return null;
+    final remaining = (total - downloadedBytes).clamp(0, total);
+    return Duration(seconds: (remaining / bytesPerSecond).ceil());
   }
+
+  bool get complete => total > 0 && done >= total;
+  double get progress => total == 0 ? 0 : done / total;
+
+  GroupState copyWith({
+    int? total,
+    int? done,
+    int? failed,
+    bool? running,
+    int? bytes,
+    int? downloadedBytes,
+    double? bytesPerSecond,
+  }) => GroupState(
+    total: total ?? this.total,
+    done: done ?? this.done,
+    failed: failed ?? this.failed,
+    running: running ?? this.running,
+    bytes: bytes ?? this.bytes,
+    downloadedBytes: downloadedBytes ?? this.downloadedBytes,
+    bytesPerSecond: bytesPerSecond ?? this.bytesPerSecond,
+  );
 }
 
+/// Downloads dua audio for offline listening, one whole group at a time.
+///
+/// The downloads run natively (Android WorkManager, iOS background
+/// URLSession) through `background_downloader`. They used to run in Dart,
+/// one file at a time, and Android 15+ cuts an app's network the moment it
+/// leaves the foreground — so a download died as soon as the screen slept or
+/// the user switched apps, and every remaining file was marked failed and
+/// never retried. Native tasks keep going in the background, run
+/// [_maxConcurrent] at a time, retry, and resume a stalled connection.
 class AudioDownloadService extends GetxService {
-  final RxList<DownloadTask> tasks = <DownloadTask>[].obs;
-  bool _isDownloading = false;
-  bool _queueRunning = false;
-  final RxDouble totalProgress = 0.0.obs;
-  final RxInt completedCount = 0.obs;
-  final RxInt failedCount = 0.obs;
-  final RxString currentStatusMessage = "Idle".obs;
-  final RxString currentlyDownloadingTitle = "".obs;
+  /// The groups offered in the Download Manager.
+  static const List<AudioType> groups = [
+    AudioType.littleKids,
+    AudioType.olderKids,
+    AudioType.grownUps,
+    AudioType.english,
+  ];
 
-  static const String DOWNLOADS_ENABLED_KEY = "audio_downloads_enabled";
-  static const String DOWNLOADS_FIRST_RUN_KEY = "audio_downloads_first_run";
-  // Bumped once so installs that were silently opted in by the old first-run
-  // behaviour get switched back off exactly one time.
-  static const String DOWNLOADS_OPT_IN_RESET_KEY = "audio_downloads_optin_reset_v1";
+  static const int _maxConcurrent = 8;
+  static const String _audioDir = 'audio';
+
+  final RxMap<AudioType, GroupState> state = <AudioType, GroupState>{
+    for (final type in groups) type: const GroupState(),
+  }.obs;
+
+  StreamSubscription<bd.TaskUpdate>? _updates;
+  Directory? _dir;
+
+  /// Bytes finished per group, timestamped, for the speed estimate.
+  final Map<AudioType, List<(DateTime, int)>> _finished = {};
+  static const Duration _speedWindow = Duration(seconds: 10);
+  Timer? _ticker;
 
   @override
   void onInit() {
     super.onInit();
-    _checkAndStartDownloads();
+    _start();
   }
 
-  void _checkAndStartDownloads() async {
-    // Downloads are opt-in. Nothing is ever fetched until the user explicitly
-    // turns background downloading on or taps a download button, so opening
-    // the Download Manager no longer starts pulling hundreds of megabytes.
-    final prefs = await SharedPreferences.getInstance();
-    final isFirstRun = prefs.getBool(DOWNLOADS_FIRST_RUN_KEY) ?? true;
-    if (isFirstRun) {
-      await prefs.setBool(DOWNLOADS_FIRST_RUN_KEY, false);
-      await prefs.setBool(DOWNLOADS_ENABLED_KEY, false);
-    }
-
-    // Existing installs were opted in without being asked. Clear that once so
-    // upgrading users are not still downloading in the background.
-    if (!(prefs.getBool(DOWNLOADS_OPT_IN_RESET_KEY) ?? false)) {
-      await prefs.setBool(DOWNLOADS_OPT_IN_RESET_KEY, true);
-      await prefs.setBool(DOWNLOADS_ENABLED_KEY, false);
-    }
-
-    // Resume only what the user previously opted into.
-    if (await isDownloadsEnabled()) {
-      Future.delayed(const Duration(seconds: 2), () {
-        startAutoDownload();
-      });
-    }
+  @override
+  void onClose() {
+    _ticker?.cancel();
+    _updates?.cancel();
+    super.onClose();
   }
 
-  Future<AudioDownloadService> init() async {
-    return this;
-  }
-
-  Future<bool> isDownloadsEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(DOWNLOADS_ENABLED_KEY) ?? false;
-  }
-
-  Future<void> setDownloadsEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(DOWNLOADS_ENABLED_KEY, enabled);
-    if (enabled) {
-      startAutoDownload();
-    } else {
-      stopAutoDownload();
-    }
-  }
-
-  Future<void> startAutoDownload() async {
-    if (_isDownloading) return;
-
-    // Check permission
-    if (!await _checkPermission()) {
-      currentStatusMessage.value = "Storage permission required";
-      return;
-    }
-
-    _isDownloading = true;
-    await _prepareAutoTasks();
-    _processQueue();
-  }
-
-  void stopAutoDownload() {
-    _isDownloading = false;
-    currentStatusMessage.value = "Stopped";
-    currentlyDownloadingTitle.value = "";
-  }
-
-  Future<bool> _checkPermission() async {
-    return true; // Usually not needed for app-specific documents on modern OS
-  }
-
-  Future<void> _prepareAutoTasks() async {
-    final duaController = Get.find<DuaController>();
-    final themeController = Get.find<ThemeController>();
-    final ageGroup = themeController.selectedAgeGroup;
-
-    final List<DownloadTask> newTasks = [];
-    final directory = await getApplicationDocumentsDirectory();
-
-    for (var dua in duaController.allDuas) {
-      // 1. Current age group selection
-      AudioType ageType;
-      String ageUrl;
-      if (ageGroup == 0) {
-        ageUrl = dua.littleKidsAudio;
-        ageType = AudioType.littleKids;
-      } else if (ageGroup == 1) {
-        ageUrl = dua.olderKidsAudio;
-        ageType = AudioType.olderKids;
-      } else {
-        ageUrl = dua.grownUpsAudio;
-        ageType = AudioType.grownUps;
-      }
-
-      // 1) ALWAYS prioritize Grown-Up's (Urdu Translations)
-      if (dua.grownUpsAudio.isNotEmpty) {
-        final grownTask = await _createTask(
-          dua,
-          dua.grownUpsAudio,
-          AudioType.grownUps,
-          directory,
-        );
-        if (grownTask.status != DownloadStatus.completed) {
-          newTasks.add(grownTask);
-        }
-      }
-
-      // 2) Then queue the currently selected age-group audio
-      // (skip if it is already Grown-Up's)
-      if (ageType != AudioType.grownUps && ageUrl.isNotEmpty) {
-        final task = await _createTask(dua, ageUrl, ageType, directory);
-        if (task.status != DownloadStatus.completed) {
-          newTasks.add(task);
-        }
-      }
-    }
-
-    // Merge, never assignAll: a bulk or per-dua selection may already be
-    // queued, and replacing the list used to silently discard it.
-    for (final task in newTasks) {
-      final existing = tasks.indexWhere((t) => t.id == task.id);
-      if (existing == -1) {
-        tasks.add(task);
-      } else if (tasks[existing].status != DownloadStatus.completed) {
-        tasks[existing] = task;
-      }
-    }
-    _updateCounts();
-  }
-
-  Future<DownloadTask> _createTask(
-    DuaModel dua,
-    String url,
-    AudioType type, [
-    Directory? directory,
-  ]) async {
-    final dir = directory ?? await getApplicationDocumentsDirectory();
-    final fileName = fileNameFor(dua.id, type);
-    final file = File("${dir.path}/$fileName");
-    final exists = await file.exists();
-
-    return DownloadTask(
-      id: "${dua.id}_${type.name}",
-      url: url,
-      fileName: fileName,
-      title: "${dua.english} (${_getTypeLabel(type)})",
-      type: type,
-      status: exists ? DownloadStatus.completed : DownloadStatus.pending,
-      progress: exists ? 1.0 : 0.0,
-      sizeInBytes: exists ? await file.length() : null,
-    );
-  }
-
-  String _getTypeLabel(AudioType type) {
-    switch (type) {
-      case AudioType.littleKids:
-        return "Little Kids".tr;
-      case AudioType.olderKids:
-        return "Older Kids".tr;
-      case AudioType.grownUps:
-        return "Grown ups".tr;
-      case AudioType.english:
-        return "English Translation".tr;
-      case AudioType.urdu:
-        return "Urdu Translation".tr;
-    }
-  }
-
-  Future<void> addToQueue(DuaModel dua, AudioType type, String url) async {
-    if (url.isEmpty) return;
-
-    final taskId = "${dua.id}_${type.name}";
-    final existingIndex = tasks.indexWhere((t) => t.id == taskId);
-
-    if (existingIndex != -1 &&
-        tasks[existingIndex].status == DownloadStatus.completed) {
-      return;
-    }
-
-    final task = await _createTask(dua, url, type);
-    if (existingIndex != -1) {
-      tasks[existingIndex] = task;
-    } else {
-      tasks.add(task);
-    }
-
-    if (!_isDownloading) {
-      _isDownloading = true;
-      _processQueue();
-    }
-    _updateCounts();
-  }
-
-  Future<void> processBulkDownload(
-    List<DuaModel> duas,
-    List<AudioType> types,
-  ) async {
-    final directory = await getApplicationDocumentsDirectory();
-    for (var dua in duas) {
-      for (var type in types) {
-        String url = _getUrlForType(dua, type);
-        if (url.isNotEmpty) {
-          final taskId = "${dua.id}_${type.name}";
-          final task = await _createTask(dua, url, type, directory);
-          final existingIndex = tasks.indexWhere((t) => t.id == taskId);
-
-          if (existingIndex != -1) {
-            if (tasks[existingIndex].status != DownloadStatus.completed) {
-              tasks[existingIndex] = task;
-            }
-          } else {
-            tasks.add(task);
-          }
-        }
-      }
-    }
-    _isDownloading = true;
-    _processQueue();
-    _updateCounts();
-  }
-
-  Future<void> _processQueue() async {
-    // Only one worker may drain the queue. Bulk download used to call this
-    // while auto-download was already looping, so two workers raced for the
-    // same task and downloaded it twice.
-    if (_queueRunning) return;
-    _queueRunning = true;
-
-    while (_isDownloading) {
-      DownloadTask? nextTask;
-      try {
-        nextTask = tasks.firstWhere((t) => t.status == DownloadStatus.pending);
-      } catch (e) {
-        // No more pending tasks
-        _isDownloading = false;
-        currentStatusMessage.value = "All downloads completed";
-        currentlyDownloadingTitle.value = "";
-        break;
-      }
-
-      await _downloadFile(nextTask);
-      _updateCounts();
-
-      // Small delay between downloads to be "slow" and non-hindering
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
-
-    _queueRunning = false;
-  }
-
-  /// url -> local file name, persisted so playback can find a file that was
-  /// downloaded in an earlier session (the in-memory task list starts empty).
-  static const String URL_INDEX_KEY = "audio_url_index";
-  Map<String, String>? _urlIndex;
-
-  Future<Map<String, String>> _loadUrlIndex() async {
-    if (_urlIndex != null) return _urlIndex!;
-    final prefs = await SharedPreferences.getInstance();
-    final entries = prefs.getStringList(URL_INDEX_KEY) ?? [];
-    _urlIndex = {};
-    for (final entry in entries) {
-      final split = entry.indexOf('|');
-      if (split > 0) {
-        _urlIndex![entry.substring(0, split)] = entry.substring(split + 1);
-      }
-    }
-    return _urlIndex!;
-  }
-
-  Future<void> _rememberUrl(String url, String fileName) async {
-    final index = await _loadUrlIndex();
-    if (index[url] == fileName) return;
-    index[url] = fileName;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      URL_INDEX_KEY,
-      index.entries.map((e) => "${e.key}|${e.value}").toList(),
-    );
-  }
-
-  Future<void> _downloadFile(DownloadTask task) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/${task.fileName}";
-    final file = File(filePath);
-
-    if (await file.exists()) {
-      task.status = DownloadStatus.completed;
-      task.progress = 1.0;
-      task.sizeInBytes = await file.length();
-      await _rememberUrl(task.url, task.fileName);
-      return;
-    }
-
-    task.status = DownloadStatus.downloading;
-    currentlyDownloadingTitle.value = "${task.title} (${task.typeLabel})";
-    currentStatusMessage.value = "Downloading...";
-
+  Future<void> _start() async {
     try {
-      final response = await http.get(Uri.parse(task.url));
-      if (response.statusCode == 200) {
-        await file.writeAsBytes(response.bodyBytes);
-        task.status = DownloadStatus.completed;
-        task.progress = 1.0;
-        task.sizeInBytes = response.bodyBytes.length;
-        await _rememberUrl(task.url, task.fileName);
-      } else {
-        task.status = DownloadStatus.failed;
-      }
-    } catch (e) {
-      debugPrint("Download failed for ${task.id} (${task.type}): $e");
-      task.status = DownloadStatus.failed;
-    }
-    tasks.refresh(); // Trigger GetX update
-  }
-
-  void _updateCounts() {
-    completedCount.value = tasks
-        .where((t) => t.status == DownloadStatus.completed)
-        .length;
-    failedCount.value = tasks
-        .where((t) => t.status == DownloadStatus.failed)
-        .length;
-    if (tasks.isNotEmpty) {
-      totalProgress.value = completedCount.value / tasks.length;
-    }
-  }
-
-  /// The single source of truth for on-disk naming. Everything that writes or
-  /// looks up a cached file must go through this — the two used to disagree
-  /// (`dua_<id>_<type>.mp3` was looked up, `<id>_<type>.mp3` was written), so
-  /// no cached file was ever found and audio always re-streamed.
-  String fileNameFor(String duaId, AudioType type) => "${duaId}_${type.name}.mp3";
-
-  Future<bool> isDownloaded(String duaId, AudioType type) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/${fileNameFor(duaId, type)}";
-    return await File(filePath).exists();
-  }
-
-  Future<String?> getLocalPathForType(String duaId, AudioType type) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final filePath = "${directory.path}/${fileNameFor(duaId, type)}";
-    if (await File(filePath).exists()) {
-      return filePath;
-    }
-    return null;
-  }
-
-  Future<String?> getLocalPathFromUrl(String url) async {
-    if (url.isEmpty) return null;
-    final directory = await getApplicationDocumentsDirectory();
-
-    // Fast path: a task from this session.
-    final task = tasks.firstWhereOrNull(
-      (t) => t.url == url && t.status == DownloadStatus.completed,
-    );
-    if (task != null) {
-      final filePath = "${directory.path}/${task.fileName}";
-      if (await File(filePath).exists()) return filePath;
-    }
-
-    // Persisted path: downloaded in an earlier session, so `tasks` is empty.
-    final index = await _loadUrlIndex();
-    final fileName = index[url];
-    if (fileName != null) {
-      final filePath = "${directory.path}/$fileName";
-      if (await File(filePath).exists()) return filePath;
-    }
-
-    return null;
-  }
-
-  Future<String?> getLocalPath(String duaId, int ageGroup) async {
-    AudioType type = ageGroup == 0
-        ? AudioType.littleKids
-        : ageGroup == 1
-        ? AudioType.olderKids
-        : AudioType.grownUps;
-    return getLocalPathForType(duaId, type);
-  }
-
-  Future<String> getStorageUsed() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final List<FileSystemEntity> files = directory.listSync();
-    int totalSize = 0;
-    for (var file in files) {
-      if (file is File && file.path.endsWith(".mp3")) {
-        totalSize += await file.length();
-      }
-    }
-    return formatSize(totalSize);
-  }
-
-  String formatSize(int bytes) {
-    if (bytes < 1024) return "$bytes B";
-    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
-    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
-  }
-
-  final Map<String, int> _remoteSizeCache = {};
-  bool _isCacheLoaded = false;
-
-  Future<void> _loadSizeCache() async {
-    if (_isCacheLoaded) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedData = prefs.getStringList('remote_size_cache') ?? [];
-      for (var item in cachedData) {
-        final parts = item.split('|');
-        if (parts.length == 2) {
-          _remoteSizeCache[parts[0]] = int.tryParse(parts[1]) ?? 0;
-        }
-      }
-    } catch (e) {
-      debugPrint("Error loading size cache: $e");
-    }
-    _isCacheLoaded = true;
-  }
-
-  Future<void> _saveSizeCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final list = _remoteSizeCache.entries
-          .map((e) => "${e.key}|${e.value}")
-          .toList();
-      await prefs.setStringList('remote_size_cache', list);
-    } catch (e) {
-      debugPrint("Error saving size cache: $e");
-    }
-  }
-
-  int? getRemoteFileSizeCached(String url) {
-    return _remoteSizeCache[url];
-  }
-
-  Future<int?> getRemoteFileSize(String url) async {
-    if (url.isEmpty) return null;
-    await _loadSizeCache();
-    if (_remoteSizeCache.containsKey(url)) return _remoteSizeCache[url];
-
-    try {
-      // First try HEAD request with longer timeout
-      final response = await http
-          .head(Uri.parse(url))
-          .timeout(const Duration(seconds: 10)); // Increased from 3s
-
-      if (response.statusCode == 200) {
-        final contentLength = response.headers['content-length'];
-        if (contentLength != null) {
-          final size = int.tryParse(contentLength);
-          if (size != null) {
-            _remoteSizeCache[url] = size;
-            _saveSizeCache();
-            return size;
-          }
-        }
-      }
-
-      // Fallback to GET with Range header if HEAD fails or doesn't return content-length
-      final getResponse = await http
-          .get(Uri.parse(url), headers: {'Range': 'bytes=0-0'})
-          .timeout(const Duration(seconds: 10)); // Increased from 3s
-
-      final rangeHeader = getResponse.headers['content-range'];
-      if (rangeHeader != null) {
-        final total = rangeHeader.split('/').last;
-        final size = int.tryParse(total);
-        if (size != null) {
-          _remoteSizeCache[url] = size;
-          _saveSizeCache();
-          return size;
-        }
-      }
-    } on TimeoutException {
-      debugPrint("Timeout fetching size for: $url");
-      return null;
-    } catch (e) {
-      debugPrint("Error getting remote file size: $e");
-    }
-    return null;
-  }
-
-  Future<int> getTotalSizeForDuas(
-    List<DuaModel> duas,
-    List<AudioType> types,
-  ) async {
-    await _loadSizeCache();
-    int total = 0;
-
-    List<String> urlsToFetch = [];
-    for (var dua in duas) {
-      for (var type in types) {
-        String url = _getUrlForType(dua, type);
-        if (url.isNotEmpty) {
-          if (_remoteSizeCache.containsKey(url)) {
-            total += _remoteSizeCache[url]!;
-          } else {
-            urlsToFetch.add(url);
-          }
-        }
-      }
-    }
-
-    if (urlsToFetch.isEmpty) return total;
-
-    // Fetch in parallel chunks - reduced size to prevent congestion
-    const chunkSize = 12;
-    for (var i = 0; i < urlsToFetch.length; i += chunkSize) {
-      final end = (i + chunkSize < urlsToFetch.length)
-          ? i + chunkSize
-          : urlsToFetch.length;
-      final chunk = urlsToFetch.sublist(i, end);
-      final results = await Future.wait(
-        chunk.map((url) => getRemoteFileSize(url)),
+      await bd.FileDownloader().configure(
+        globalConfig: [
+          (bd.Config.holdingQueue, (_maxConcurrent, _maxConcurrent, null)),
+          (bd.Config.requestTimeout, const Duration(seconds: 30)),
+          (bd.Config.checkAvailableSpace, 50),
+        ],
       );
-      for (var size in results) {
-        if (size != null) total += size;
-      }
+      _updates = bd.FileDownloader().updates.listen(_onUpdate);
+      // Delivers what finished while the app was closed, and re-queues tasks
+      // the OS killed.
+      await bd.FileDownloader().start();
+    } catch (e) {
+      debugPrint('⬇️ AudioDownloadService: start failed: $e');
     }
-
-    return total;
+    await _removeLegacyFiles();
   }
 
-  String _getUrlForType(DuaModel dua, AudioType type) {
+  Future<Directory> _audioDirectory() async {
+    if (_dir != null) return _dir!;
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/$_audioDir');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return _dir = dir;
+  }
+
+  /// Files from the old downloader were named `<duaId>_<type>.mp3` in the
+  /// documents folder. Its downloads rarely finished, and the new naming
+  /// follows the URL, so they are removed rather than left taking space.
+  Future<void> _removeLegacyFiles() async {
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      await for (final entity in docs.list()) {
+        if (entity is File && isLegacyAudioFile(entity.uri.pathSegments.last)) {
+          await entity.delete();
+        }
+      }
+      final prefs = await SharedPreferences.getInstance();
+      for (final key in const [
+        'audio_url_index',
+        'audio_downloads_enabled',
+        'audio_downloads_first_run',
+        'audio_downloads_optin_reset_v1',
+      ]) {
+        await prefs.remove(key);
+      }
+    } catch (e) {
+      debugPrint('⬇️ AudioDownloadService: legacy cleanup failed: $e');
+    }
+  }
+
+  String urlFor(DuaModel dua, AudioType type) {
     switch (type) {
       case AudioType.littleKids:
         return dua.littleKidsAudio;
@@ -608,30 +191,303 @@ class AudioDownloadService extends GetxService {
     }
   }
 
-  Future<void> refreshTasks() async {
-    final List<DownloadTask> updatedTasks = [];
-    final directory = await getApplicationDocumentsDirectory();
+  List<String> _urlsFor(AudioType type) => [
+    for (final dua in Get.find<DuaController>().allDuas)
+      if (urlFor(dua, type).isNotEmpty) urlFor(dua, type),
+  ];
 
-    for (var task in tasks) {
-      final filePath = "${directory.path}/${task.fileName}";
-      final exists = await File(filePath).exists();
-
-      updatedTasks.add(
-        DownloadTask(
-          id: task.id,
-          url: task.url,
-          fileName: task.fileName,
-          title: task.title,
-          type: task.type,
-          status: exists ? DownloadStatus.completed : task.status,
-          progress: exists ? 1.0 : task.progress,
-          sizeInBytes: exists
-              ? await File(filePath).length()
-              : task.sizeInBytes,
-        ),
+  /// Recounts every group from what is on disk and what is still queued.
+  /// The disk is the truth: it survives the app being killed mid-download.
+  Future<void> refresh() async {
+    final dir = await _audioDirectory();
+    for (final type in groups) {
+      final urls = _urlsFor(type);
+      var done = 0;
+      var downloadedBytes = 0;
+      for (final url in urls) {
+        final file = File('${dir.path}/${audioFileNameFor(url)}');
+        if (file.existsSync()) {
+          done++;
+          downloadedBytes += file.lengthSync();
+        }
+      }
+      var running = false;
+      try {
+        running = (await bd.FileDownloader().allTasks(
+          group: type.name,
+        )).isNotEmpty;
+      } catch (_) {}
+      state[type] = state[type]!.copyWith(
+        total: urls.length,
+        done: done,
+        downloadedBytes: downloadedBytes,
+        running: running,
+        failed: running ? null : 0,
       );
+      if (running) _startTicker();
     }
-    tasks.assignAll(updatedTasks);
-    _updateCounts();
+  }
+
+  /// Recomputes the speeds once a second while anything is downloading, so
+  /// the figure falls when files stop arriving instead of freezing.
+  void _startTicker() {
+    _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      var anyRunning = false;
+      for (final type in groups) {
+        final group = state[type]!;
+        anyRunning |= group.running;
+        final speed = group.running ? _speed(type, now) : 0.0;
+        if (speed != group.bytesPerSecond) {
+          state[type] = group.copyWith(bytesPerSecond: speed);
+        }
+      }
+      if (!anyRunning) {
+        _ticker?.cancel();
+        _ticker = null;
+      }
+    });
+  }
+
+  double _speed(AudioType type, DateTime now) {
+    final samples = _finished[type];
+    if (samples == null || samples.isEmpty) return 0;
+    samples.removeWhere((s) => now.difference(s.$1) > _speedWindow);
+    if (samples.isEmpty) return 0;
+    final bytes = samples.fold<int>(0, (n, s) => n + s.$2);
+    // Over the whole window once it has filled; before that, since the
+    // first file landed, so the first reading is not ten times too low.
+    final span = now.difference(samples.first.$1);
+    final seconds = span > const Duration(seconds: 2)
+        ? (span < _speedWindow ? span : _speedWindow).inMilliseconds / 1000
+        : 2.0;
+    return bytes / seconds;
+  }
+
+  /// Queues every recording in [type] that is not already on the device.
+  Future<void> downloadGroup(AudioType type) async {
+    final dir = await _audioDirectory();
+    final missing = {
+      for (final url in _urlsFor(type))
+        if (!File('${dir.path}/${audioFileNameFor(url)}').existsSync()) url,
+    };
+    if (missing.isEmpty) {
+      await refresh();
+      return;
+    }
+
+    final label = groupLabel(type);
+    bd.FileDownloader().configureNotificationForGroup(
+      type.name,
+      running: bd.TaskNotification(
+        label,
+        '{numFinished} / {numTotal} ${'downloaded'.tr}',
+      ),
+      complete: bd.TaskNotification(label, 'Download complete'.tr),
+      error: bd.TaskNotification(
+        label,
+        '{numFailed} ${'files failed to download'.tr}',
+      ),
+      progressBar: true,
+      groupNotificationId: 'audio_${type.name}',
+    );
+
+    state[type] = state[type]!.copyWith(running: true, failed: 0);
+    _finished[type] = [];
+    _startTicker();
+    await bd.FileDownloader().enqueueAll([
+      for (final url in missing)
+        bd.DownloadTask(
+          url: url,
+          filename: audioFileNameFor(url),
+          directory: _audioDir,
+          baseDirectory: bd.BaseDirectory.applicationDocuments,
+          group: type.name,
+          updates: bd.Updates.status,
+          retries: 3,
+          stallTimeout: const Duration(seconds: 30),
+        ),
+    ]);
+  }
+
+  Future<void> cancelGroup(AudioType type) async {
+    await bd.FileDownloader().cancelAll(group: type.name);
+    state[type] = state[type]!.copyWith(running: false);
+    await refresh();
+  }
+
+  /// Deletes the group's files, keeping any shared with another group that
+  /// is downloaded (the same recording can serve two age groups).
+  Future<void> removeGroup(AudioType type) async {
+    await bd.FileDownloader().cancelAll(group: type.name);
+    final dir = await _audioDirectory();
+    final keep = {
+      for (final other in groups)
+        if (other != type) ..._urlsFor(other).map(audioFileNameFor),
+    };
+    for (final url in _urlsFor(type)) {
+      final name = audioFileNameFor(url);
+      if (keep.contains(name)) continue;
+      final file = File('${dir.path}/$name');
+      if (await file.exists()) await file.delete();
+    }
+    await refresh();
+  }
+
+  void _onUpdate(bd.TaskUpdate update) {
+    if (update is! bd.TaskStatusUpdate) return;
+    final type = AudioType.values.firstWhereOrNull(
+      (t) => t.name == update.task.group,
+    );
+    if (type == null || !state.containsKey(type)) return;
+    final current = state[type]!;
+
+    switch (update.status) {
+      case bd.TaskStatus.complete:
+        // The file just written, measured on disk; the cached remote size
+        // may not be loaded if the download outlived a restart.
+        final file = _dir == null
+            ? null
+            : File('${_dir!.path}/${update.task.filename}');
+        final size = (file != null && file.existsSync())
+            ? file.lengthSync()
+            : _sizeCache[update.task.url] ?? 0;
+        (_finished[type] ??= []).add((DateTime.now(), size));
+        state[type] = current.copyWith(
+          done: (current.done + 1).clamp(0, current.total),
+          downloadedBytes: current.downloadedBytes + size,
+        );
+      case bd.TaskStatus.failed:
+      case bd.TaskStatus.notFound:
+        debugPrint(
+          '⬇️ ${update.task.filename} failed: ${update.exception?.description}',
+        );
+        state[type] = current.copyWith(failed: current.failed + 1);
+      default:
+        break;
+    }
+    if (update.status.isFinalState) _settle(type);
+  }
+
+  /// After a task finishes, checks whether its group has anything left.
+  Future<void> _settle(AudioType type) async {
+    try {
+      final left = await bd.FileDownloader().allTasks(group: type.name);
+      if (left.isEmpty) {
+        final failed = state[type]!.failed;
+        await refresh();
+        // refresh() resets the failure count; a finished run keeps it, so
+        // the screen can offer a retry.
+        state[type] = state[type]!.copyWith(failed: failed);
+      }
+    } catch (_) {}
+  }
+
+  /// The downloaded file for [url], if there is one. Used by playback.
+  Future<String?> getLocalPathFromUrl(String url) async {
+    if (url.isEmpty) return null;
+    final dir = await _audioDirectory();
+    final path = '${dir.path}/${audioFileNameFor(url)}';
+    return File(path).existsSync() ? path : null;
+  }
+
+  String groupLabel(AudioType type) {
+    switch (type) {
+      case AudioType.littleKids:
+        return "Little Kids".tr;
+      case AudioType.olderKids:
+        return "Older Kids".tr;
+      case AudioType.grownUps:
+        return "Grown ups".tr;
+      case AudioType.english:
+        return "English Translation".tr;
+      case AudioType.urdu:
+        return "Urdu Translation".tr;
+    }
+  }
+
+  /// Space taken by every downloaded recording.
+  Future<int> storageUsed() async {
+    final dir = await _audioDirectory();
+    var total = 0;
+    await for (final entity in dir.list()) {
+      if (entity is File) total += await entity.length();
+    }
+    return total;
+  }
+
+  String formatSize(int bytes) {
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) return "${(bytes / 1024).toStringAsFixed(1)} KB";
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
+  }
+
+  // ---- Group sizes ---------------------------------------------------------
+
+  static const String _sizeCacheKey = 'remote_size_cache';
+  final Map<String, int> _sizeCache = {};
+  bool _sizeCacheLoaded = false;
+  bool _measuring = false;
+
+  /// Fills in each group's size. Sizes are cached across launches, so after
+  /// the first time this makes no requests. The old version opened a new
+  /// connection per file — hundreds of TLS handshakes racing the downloads —
+  /// whereas this reuses one client and keeps a few requests in flight.
+  Future<void> measureGroups() async {
+    if (_measuring) return;
+    _measuring = true;
+    final client = http.Client();
+    try {
+      await _loadSizeCache();
+      for (final type in groups) {
+        final urls = _urlsFor(type);
+        final unknown = urls.where((u) => !_sizeCache.containsKey(u)).toList();
+        for (var i = 0; i < unknown.length; i += 6) {
+          await Future.wait(
+            unknown.skip(i).take(6).map((url) => _measure(client, url)),
+          );
+        }
+        var bytes = 0;
+        for (final url in urls) {
+          bytes += _sizeCache[url] ?? 0;
+        }
+        state[type] = state[type]!.copyWith(bytes: bytes);
+      }
+      await _saveSizeCache();
+    } finally {
+      client.close();
+      _measuring = false;
+    }
+  }
+
+  Future<void> _measure(http.Client client, String url) async {
+    try {
+      final response = await client
+          .head(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
+      final size = int.tryParse(response.headers['content-length'] ?? '');
+      if (response.statusCode == 200 && size != null) _sizeCache[url] = size;
+    } catch (_) {
+      // Unknown sizes are simply left out of the total.
+    }
+  }
+
+  Future<void> _loadSizeCache() async {
+    if (_sizeCacheLoaded) return;
+    final prefs = await SharedPreferences.getInstance();
+    for (final item in prefs.getStringList(_sizeCacheKey) ?? const []) {
+      final split = item.lastIndexOf('|');
+      if (split <= 0) continue;
+      final size = int.tryParse(item.substring(split + 1));
+      if (size != null) _sizeCache[item.substring(0, split)] = size;
+    }
+    _sizeCacheLoaded = true;
+  }
+
+  Future<void> _saveSizeCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_sizeCacheKey, [
+      for (final e in _sizeCache.entries) '${e.key}|${e.value}',
+    ]);
   }
 }
