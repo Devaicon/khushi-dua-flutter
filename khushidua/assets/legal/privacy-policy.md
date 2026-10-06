@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Khushi Dua**
-Effective date: 23 September 2026
+Effective date: 6 October 2026
 
 This Privacy Policy explains how Khushi Dua ("we", "us", "our") collects, uses and protects information when you use the Khushi Dua mobile application (the "App") on Android and iOS.
 
@@ -37,13 +37,8 @@ If you are signed in, we store:
 
 ### 1.4 Information collected by third parties
 
-- **Advertising.** Some users see ads from **Google AdMob**. Which ads, if any, depend on the age group selected in the App:
-  - **Little Kids:** no ads are shown, and the advertising service is not started at all.
-  - **Older Kids:** ads are marked as directed at children. They are not personalised and are limited to content suitable for general audiences.
-  - **Grown ups:** standard AdMob ads. AdMob may collect device information, including advertising identifiers, IP address and ad-interaction data, to serve ads, limit ad frequency and measure performance.
-  - **Members** do not see ads.
-
-  See Google's policy: https://policies.google.com/technologies/ads
+- **No advertising.** The App shows no ads and contains no advertising service.
+- **Donations.** The App's "Donate" buttons open LearningSouls' donation page (https://learningsouls.org/donate), either inside the App or in your browser. Anything you enter on that page goes to LearningSouls and its payment provider under their own privacy terms; the App does not see or store it.
 - **Firebase (Google).** We use Firebase Authentication, Cloud Firestore, Cloud Storage and Cloud Messaging to run the App. Google processes data on our behalf under its terms: https://firebase.google.com/support/privacy
 
 We do **not** sell your personal information.
@@ -59,7 +54,7 @@ We use the information above to:
 - calculate prayer times and the Qibla direction;
 - give feedback on your recitation when you use Practice;
 - send the prayer and Azkar reminders you switch on, and announcements if you allow notifications;
-- show ads as described in section 1.4;
+- remind you once a week about supporting LearningSouls, unless you turn that reminder off;
 - keep the App secure and prevent misuse;
 - fix problems and improve the App.
 
@@ -71,7 +66,7 @@ The App offers content for young children, older children and adults. We take ex
 
 - A child can use the App as a guest without giving any personal information.
 - We do not knowingly collect personal information from children under 13 (or the minimum age in your country) without a parent's or guardian's consent. We encourage parents to create and manage the account.
-- No ads are shown in the Little Kids section. Ads shown in the Older Kids section are marked as directed at children, are not personalised and are limited to content suitable for general audiences.
+- The App shows no ads to anyone.
 - A parent or guardian can delete their child's account from Settings in the App, or ask us to review or delete their child's information using the contact details below.
 
 If you believe a child has given us personal information without consent, contact us and we will delete it.
@@ -82,7 +77,7 @@ If you believe a child has given us personal information without consent, contac
 
 We share information only:
 
-- with the **service providers** listed in section 1.4 (Google Firebase and Google AdMob), who process it to provide their services;
+- with the **service providers** listed in section 1.4 (Google Firebase), who process it to provide their services;
 - when **required by law**, or to protect the rights, safety or property of our users, the public or us;
 - as part of a **merger, acquisition or sale** of the App. In that case we will notify you before your information falls under a different privacy policy.
 
@@ -102,8 +97,7 @@ When you share a dua image, the App uses your device's share sheet. You choose w
 
 - **Delete your account:** you can delete your account at any time from **Settings → Delete account** in the App. Deletion is immediate and cannot be undone. If you can no longer sign in, email us and we will delete it for you.
 - **Permissions:** you can turn off location, microphone and notification access at any time in your device settings.
-- **Ads:** you can reset or limit your advertising ID in your device settings.
-- **Access and correction:** you can ask for a copy of your information, or ask us to correct it, by emailing ghazanfar.shah@learningsouls.org.
+- **Access and correction:** you can ask for a copy of your information, or ask us to correct it, by emailing admin@learningsouls.org.
 - Depending on where you live (for example the EU/UK under GDPR, or California under CCPA/CPRA), you may have further rights, such as objecting to processing or data portability. Contact us to use them. You may also complain to your local data protection authority.
 
 ---
@@ -129,4 +123,4 @@ We may update this policy from time to time. We will change the "Effective date"
 ## 10. Contact us
 
 Khushi Dua
-Email: ghazanfar.shah@learningsouls.org
+Email: admin@learningsouls.org

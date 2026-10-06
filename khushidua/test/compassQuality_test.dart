@@ -7,14 +7,13 @@ CompassCapabilities caps({
   bool rotationVector = true,
   bool geomagneticRotationVector = true,
   bool gyroscope = true,
-}) =>
-    CompassCapabilities(
-      hasMagnetometer: magnetometer,
-      hasAccelerometer: accelerometer,
-      hasRotationVector: rotationVector,
-      hasGeomagneticRotationVector: geomagneticRotationVector,
-      hasGyroscope: gyroscope,
-    );
+}) => CompassCapabilities(
+  hasMagnetometer: magnetometer,
+  hasAccelerometer: accelerometer,
+  hasRotationVector: rotationVector,
+  hasGeomagneticRotationVector: geomagneticRotationVector,
+  hasGyroscope: gyroscope,
+);
 
 void main() {
   group('quality classification', () {
@@ -26,10 +25,13 @@ void main() {
       expect(caps(gyroscope: false).quality, CompassQuality.reduced);
     });
 
-    test('no rotation vector falls back to magnetometer plus accelerometer', () {
-      // This is the old-Android path flutter_compass actually takes.
-      expect(caps(rotationVector: false).quality, CompassQuality.low);
-    });
+    test(
+      'no rotation vector falls back to magnetometer plus accelerometer',
+      () {
+        // This is the old-Android path flutter_compass actually takes.
+        expect(caps(rotationVector: false).quality, CompassQuality.low);
+      },
+    );
 
     test('no rotation vector and no gyroscope is still low, not reduced', () {
       expect(
@@ -46,13 +48,15 @@ void main() {
       );
     });
 
-    test('magnetometer without accelerometer or rotation vector is unavailable',
-        () {
-      expect(
-        caps(rotationVector: false, accelerometer: false).quality,
-        CompassQuality.unavailable,
-      );
-    });
+    test(
+      'magnetometer without accelerometer or rotation vector is unavailable',
+      () {
+        expect(
+          caps(rotationVector: false, accelerometer: false).quality,
+          CompassQuality.unavailable,
+        );
+      },
+    );
 
     test('unknown capabilities default to a usable device', () {
       // iOS reports a fused true-north heading and no inventory; it should not
@@ -63,24 +67,24 @@ void main() {
 
   group('fromMap', () {
     test('reads the platform payload', () {
-      final CompassCapabilities c = CompassCapabilities.fromMap(
-        <Object?, Object?>{
-          'hasMagnetometer': true,
-          'hasAccelerometer': true,
-          'hasRotationVector': false,
-          'hasGeomagneticRotationVector': false,
-          'hasGyroscope': false,
-          'rotationVectorName': null,
-        },
-      );
+      final CompassCapabilities c =
+          CompassCapabilities.fromMap(<Object?, Object?>{
+            'hasMagnetometer': true,
+            'hasAccelerometer': true,
+            'hasRotationVector': false,
+            'hasGeomagneticRotationVector': false,
+            'hasGyroscope': false,
+            'rotationVectorName': null,
+          });
       expect(c.hasMagnetometer, isTrue);
       expect(c.hasRotationVector, isFalse);
       expect(c.quality, CompassQuality.low);
     });
 
     test('missing keys are treated as absent sensors', () {
-      final CompassCapabilities c =
-          CompassCapabilities.fromMap(<Object?, Object?>{});
+      final CompassCapabilities c = CompassCapabilities.fromMap(
+        <Object?, Object?>{},
+      );
       expect(c.quality, CompassQuality.unavailable);
     });
   });
@@ -105,10 +109,52 @@ void main() {
 
     test('only unavailable hides the heading', () {
       expect(CompassQualityMessage.canShowHeading(CompassQuality.high), isTrue);
-      expect(CompassQualityMessage.canShowHeading(CompassQuality.reduced), isTrue);
+      expect(
+        CompassQualityMessage.canShowHeading(CompassQuality.reduced),
+        isTrue,
+      );
       expect(CompassQualityMessage.canShowHeading(CompassQuality.low), isTrue);
       expect(
         CompassQualityMessage.canShowHeading(CompassQuality.unavailable),
+        isFalse,
+      );
+    });
+  });
+
+  group('needsCalibration', () {
+    test('Android: unreliable or low magnetometer asks to calibrate', () {
+      expect(needsCalibration(isAndroid: true, magnetometerStatus: 0), isTrue);
+      expect(needsCalibration(isAndroid: true, magnetometerStatus: 1), isTrue);
+    });
+
+    test('Android: medium or high is fine', () {
+      expect(needsCalibration(isAndroid: true, magnetometerStatus: 2), isFalse);
+      expect(needsCalibration(isAndroid: true, magnetometerStatus: 3), isFalse);
+    });
+
+    test('Android: no status yet, or no contact, does not nag', () {
+      expect(needsCalibration(isAndroid: true), isFalse);
+      expect(
+        needsCalibration(isAndroid: true, magnetometerStatus: -1),
+        isFalse,
+      );
+    });
+
+    test('iOS: missing, invalid or coarse accuracy asks to calibrate', () {
+      expect(needsCalibration(isAndroid: false), isTrue);
+      expect(
+        needsCalibration(isAndroid: false, iosAccuracyDegrees: -1),
+        isTrue,
+      );
+      expect(
+        needsCalibration(isAndroid: false, iosAccuracyDegrees: 45),
+        isTrue,
+      );
+    });
+
+    test('iOS: fine accuracy is fine', () {
+      expect(
+        needsCalibration(isAndroid: false, iosAccuracyDegrees: 10),
         isFalse,
       );
     });

@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/views/dashboard.dart';
 
 import 'constants/theme.dart';
+import 'controllers/appearanceController.dart';
 import 'controllers/initController.dart';
 import 'controllers/themeController.dart';
 import 'services/reminderService.dart';
@@ -40,9 +42,10 @@ void main() async {
 
   // Before runApp, so ThemeController starts on the reader's last age group.
   await ThemeController.loadSavedAgeGroup();
+  // Likewise the appearance, so a dark-mode reader never sees a light flash.
+  await AppearanceController.loadSaved();
+  Get.put(AppearanceController(), permanent: true);
 
-  // AdMob is not started here: AdService starts it only once an age group
-  // that may see ads is selected, so Little Kids never touches it.
   runApp(const MyApp());
 }
 
@@ -51,6 +54,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilt when the appearance changes, for the new theme.
+    return GetBuilder<AppearanceController>(builder: (_) => _buildApp());
+  }
+
+  Widget _buildApp() {
     return GetMaterialApp(
       title: 'Khushi Dua Book',
       navigatorKey: Get.key,
@@ -60,6 +68,16 @@ class MyApp extends StatelessWidget {
       fallbackLocale: Locale('en', 'US'),
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // Every route sits on the page colour, so no edge of the screen — the
+      // strip a SafeArea leaves, or a route mid-transition — ever shows the
+      // window's black dark-mode background.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: kAppOverlayStyle,
+        child: ColoredBox(
+          color: AppSurface.page,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       defaultTransition: Transition.cupertino,
       transitionDuration: AppMotion.base,
       home: Dashboard(),

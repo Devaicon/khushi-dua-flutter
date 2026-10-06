@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../widgets/googleSignInButton.dart';
 import '../../constants/userData.dart';
 import '../../controllers/themeController.dart';
@@ -28,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rwhite,
+      backgroundColor: AppSurface.page,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -39,13 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Container(
                   width: MediaQuery.of(context).size.width,
                   height: 200,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
-                    ),
-                  ),
+                  decoration: BoxDecoration(gradient: AppGradient.authHeader),
                   child: Stack(
                     children: [
                       Positioned(
@@ -59,9 +54,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               Get.back();
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: rblack,
+                            color: rtext,
                           ),
                         ),
                       ),
@@ -108,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Email".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ).marginOnly(top: 20),
@@ -120,7 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (email == null || email.trim().isEmpty) {
                           return "Email is required".tr;
                         }
-                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
                         if (!emailRegex.hasMatch(email.trim())) {
                           return "Please enter a valid email address".tr;
                         }
@@ -144,9 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ).marginOnly(top: 12),
                     Text(
                       "Password".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ).marginOnly(top: 20),
@@ -178,10 +175,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => Get.to(() => const ForgotPasswordScreen()),
+                        onPressed: () =>
+                            Get.to(() => const ForgotPasswordScreen()),
                         child: Text(
                           "Forgot Password?".tr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: rbluedark,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -215,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: _isLoading ? Colors.grey : rbluedark,
+                          color: _isLoading ? Colors.grey : brandFill,
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
@@ -240,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Text(
                             "New with us? ".tr,
-                            style: const TextStyle(color: rblack),
+                            style: TextStyle(color: rtext),
                           ),
                           InkWell(
                             onTap: () {
@@ -252,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             child: Text(
                               "Signup now! ".tr,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: rbluedark,
                                 fontWeight: FontWeight.bold,
                               ),

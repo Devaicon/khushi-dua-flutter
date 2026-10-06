@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../controllers/appearanceController.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
@@ -14,12 +17,15 @@ import '../../controllers/reminderController.dart';
 import '../../controllers/userController.dart';
 import '../auth/signupScreen.dart';
 import '../legalScreen.dart';
+import 'notifications.dart';
 import '../../services/authService.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
+import '../subSettings/prayerTimeSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/profileAvatar.dart';
 import '../../widgets/customSnackbar.dart';
+import '../../widgets/donateCard.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -61,6 +67,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString("selectedLanguage", language);
     Localization.changeLocale(language);
     Get.find<UserController>().setSelectedLanguage(language);
+  }
+
+  static const String _feedbackEmail = 'admin@learningsouls.org';
+
+  /// Opens a new draft in the phone's mail app, addressed and with the
+  /// subject filled in.
+  Future<void> sendFeedback() async {
+    // The query is built by hand: Uri's queryParameters encodes spaces as
+    // "+", which several mail apps show literally in the subject.
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _feedbackEmail,
+      query: 'subject=${Uri.encodeComponent('Khushi Dua Feedback')}',
+    );
+    bool opened = false;
+    try {
+      opened = await launchUrl(uri);
+    } catch (e) {
+      debugPrint('Feedback: could not open mail app: $e');
+    }
+    if (!opened) {
+      CustomSnackbar.show(
+        "No email app found".tr,
+        "${"Write to us at".tr} $_feedbackEmail",
+        isSuccess: false,
+      );
+    }
   }
 
   void openTermsAndPrivacy() {
@@ -192,6 +225,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: "PREFERENCES".tr,
                           rows: [
                             _SettingsRow(
+                              icon: Icons.notifications_rounded,
+                              seed: const Color(0xFF7E57C2),
+                              title: "Notifications".tr,
+                              subtitle: "View or delete notifications".tr,
+                              onTap: () => Get.to(
+                                () => const NotificationScreen(),
+                                transition: Transition.fade,
+                              ),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.schedule_rounded,
+                              seed: const Color(0xFF3949AB),
+                              title: "Prayer Times".tr,
+                              subtitle: "Calculation and juristic method".tr,
+                              onTap: () => Get.to(
+                                () => const PrayerTimeSettings(),
+                                transition: Transition.fade,
+                              ),
+                            ),
+                            _SettingsRow(
                               icon: Icons.download_rounded,
                               seed: const Color(0xFF26A69A),
                               title: "Downloads".tr,
@@ -205,6 +258,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               subtitle: "Change app language".tr,
                               trailing: _buildLanguageDropdown(
                                 userController.selectedLanguage,
+                              ),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.dark_mode_rounded,
+                              seed: const Color(0xFF455A64),
+                              title: "Appearance".tr,
+                              subtitle: "Light, dark or match your phone".tr,
+                              trailing: GetBuilder<AppearanceController>(
+                                builder: (appearance) =>
+                                    _buildAppearanceDropdown(appearance),
                               ),
                             ),
                           ],
@@ -228,17 +291,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               status: reminders.salahEnabled,
                               onTap: salahReminderSettings,
                             ),
+                            _SettingsRow(
+                              icon: Icons.favorite_rounded,
+                              seed: kDonateSeed,
+                              title: "Support reminder".tr,
+                              subtitle: "A weekly reminder to donate".tr,
+                              trailing: Switch(
+                                value: reminders.supportEnabled,
+                                onChanged: (value) async {
+                                  final ok = await reminders.setSupportEnabled(
+                                    value,
+                                  );
+                                  if (!ok) {
+                                    CustomSnackbar.show(
+                                      "Error".tr,
+                                      "Notification permission is required for reminders"
+                                          .tr,
+                                      isSuccess: false,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
                           ],
                         ),
                         _SettingsGroup(
                           title: "SUPPORT".tr,
                           rows: [
                             _SettingsRow(
+                              icon: Icons.volunteer_activism_rounded,
+                              seed: kDonateSeed,
+                              title: "Donate".tr,
+                              subtitle: "Support LearningSouls".tr,
+                              onTap: openDonate,
+                            ),
+                            _SettingsRow(
                               icon: Icons.ios_share_rounded,
                               seed: const Color(0xFFEC407A),
                               title: "Share".tr,
                               subtitle: "Share with friends".tr,
                               onTap: shareApp,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.mail_rounded,
+                              seed: const Color(0xFF26A69A),
+                              title: "Feedback".tr,
+                              subtitle: "Send us an email".tr,
+                              onTap: sendFeedback,
+                            ),
+                            _SettingsRow(
+                              icon: Icons.menu_book_rounded,
+                              seed: const Color(0xFF8D6E63),
+                              title: "References".tr,
+                              subtitle: "Sources and credits".tr,
+                              onTap: () =>
+                                  Get.to(() => const ReferencesScreen()),
                             ),
                             _SettingsRow(
                               icon: Icons.privacy_tip_rounded,
@@ -303,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: Colors.grey.shade400,
           size: 22,
         ),
-        dropdownColor: Colors.white,
+        dropdownColor: AppSurface.card,
         borderRadius: AppRadius.cardAll,
         menuMaxHeight: 420,
         style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
@@ -325,7 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     "${language['flag']} ${language['name']}",
-                    style: const TextStyle(color: AppText.onPage, fontSize: 15),
+                    style: TextStyle(color: AppText.onPage, fontSize: 15),
                   ),
                   if (language['name'] == selected) ...[
                     const SizedBox(width: AppSpace.sm),
@@ -341,6 +448,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
         onChanged: (value) {
           if (value != null && value != selected) changeLanguage(value);
+        },
+      ),
+    );
+  }
+
+  /// Light, dark or the phone's setting, in the language picker's style.
+  Widget _buildAppearanceDropdown(AppearanceController appearance) {
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: appearance.mode,
+        isDense: true,
+        icon: Icon(
+          Icons.expand_more_rounded,
+          color: Colors.grey.shade400,
+          size: 22,
+        ),
+        dropdownColor: AppSurface.card,
+        borderRadius: AppRadius.cardAll,
+        style: TextStyle(color: AppText.onPageMuted, fontSize: 13),
+        selectedItemBuilder: (context) => [
+          for (final label in AppearanceController.modes.values)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Text(label.tr),
+            ),
+        ],
+        items: [
+          for (final MapEntry(key: mode, value: label)
+              in AppearanceController.modes.entries)
+            DropdownMenuItem<String>(
+              value: mode,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label.tr,
+                    style: TextStyle(color: AppText.onPage, fontSize: 15),
+                  ),
+                  if (mode == appearance.mode) ...[
+                    const SizedBox(width: AppSpace.sm),
+                    const Icon(
+                      Icons.check_rounded,
+                      color: Color(0xFF2E9E5B),
+                      size: 18,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+        onChanged: (value) {
+          if (value != null) appearance.setMode(value);
         },
       ),
     );
@@ -362,7 +521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         AppSpace.sm,
       ),
       padding: const EdgeInsets.all(AppSpace.xl),
-      decoration: cardDecoration(rbluedark, radius: 28),
+      decoration: cardDecoration(kBrandNavy, radius: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -382,11 +541,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: AppSurface.card,
                             shape: BoxShape.circle,
                             boxShadow: AppElevation.card,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.edit_rounded,
                             size: 13,
                             color: rbluedark,
@@ -552,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Center(
             child: Text(
               "Select Your Avatar".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -601,7 +760,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             Text(
               isGirlAvatar(imagePath) ? "Girl".tr : "Boy".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -720,7 +879,7 @@ class _SettingsRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppText.onPage,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

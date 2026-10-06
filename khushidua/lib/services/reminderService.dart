@@ -35,9 +35,12 @@ class ReminderService {
   static const String _legacyVibrateChannelId = 'salah_reminders_vibrate';
 
   /// Long enough to be felt through a pocket: wait, buzz, pause, buzz.
-  static final Int64List salahVibrationPattern = Int64List.fromList(
-    const [0, 500, 250, 500],
-  );
+  static final Int64List salahVibrationPattern = Int64List.fromList(const [
+    0,
+    500,
+    250,
+    500,
+  ]);
 
   /// The notification channel a prayer's reminder should use.
   static String channelIdForSalah(SalahChannel channel) {
@@ -117,8 +120,7 @@ class ReminderService {
           iOS: darwinSettings,
         ),
         onDidReceiveNotificationResponse: _handleResponse,
-        onDidReceiveBackgroundNotificationResponse:
-            notificationTapBackground,
+        onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
 
       await _createAndroidChannels();
@@ -240,49 +242,134 @@ class ReminderService {
     String? iosSound,
     bool vibrate = true,
   }) async {
-    await init();
-
-    final next = nextOccurrence(
-      hour: hour,
-      minute: minute,
-      now: DateTime.now(),
+    await _schedule(
+      id: id,
+      when: nextOccurrence(hour: hour, minute: minute, now: DateTime.now()),
+      // Repeats every day at the same wall-clock time.
+      repeat: DateTimeComponents.time,
+      title: title,
+      body: body,
+      payload: payload,
+      details: _details(
+        channelId: channelId,
+        channelName: channelName,
+        playSound: playSound,
+        androidSound: androidSound,
+        iosSound: iosSound,
+        vibrate: vibrate,
+      ),
     );
+  }
 
+  /// Schedules a notification repeating every week on [weekday] at
+  /// [hour]:[minute], on the announcements channel.
+  Future<void> scheduleWeekly({
+    required int id,
+    required String title,
+    required String body,
+    required int weekday,
+    required int hour,
+    required int minute,
+    String? payload,
+  }) async {
+    await _schedule(
+      id: id,
+      when: nextWeekdayOccurrence(
+        weekday: weekday,
+        hour: hour,
+        minute: minute,
+        now: DateTime.now(),
+      ),
+      repeat: DateTimeComponents.dayOfWeekAndTime,
+      title: title,
+      body: body,
+      payload: payload,
+      details: _details(channelId: pushChannelId, channelName: 'Announcements'),
+    );
+  }
+
+  NotificationDetails _details({
+    required String channelId,
+    required String channelName,
+    bool playSound = true,
+    String? androidSound,
+    String? iosSound,
+    bool vibrate = true,
+  }) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        channelName,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: playSound,
+        sound: androidSound == null
+            ? null
+            : RawResourceAndroidNotificationSound(androidSound),
+        enableVibration: vibrate,
+        vibrationPattern: vibrate && !playSound ? salahVibrationPattern : null,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentSound: playSound,
+        sound: playSound ? iosSound : null,
+      ),
+    );
+  }
+
+  Future<void> _schedule({
+    required int id,
+    required DateTime when,
+    required DateTimeComponents repeat,
+    required String title,
+    required String body,
+    required NotificationDetails details,
+    String? payload,
+  }) async {
+    await init();
     try {
       await _plugin.zonedSchedule(
         id,
         title,
         body,
-        tz.TZDateTime.from(next, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channelId,
-            channelName,
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: playSound,
-            sound: androidSound == null
-                ? null
-                : RawResourceAndroidNotificationSound(androidSound),
-            enableVibration: vibrate,
-            vibrationPattern: vibrate && !playSound
-                ? salahVibrationPattern
-                : null,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentSound: playSound,
-            sound: playSound ? iosSound : null,
-          ),
-        ),
+        tz.TZDateTime.from(when, tz.local),
+        details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        // Repeats every day at the same wall-clock time.
-        matchDateTimeComponents: DateTimeComponents.time,
+        matchDateTimeComponents: repeat,
         payload: payload,
       );
     } catch (e) {
       debugPrint('⏰ ReminderService: scheduling id $id failed: $e');
+    }
+  }
+
+  /// Fires a Salah reminder right now through [channel], exactly as a real
+  /// one would arrive: same channel, sound and vibration. The OS — not the
+  /// app — plays it, so what the user hears is what they will get, including
+  /// the effect of Do Not Disturb or a muted channel.
+  Future<void> previewSalah(
+    SalahChannel channel, {
+    required String title,
+    required String body,
+  }) async {
+    await init();
+    final useHaya = channel == SalahChannel.haya;
+    try {
+      await _plugin.show(
+        kSalahPreviewNotificationId,
+        title,
+        body,
+        _details(
+          channelId: channelIdForSalah(channel),
+          channelName: channelNameForSalah(channel),
+          playSound: channel != SalahChannel.vibrate,
+          androidSound: useHaya ? salahSoundAndroid : null,
+          iosSound: useHaya ? salahSoundIos : null,
+        ),
+      );
+    } catch (e) {
+      debugPrint('⏰ ReminderService: preview failed: $e');
     }
   }
 

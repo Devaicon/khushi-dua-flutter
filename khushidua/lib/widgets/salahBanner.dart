@@ -56,13 +56,10 @@ class _SalahBannerState extends State<SalahBanner> {
 
         return Container(
           width: double.infinity,
-          margin: EdgeInsets.only(
-            top: widget.topGap,
-            bottom: widget.bottomGap,
-          ),
+          margin: EdgeInsets.only(top: widget.topGap, bottom: widget.bottomGap),
           padding: const EdgeInsets.all(AppSpace.lg),
           decoration: BoxDecoration(
-            gradient: AppGradient.forSeed(rbluedark),
+            gradient: AppGradient.forSeed(kBrandNavy),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(

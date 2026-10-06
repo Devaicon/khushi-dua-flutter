@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:khushidua/controllers/userController.dart';
 import 'package:khushidua/views/dashboard.dart';
+import 'package:khushidua/constants/colors.dart';
+import 'package:khushidua/constants/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BlockedScreen extends StatelessWidget {
@@ -22,7 +24,7 @@ class BlockedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppSurface.page,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -31,10 +33,10 @@ class BlockedScreen extends StatelessWidget {
             children: [
               Icon(Icons.block, size: 80, color: Colors.red),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 "Your account has been blocked.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, color: Colors.black),
+                style: TextStyle(fontSize: 22, color: rtext),
               ),
               const SizedBox(height: 30),
               ElevatedButton(

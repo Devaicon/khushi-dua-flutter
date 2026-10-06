@@ -13,7 +13,23 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
+/// The announcements inbox, opened from the bell on the home screen.
 class _NotificationScreenState extends State<NotificationScreen> {
+  final _controller = Get.find<NotificationController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.markAllSeen();
+  }
+
+  @override
+  void dispose() {
+    // Anything that arrived while the inbox was open has been seen too.
+    _controller.markAllSeen();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,14 +37,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
       appBar: AppBar(
         title: Text(
           "Notifications".tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
+          style: TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
         ),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: rbluedark),
         actions: [
           TextButton(
-            onPressed: () => Get.find<NotificationController>().clearNotifications(),
+            onPressed: _confirmClearAll,
             child: Text(
               "Clear All".tr,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -39,13 +56,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: GetBuilder<NotificationController>(
         builder: (notificationController) {
-          // Filter out "test" notifications to satisfy user request
-          final activeNotifications =
-              notificationController.allNotifications.where((n) {
-                final title = n.title.toLowerCase();
-                final msg = n.message.toLowerCase();
-                return !title.contains("test") && !msg.contains("test");
-              }).toList();
+          // Everything is shown. Notifications mentioning "test" used to be
+          // hidden here, so an admin's test send never reached the inbox.
+          final activeNotifications = notificationController.allNotifications;
 
           if (activeNotifications.isEmpty) {
             return _buildEmptyState();
@@ -55,14 +68,60 @@ class _NotificationScreenState extends State<NotificationScreen> {
             itemCount: activeNotifications.length,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
-              return NotificationTile(
-                notificationModel: activeNotifications[index],
-                index: index,
+              final notification = activeNotifications[index];
+              // Swipe either way to delete.
+              return Dismissible(
+                key: ValueKey(notification.id),
+                onDismissed: (_) =>
+                    notificationController.deleteNotification(notification.id),
+                background: _deleteBackground(Alignment.centerLeft),
+                secondaryBackground: _deleteBackground(Alignment.centerRight),
+                child: NotificationTile(
+                  notificationModel: notification,
+                  index: index,
+                ),
               );
             },
           );
         },
       ),
+    );
+  }
+
+  Future<void> _confirmClearAll() async {
+    if (_controller.allNotifications.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Delete all notifications?".tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel".tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+            ),
+            child: Text("Delete".tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _controller.clearNotifications();
+  }
+
+  Widget _deleteBackground(Alignment alignment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl),
+      alignment: alignment,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE53935),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: const Icon(Icons.delete_rounded, color: Colors.white),
     );
   }
 
@@ -86,7 +145,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           const SizedBox(height: 24),
           Text(
             "All caught up!".tr,
-            style: const TextStyle(
+            style: TextStyle(
               color: rbluedark,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -119,7 +178,7 @@ class NotificationTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -156,7 +215,7 @@ class NotificationTile extends StatelessWidget {
                             color: rbluedark.withOpacity(0.05),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.notifications_active_rounded,
                             color: rbluedark,
                             size: 22,
@@ -174,7 +233,7 @@ class NotificationTile extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       notificationModel.title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: rbluedark,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -194,7 +253,7 @@ class NotificationTile extends StatelessWidget {
                               Text(
                                 notificationModel.message,
                                 style: TextStyle(
-                                  color: rblack.withOpacity(0.6),
+                                  color: rtext.withValues(alpha: 0.6),
                                   fontSize: 14,
                                   height: 1.5,
                                 ),

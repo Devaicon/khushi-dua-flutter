@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
+import '../../constants/theme.dart';
 import '../../widgets/googleSignInButton.dart';
 import '../../constants/userData.dart';
 import '../../controllers/themeController.dart';
@@ -30,7 +31,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rwhite,
+      backgroundColor: AppSurface.page,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -41,13 +42,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Container(
                   width: MediaQuery.of(context).size.width,
                   height: 200,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
-                    ),
-                  ),
+                  decoration: BoxDecoration(gradient: AppGradient.authHeader),
                   child: Stack(
                     children: [
                       Positioned(
@@ -61,9 +56,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               Get.back();
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: rblack,
+                            color: rtext,
                           ),
                         ),
                       ),
@@ -87,7 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                             Container(
                                               padding: const EdgeInsets.all(6),
                                               decoration: BoxDecoration(
-                                                color: Colors.white,
+                                                color: AppSurface.card,
                                                 shape: BoxShape.circle,
                                                 boxShadow: [
                                                   BoxShadow(
@@ -98,7 +93,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              child: const Icon(
+                                              child: Icon(
                                                 Icons.camera_alt_rounded,
                                                 size: 14,
                                                 color: rbluedark,
@@ -136,9 +131,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     Text(
                       "Name".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -168,9 +163,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     ).marginOnly(top: 10),
                     Text(
                       "Email".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ).marginOnly(top: 20),
@@ -180,7 +175,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         if (email == null || email.trim().isEmpty) {
                           return "Email is required".tr;
                         }
-                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
                         if (!emailRegex.hasMatch(email.trim())) {
                           return "Please enter a valid email address".tr;
                         }
@@ -204,9 +201,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     ).marginOnly(top: 12),
                     Text(
                       "Password".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ).marginOnly(top: 20),
@@ -237,9 +234,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     ).marginOnly(top: 12),
                     Text(
                       "Confirm Password".tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
-                        color: rblack,
+                        color: rtext,
                         fontWeight: FontWeight.bold,
                       ),
                     ).marginOnly(top: 20),
@@ -299,7 +296,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: _isLoading ? Colors.grey : rbluedark,
+                          color: _isLoading ? Colors.grey : brandFill,
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
@@ -324,7 +321,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         children: [
                           Text(
                             "Already have an account? ".tr,
-                            style: const TextStyle(color: rblack),
+                            style: TextStyle(color: rtext),
                           ),
                           InkWell(
                             onTap: () {
@@ -335,7 +332,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             },
                             child: Text(
                               "Login now! ".tr,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: rbluedark,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -362,11 +359,11 @@ class _SignupScreenState extends State<SignupScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: AppSurface.card,
           title: Center(
             child: Text(
               "Select Your Avatar".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -407,9 +404,7 @@ class _SignupScreenState extends State<SignupScreen> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -417,7 +412,7 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 8),
             Text(
               imagePath.contains("male") ? "Boy".tr : "Girl".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,

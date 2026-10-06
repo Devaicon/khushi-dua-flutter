@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/colors.dart';
 import '../constants/theme.dart';
 
 /// A shimmering placeholder shown while a list loads.
@@ -36,9 +37,13 @@ class _SkeletonState extends State<Skeleton>
   Widget build(BuildContext context) {
     final base = widget.onDark
         ? Colors.white.withValues(alpha: 0.08)
+        : AppPalette.isDark
+        ? const Color(0xff222740)
         : const Color(0xffE6E8F0);
     final highlight = widget.onDark
         ? Colors.white.withValues(alpha: 0.20)
+        : AppPalette.isDark
+        ? const Color(0xff2E3452)
         : const Color(0xffF4F5F9);
 
     return AnimatedBuilder(

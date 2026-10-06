@@ -56,6 +56,27 @@ class LegalScreen extends StatelessWidget {
   }
 }
 
+/// The references and credits, from `assets/legal/references.md`, rendered
+/// the same way as the legal documents.
+class ReferencesScreen extends StatelessWidget {
+  const ReferencesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppSurface.page,
+      appBar: AppBar(
+        title: Text("References".tr),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Get.back(),
+        ),
+      ),
+      body: const _LegalDocument(assetPath: 'assets/legal/references.md'),
+    );
+  }
+}
+
 class _LegalDocument extends StatefulWidget {
   const _LegalDocument({required this.assetPath});
 
@@ -106,7 +127,8 @@ abstract final class _MarkdownBlocks {
   static final _bullet = RegExp(r'^(\s*)- (.*)$');
   static final _heading = RegExp(r'^(#{1,3}) (.*)$');
 
-  static const _body = TextStyle(color: rtext, fontSize: 14.5, height: 1.5);
+  static TextStyle get _body =>
+      TextStyle(color: rtext, fontSize: 14.5, height: 1.5);
 
   static List<Widget> parse(String markdown) {
     final widgets = <Widget>[];
@@ -281,8 +303,10 @@ class _InlineTextState extends State<_InlineText> {
           TextSpan(
             text: url,
             recognizer: recognizer,
-            style: const TextStyle(
-              color: Color(0xFF3949AB),
+            style: TextStyle(
+              color: AppPalette.isDark
+                  ? const Color(0xFF9FA8DA)
+                  : const Color(0xFF3949AB),
               decoration: TextDecoration.underline,
             ),
           ),

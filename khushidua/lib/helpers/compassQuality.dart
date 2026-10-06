@@ -120,3 +120,28 @@ class CompassQualityMessage {
   static bool canShowHeading(CompassQuality quality) =>
       quality != CompassQuality.unavailable;
 }
+
+/// Whether to ask the user to calibrate (the figure-8 motion).
+///
+/// On Android this uses the magnetometer's own status, reported natively:
+/// `SensorManager.SENSOR_STATUS_UNRELIABLE` (0) or `_ACCURACY_LOW` (1). The
+/// `flutter_compass` accuracy it replaces reported "unreliable" as -1, which
+/// the screen read as fine — so the prompt never appeared in exactly the case
+/// it exists for — and it mixed in the accelerometer's status as well.
+///
+/// On iOS [iosAccuracyDegrees] is Core Location's heading accuracy; negative
+/// means invalid, and above 30° is too coarse to point at the Qibla.
+bool needsCalibration({
+  required bool isAndroid,
+  int? magnetometerStatus,
+  double? iosAccuracyDegrees,
+}) {
+  if (isAndroid) {
+    // Null until the first status arrives; no prompt on a guess.
+    return magnetometerStatus != null &&
+        magnetometerStatus >= 0 &&
+        magnetometerStatus <= 1;
+  }
+  final accuracy = iosAccuracyDegrees;
+  return accuracy == null || accuracy < 0 || accuracy > 30;
+}

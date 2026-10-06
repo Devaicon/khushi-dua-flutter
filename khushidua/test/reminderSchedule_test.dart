@@ -3,6 +3,56 @@ import 'package:khushidua/helpers/reminderSchedule.dart';
 
 void main() {
   _soundAndChannelTests();
+  group('nextWeekdayOccurrence', () {
+    // 2026-10-06 is a Tuesday; the Friday after it is 2026-10-09.
+    test('finds the coming Friday from earlier in the week', () {
+      expect(
+        nextWeekdayOccurrence(
+          weekday: DateTime.friday,
+          hour: 15,
+          minute: 0,
+          now: DateTime(2026, 10, 6, 9, 0),
+        ),
+        DateTime(2026, 10, 9, 15, 0),
+      );
+    });
+
+    test('uses today when it is Friday and the time is ahead', () {
+      expect(
+        nextWeekdayOccurrence(
+          weekday: DateTime.friday,
+          hour: 15,
+          minute: 0,
+          now: DateTime(2026, 10, 9, 14, 59),
+        ),
+        DateTime(2026, 10, 9, 15, 0),
+      );
+    });
+
+    test('skips a week when it is Friday and the time is exactly now', () {
+      expect(
+        nextWeekdayOccurrence(
+          weekday: DateTime.friday,
+          hour: 15,
+          minute: 0,
+          now: DateTime(2026, 10, 9, 15, 0),
+        ),
+        DateTime(2026, 10, 16, 15, 0),
+      );
+    });
+
+    test('rolls across a month boundary from Saturday', () {
+      expect(
+        nextWeekdayOccurrence(
+          weekday: DateTime.friday,
+          hour: 15,
+          minute: 0,
+          now: DateTime(2026, 10, 31, 10, 0),
+        ),
+        DateTime(2026, 11, 6, 15, 0),
+      );
+    });
+  });
   group('nextOccurrence', () {
     test('returns today when the time is still ahead', () {
       final now = DateTime(2026, 9, 11, 6, 0);

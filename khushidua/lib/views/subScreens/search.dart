@@ -5,8 +5,10 @@ import '../../constants/colors.dart';
 import '../../constants/theme.dart';
 
 import '../../animations/fadeInAnimationBTT.dart';
+import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../models/subCategoryModel.dart';
+import '../../widgets/donateCard.dart';
 import '../openDuasScreen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -73,7 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: Text(
           "Explore Duas".tr,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
+          style: TextStyle(fontWeight: FontWeight.bold, color: rbluedark),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -86,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppSurface.card,
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
                   BoxShadow(
@@ -99,14 +101,11 @@ class _SearchScreenState extends State<SearchScreen> {
               child: TextFormField(
                 controller: _searchController,
                 onChanged: (_) => _filterSubCategories(),
-                style: const TextStyle(
-                  color: rbluedark,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: rbluedark, fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
                   hintText: "Search for Duas...".tr,
                   hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.search_rounded,
                     color: rbluedark,
                     size: 22,
@@ -162,8 +161,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       );
                       _filterSubCategories();
                     },
-                    backgroundColor: Colors.white,
-                    surfaceTintColor: Colors.white,
+                    backgroundColor: AppSurface.card,
+                    surfaceTintColor: AppSurface.card,
                     elevation: 2,
                     shadowColor: Colors.black12,
                     shape: RoundedRectangleBorder(
@@ -209,26 +208,86 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  /// Before anything is typed, the screen lists sections to browse rather
+  /// than sitting empty: [_pageSize] at a time, in the home screen's order.
+  static const int _pageSize = 10;
+  int _browseCount = _pageSize;
+
+  /// The sections the reader can see for their age group, in category order
+  /// and then section order — the order they appear on the home screen.
+  List<SubCategoryModel> _browseList(CategoryController categories) {
+    final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
+    final categoryRank = {
+      for (final (i, c) in categories.filteredCategories.indexed) c.id: i,
+    };
+    return categories.allSubCategories.where((s) {
+      if (!s.isEnabled || !categoryRank.containsKey(s.categoryId)) {
+        return false;
+      }
+      return switch (ageGroup) {
+        0 => s.littleKids,
+        1 => s.olderKids,
+        _ => s.grownUps,
+      };
+    }).toList()..sort((a, b) {
+      final byCategory = categoryRank[a.categoryId]!.compareTo(
+        categoryRank[b.categoryId]!,
+      );
+      return byCategory != 0 ? byCategory : a.order.compareTo(b.order);
+    });
+  }
+
   Widget _buildInitialState() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Icon(
-            Icons.auto_awesome_rounded,
-            size: 80,
-            color: rbluedark.withOpacity(0.1),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Search anything...".tr,
-            style: TextStyle(
-              color: rbluedark.withOpacity(0.4),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+    // Content and the age group both load or change after this screen is
+    // built, so the list follows them.
+    return GetBuilder<ThemeController>(
+      builder: (_) => GetBuilder<CategoryController>(
+        builder: (categoryController) {
+          final language = Get.find<UserController>().selectedLanguage;
+          final all = _browseList(categoryController);
+          final shown = all.take(_browseCount).toList();
+          final hasMore = all.length > shown.length;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, AppSpace.xl),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.md),
+                child: Text(
+                  "Browse duas".tr,
+                  style: TextStyle(
+                    color: AppText.onPageMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              for (final subCategory in shown)
+                _buildResultTile(
+                  subCategory,
+                  categoryController.allCategories
+                          .firstWhereOrNull(
+                            (c) => c.id == subCategory.categoryId,
+                          )
+                          ?.getName(language) ??
+                      "",
+                ),
+              if (hasMore)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _browseCount += _pageSize),
+                    style: TextButton.styleFrom(foregroundColor: rbluedark),
+                    icon: const Icon(Icons.expand_more_rounded),
+                    label: Text("Load more".tr),
+                  ),
+                ),
+              const SizedBox(height: AppSpace.lg),
+              const DonateCard(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -252,7 +311,7 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(height: 20),
         Text(
           "No results found".tr,
-          style: const TextStyle(
+          style: TextStyle(
             color: rbluedark,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -273,7 +332,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppSurface.card,
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
@@ -322,7 +381,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: rbluedark,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -348,7 +407,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: rbluedark.withOpacity(0.05),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_forward_ios_rounded,
                       color: rbluedark,
                       size: 14,

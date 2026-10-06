@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/colors.dart';
+import '../constants/theme.dart';
 import '../helpers/sectionProgress.dart';
 
 /// Explains what "listened" means and how locked sections open, for readers
@@ -24,8 +25,8 @@ void showSectionUnlockHelp(SectionProgress progress) {
     SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        decoration: const BoxDecoration(
-          color: rwhite,
+        decoration: BoxDecoration(
+          color: AppSurface.card,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -34,12 +35,12 @@ void showSectionUnlockHelp(SectionProgress progress) {
           children: [
             Row(
               children: [
-                const Icon(Icons.lock_open_rounded, color: rbluedark),
+                Icon(Icons.lock_open_rounded, color: rbluedark),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     "How to unlock sections".tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: rbluedark,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -86,17 +87,14 @@ void showSectionUnlockHelp(SectionProgress progress) {
                 'done': '${progress.completedFreeSections}',
                 'total': '${progress.freeSectionCount}',
               }),
-              style: const TextStyle(color: rtext, fontSize: 13),
+              style: TextStyle(color: rtext, fontSize: 13),
             ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Get.back(),
-                child: Text(
-                  "Got it".tr,
-                  style: const TextStyle(color: rbluedark),
-                ),
+                child: Text("Got it".tr, style: TextStyle(color: rbluedark)),
               ),
             ),
           ],
@@ -125,7 +123,7 @@ class _HelpLine extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: rtext, fontSize: 14, height: 1.4),
+              style: TextStyle(color: rtext, fontSize: 14, height: 1.4),
             ),
           ),
         ],
@@ -189,16 +187,12 @@ class _FirstTimeTipState extends State<FirstTimeTip> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.lightbulb_outline_rounded, color: rbluedark),
+              Icon(Icons.lightbulb_outline_rounded, color: rbluedark),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   widget.message,
-                  style: const TextStyle(
-                    color: rtext,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
+                  style: TextStyle(color: rtext, fontSize: 14, height: 1.4),
                 ),
               ),
             ],
@@ -207,10 +201,7 @@ class _FirstTimeTipState extends State<FirstTimeTip> {
             onPressed: _dismiss,
             child: Text(
               "Got it".tr,
-              style: const TextStyle(
-                color: rbluedark,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: rbluedark, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -230,8 +221,7 @@ class ListenedBadge extends StatelessWidget {
     return Tooltip(
       triggerMode: TooltipTriggerMode.tap,
       showDuration: const Duration(seconds: 4),
-      message:
-          "You played this dua's audio all the way to the end.".tr,
+      message: "You played this dua's audio all the way to the end.".tr,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -241,11 +231,11 @@ class ListenedBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_rounded, size: 16, color: rbluedark),
+            Icon(Icons.check_circle_rounded, size: 16, color: rbluedark),
             const SizedBox(width: 4),
             Text(
               "Listened".tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: rbluedark,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

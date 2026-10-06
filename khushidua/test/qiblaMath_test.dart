@@ -70,35 +70,45 @@ void main() {
       const double declination = -11.0; // Degrees east of true north.
       const double magneticHeading = 0.0; // Phone facing magnetic north.
 
-      final double uncorrected = QiblaMath.needleAngle(qiblaTrue, magneticHeading);
+      final double uncorrected = QiblaMath.needleAngle(
+        qiblaTrue,
+        magneticHeading,
+      );
       final double corrected = QiblaMath.needleAngle(
         qiblaTrue,
         QiblaMath.magneticToTrue(magneticHeading, declination),
       );
 
-      expect(QiblaMath.angularDifference(uncorrected, corrected),
-          closeTo(declination.abs(), 1e-9));
-    });
-
-    test('corrected needle matches the true bearing when facing true north', () {
-      const double qiblaTrue = 58.49;
-      const double declination = -11.0;
-      // Facing TRUE north means the magnetometer reads +11 magnetic.
-      const double magneticHeading = 11.0;
-
-      final double corrected = QiblaMath.needleAngle(
-        qiblaTrue,
-        QiblaMath.magneticToTrue(magneticHeading, declination),
+      expect(
+        QiblaMath.angularDifference(uncorrected, corrected),
+        closeTo(declination.abs(), 1e-9),
       );
-
-      expect(corrected, closeTo(qiblaTrue, 1e-9));
     });
+
+    test(
+      'corrected needle matches the true bearing when facing true north',
+      () {
+        const double qiblaTrue = 58.49;
+        const double declination = -11.0;
+        // Facing TRUE north means the magnetometer reads +11 magnetic.
+        const double magneticHeading = 11.0;
+
+        final double corrected = QiblaMath.needleAngle(
+          qiblaTrue,
+          QiblaMath.magneticToTrue(magneticHeading, declination),
+        );
+
+        expect(corrected, closeTo(qiblaTrue, 1e-9));
+      },
+    );
   });
 
   group('angularDifference', () {
     test('is symmetric', () {
-      expect(QiblaMath.angularDifference(10, 350),
-          closeTo(QiblaMath.angularDifference(350, 10), 1e-9));
+      expect(
+        QiblaMath.angularDifference(10, 350),
+        closeTo(QiblaMath.angularDifference(350, 10), 1e-9),
+      );
     });
 
     test('takes the short way around the circle', () {
@@ -202,6 +212,37 @@ void main() {
         QiblaMath.magneticToTrue(270, 2.2),
       );
       expect(fromNegative, closeTo(fromPositive, 1e-9));
+    });
+  });
+
+  group('signedDifference', () {
+    test('positive when the target is clockwise', () {
+      expect(QiblaMath.signedDifference(120, 100), closeTo(20, 1e-9));
+    });
+
+    test('negative when the target is anticlockwise', () {
+      expect(QiblaMath.signedDifference(100, 120), closeTo(-20, 1e-9));
+    });
+
+    test('takes the short way across north', () {
+      expect(QiblaMath.signedDifference(10, 350), closeTo(20, 1e-9));
+      expect(QiblaMath.signedDifference(350, 10), closeTo(-20, 1e-9));
+    });
+  });
+
+  group('smoothAngle', () {
+    test('moves part of the way towards the new reading', () {
+      expect(QiblaMath.smoothAngle(100, 120, 0.25), closeTo(105, 1e-9));
+    });
+
+    test('crosses north along the short arc, not the long one', () {
+      // 350 -> 10 is 20 degrees clockwise; a naive average would go via 180.
+      expect(QiblaMath.smoothAngle(350, 10, 0.5), closeTo(0, 1e-9));
+      expect(QiblaMath.smoothAngle(10, 350, 0.5), closeTo(0, 1e-9));
+    });
+
+    test('a factor of 1 jumps straight to the reading', () {
+      expect(QiblaMath.smoothAngle(42, 300, 1), closeTo(300, 1e-9));
     });
   });
 }

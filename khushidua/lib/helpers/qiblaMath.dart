@@ -40,6 +40,19 @@ class QiblaMath {
     return diff > 180 ? 360 - diff : diff;
   }
 
+  /// Signed shortest turn from [from] to [to], in `(-180, 180]`: positive
+  /// is clockwise (turn right), negative anticlockwise (turn left).
+  static double signedDifference(double to, double from) {
+    final double diff = normalize(to - from);
+    return diff > 180 ? diff - 360 : diff;
+  }
+
+  /// Moves [previous] a [factor] of the way towards [next] along the shorter
+  /// arc, so the needle settles instead of shaking with sensor noise — and
+  /// does not swing the long way round when the heading crosses north.
+  static double smoothAngle(double previous, double next, double factor) =>
+      normalize(previous + signedDifference(next, previous) * factor);
+
   /// Whether [needle] points within [tolerance] degrees of straight up.
   static bool isAligned(double needle, {double tolerance = 5}) =>
       angularDifference(needle, 0) <= tolerance;

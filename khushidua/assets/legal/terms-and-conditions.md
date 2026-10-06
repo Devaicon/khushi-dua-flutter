@@ -1,7 +1,7 @@
 # Terms and Conditions
 
 **Khushi Dua**
-Effective date: 23 September 2026
+Effective date: 6 October 2026
 
 These Terms and Conditions ("Terms") govern your use of the Khushi Dua mobile application (the "App"), provided by Khushi Dua ("we", "us", "our"). By downloading or using the App you agree to these Terms. If you do not agree, please do not use the App.
 
@@ -26,7 +26,7 @@ Anyone may use the App. If you are under 13 (or the age of digital consent in yo
 
 - We try hard to present duas, translations, transliterations and audio accurately and from reliable sources. Even so, they are provided for learning and personal devotion, **not as religious rulings (fatwa)**. For religious guidance, please consult a qualified scholar.
 - Translations are meanings, not replacements for the original Arabic.
-- If you find an error, please tell us at ghazanfar.shah@learningsouls.org so we can correct it.
+- If you find an error, please tell us at admin@learningsouls.org so we can correct it.
 
 ## 5. Prayer times and Qibla direction
 
@@ -40,10 +40,11 @@ Reminders depend on your device's settings, battery optimisation and operating s
 
 The Practice feature gives automated feedback that may not always be accurate. It is a learning aid and does not replace a qualified teacher.
 
-## 8. Membership and advertising
+## 8. Membership and donations
 
-- The App is free to use. It shows advertising to users who are not members, except in the Little Kids section, which never shows ads. Ads in the Older Kids section are directed at children and are not personalised.
-- Membership removes ads and unlocks all sections. Membership is granted by us at our discretion and is not sold in the App. We may grant, change or withdraw membership at any time.
+- The App is free to use and shows no advertising.
+- Membership unlocks all sections. Membership is granted by us at our discretion and is not sold in the App. We may grant, change or withdraw membership at any time.
+- Donations are voluntary, are made to LearningSouls on its own website, and do not buy membership or any feature in the App.
 - We may change which features are free and which need membership.
 
 ## 9. Acceptable use
@@ -63,7 +64,7 @@ The App's design, software, graphics, illustrations, audio recordings and compil
 
 ## 11. Third-party services
 
-The App uses third-party services, including Google Firebase, Google Sign-In and Google AdMob. Their own terms and privacy policies govern your use of them. We are not responsible for third-party services or for content in advertisements.
+The App uses third-party services, including Google Firebase and Google Sign-In, and LearningSouls' donation website. Their own terms and privacy policies govern your use of them. We are not responsible for third-party services.
 
 ## 12. Availability and changes
 
@@ -102,4 +103,4 @@ If you downloaded the App from the Apple App Store, you also agree that:
 ## 19. Contact us
 
 Khushi Dua
-Email: ghazanfar.shah@learningsouls.org
+Email: admin@learningsouls.org

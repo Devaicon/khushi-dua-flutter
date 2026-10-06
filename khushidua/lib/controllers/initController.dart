@@ -7,8 +7,8 @@ import 'package:khushidua/controllers/audioController.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
 
 import 'notificationController.dart';
+import 'prayerSettingsController.dart';
 import 'reminderController.dart';
-import 'homeBannerController.dart';
 
 class InitControllers extends Bindings {
   @override
@@ -20,7 +20,7 @@ class InitControllers extends Bindings {
     Get.put(NotificationController(), permanent: true);
     Get.put(AudioController(), permanent: true);
     Get.put(AudioDownloadService(), permanent: true);
+    Get.put(PrayerSettingsController(), permanent: true);
     Get.put(ReminderController(), permanent: true);
-    Get.put(HomeBannerController(), permanent: true);
   }
 }
