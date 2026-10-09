@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.5.0+21
+version: 1.6.0+22
 
 environment:
   sdk: ^3.8.1
@@ -46,6 +46,7 @@ dependencies:
   url_launcher: ^6.3.2
   webview_flutter: ^4.14.1
   background_downloader: ^9.6.3
+  sensors_plus: ^7.1.1
 
 dependency_overrides:
   record_linux: ^1.2.1

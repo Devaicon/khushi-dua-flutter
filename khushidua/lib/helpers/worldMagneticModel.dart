@@ -11,9 +11,14 @@ class GeomagneticField {
   /// a magnetic compass stops being trustworthy at all.
   final double horizontalIntensity;
 
+  /// Total field intensity in nT: what a calibrated magnetometer should
+  /// measure here, away from any local interference.
+  final double totalIntensity;
+
   const GeomagneticField({
     required this.declination,
     required this.horizontalIntensity,
+    required this.totalIntensity,
   });
 
   /// NOAA defines H < 2000 nT as a "blackout zone" where declination values are
@@ -273,12 +278,14 @@ class WorldMagneticModel {
     // Rotate from spherical back to geodetic coordinates.
     final double bx = -bt * ca - br * sa;
     final double by = bp;
+    final double bz = bt * sa - br * ca;
 
     final double bh = math.sqrt((bx * bx) + (by * by));
 
     return GeomagneticField(
       declination: math.atan2(by, bx) * 180.0 / math.pi,
       horizontalIntensity: bh,
+      totalIntensity: math.sqrt((bh * bh) + (bz * bz)),
     );
   }
 

@@ -25,7 +25,11 @@ class NotificationService {
       (event) {
         bool changed = false;
         for (var element in event.docChanges) {
-          if (element.type == DocumentChangeType.added ||
+          if (element.type == DocumentChangeType.removed) {
+            _notificationController.removeNotificationFromList(element.doc.id,
+                shouldUpdate: false);
+            changed = true;
+          } else if (element.type == DocumentChangeType.added ||
               element.type == DocumentChangeType.modified) {
             _notificationController.addNotificationToList(
               NotificationModel.fromMap(element.doc.data()!),
@@ -63,6 +67,28 @@ class NotificationService {
       }
     }
     return "Send failed: $error";
+  }
+
+  /// Deletes a notification for everyone: the app's inboxes listen to this
+  /// collection and drop it live. Pushes already on a device's lock screen
+  /// stay there; only the in-app copy goes.
+  Future<bool> deleteNotification(NotificationModel notification) async {
+    try {
+      await notificationRef.doc(notification.id).delete();
+      CustomSnackbar.show(
+        "Deleted".tr,
+        "\"${notification.title}\" was removed from every inbox.",
+        isSuccess: true,
+      );
+      return true;
+    } catch (e) {
+      CustomSnackbar.show(
+        "Failed".tr,
+        "Could not delete the notification: $e",
+        isSuccess: false,
+      );
+      return false;
+    }
   }
 
   Future<void> sendGlobalNotification(String title, String description) async {

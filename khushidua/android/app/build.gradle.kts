@@ -76,6 +76,9 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // The Fused Orientation Provider for the Qibla compass (added in 21.2.0).
+    // geolocator already brings this version in, but only to itself.
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 }
 
 flutter {

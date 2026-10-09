@@ -21,6 +21,15 @@ class NotificationController extends GetxController {
     if (shouldUpdate) update();
   }
 
+  void removeNotificationFromList(String id, {bool shouldUpdate = true}) {
+    _allNotifications.removeWhere((n) => n.id == id);
+    if (shouldUpdate) update();
+  }
+
+  /// Removes it from Firestore; the live listener then drops it here.
+  Future<bool> deleteNotification(NotificationModel notification) =>
+      NotificationService().deleteNotification(notification);
+
   getAllNotifications() {
     NotificationService().getAllNotifications();
   }

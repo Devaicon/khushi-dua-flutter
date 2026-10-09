@@ -389,6 +389,7 @@ Widget TableHeader() {
               "Created at",
               style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
             )),
+        SizedBox(width: _kActionsWidth),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10),
   );
@@ -436,7 +437,70 @@ class _NotificationTileState extends State<NotificationTile> {
               style:
                   const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
             )),
+        SizedBox(
+          width: _kActionsWidth,
+          child: _deleting
+              ? const Center(
+                  child: SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: rRed),
+                  ),
+                )
+              : IconButton(
+                  tooltip: "Delete notification",
+                  icon: const Icon(Icons.delete_outline_rounded, color: rRed),
+                  onPressed: _confirmDelete,
+                ),
+        ),
       ],
     ).marginSymmetric(horizontal: 12, vertical: 10);
   }
+
+  bool _deleting = false;
+
+  Future<void> _confirmDelete() async {
+    final notification = widget.notificationModel;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: rBg,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Delete notification?",
+          style: TextStyle(
+              fontWeight: FontWeight.bold, color: rWhite, fontSize: 18),
+        ),
+        content: Text(
+          notification.sentTo == null
+              ? "\"${notification.title}\" will be removed from every user's "
+                  "inbox in the app. This cannot be undone."
+              : "\"${notification.title}\" will be removed from this user's "
+                  "inbox in the app. This cannot be undone.",
+          style: const TextStyle(color: rHint, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel", style: TextStyle(color: rWhite)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rRed),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Delete", style: TextStyle(color: rWhite)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleting = true);
+    final deleted = await Get.find<NotificationController>()
+        .deleteNotification(notification);
+    // On success the tile goes with the list; on failure it stays.
+    if (!deleted && mounted) setState(() => _deleting = false);
+  }
 }
+
+/// The width of the delete column, shared by the header and each row.
+const double _kActionsWidth = 48;

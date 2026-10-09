@@ -2,9 +2,8 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:prayers_times/prayers_times.dart';
@@ -12,8 +11,11 @@ import 'package:prayers_times/prayers_times.dart';
 import '../constants/colors.dart';
 import '../constants/theme.dart';
 import '../helpers/compassQuality.dart';
+import '../helpers/compassTilt.dart';
 import '../helpers/qiblaMath.dart';
+import '../services/compassCues.dart';
 import '../services/declinationService.dart';
+import '../services/headingService.dart';
 
 /// How long to wait for a first compass reading before telling the user their
 /// device does not appear to be delivering one.
@@ -27,6 +29,27 @@ const double _kReleaseTolerance = 8;
 /// Share of each new reading blended into the shown heading (~30 readings a
 /// second): steady enough to read, quick enough to follow a turn.
 const double _kSmoothing = 0.2;
+
+/// Share of each gravity reading blended into the dial's tilt.
+const double _kTiltSmoothing = 0.35;
+
+/// Perspective of the leaning dial: larger is more dramatic.
+const double _kPerspective = 0.0015;
+
+/// How thick the dial is, and in how many slices its edge is drawn: one per
+/// pixel, so the edge reads as solid when the dial leans.
+const double _kDialThickness = 12;
+const int _kDialEdgeSlices = 12;
+
+/// The buzz on reaching the Qibla comes at most this often, so a phone held
+/// at the edge of the tolerance does not keep buzzing.
+const Duration _kAlignedCueGap = Duration(seconds: 3);
+
+/// How long the compass takes to fade in when it first appears.
+const Duration _kAppearDuration = Duration(milliseconds: 250);
+
+/// How long a notice's toast stays before it folds into the header button.
+const Duration _kToastDuration = Duration(seconds: 4);
 
 const Color _kGold = Color(0xFFFFB300);
 
@@ -53,57 +76,97 @@ class CompassScreen extends StatefulWidget {
   State<CompassScreen> createState() => _CompassScreenState();
 }
 
-class _CompassScreenState extends State<CompassScreen> {
-  static const EventChannel _accuracyChannel = EventChannel(
-    'com.khushiidua.app/compassAccuracy',
-  );
-
+class _CompassScreenState extends State<CompassScreen>
+    with WidgetsBindingObserver {
   /// Qibla bearing, in degrees clockwise from **true** north.
   double _qiblaDirection = 0;
 
-  /// Declination, sensor inventory and model validity for this device/location.
+  /// Declination, field strength, sensor inventory and model validity for
+  /// this device and location.
   CompassEnvironment? _env;
   bool _envResolved = false;
 
   /// iOS only populates `CLHeading.trueHeading` while location updates are
   /// running. `flutter_compass` never starts them, so we hold a subscription
-  /// open for the lifetime of this screen.
+  /// open while the screen is in use.
   StreamSubscription<Position>? _positionSub;
 
-  StreamSubscription<CompassEvent>? _compassSub;
-  StreamSubscription<dynamic>? _accuracySub;
+  StreamSubscription<HeadingReading?>? _headingSub;
+  StreamSubscription<Gravity>? _gravitySub;
 
-  /// Fires if no compass event ever arrives — a device with no usable
-  /// magnetometer produces an eternally empty stream rather than an error.
+  /// How the phone is held, smoothed; leans the dial and moves the level.
+  DeviceTilt _tilt = DeviceTilt.flat;
+  bool _sawTilt = false;
+
+  /// Held well off flat for long enough to suggest holding it flatter.
+  final SustainedFlag _tilted = SustainedFlag(
+    dwell: const Duration(seconds: 3),
+  );
+
+  /// Fires if no heading ever arrives — a device with no usable magnetometer
+  /// can produce an eternally empty stream rather than an error.
   Timer? _timeoutTimer;
   bool _timedOut = false;
   bool _sawReading = false;
 
-  /// The smoothed raw platform heading (magnetic on Android, true on iOS).
-  double? _rawHeading;
+  /// The smoothed heading, in degrees clockwise from **true** north.
+  double? _heading;
+
+  /// The latest reading, for its source and accuracy.
+  HeadingReading? _reading;
   bool _headingUnusable = false;
   bool _sensorError = false;
 
-  /// Android: the magnetometer's SensorManager status. iOS: heading accuracy
-  /// in degrees, from flutter_compass.
-  int? _magnetometerStatus;
-  double? _iosAccuracy;
+  /// Poor accuracy, and a field unlike Earth's, each held long enough to be
+  /// worth a notice under the compass. Both clear quickly, so the notice goes
+  /// as soon as the problem has.
+  final SustainedFlag _needsCalibration = SustainedFlag(
+    dwell: const Duration(seconds: 3),
+    clearDwell: const Duration(seconds: 1),
+  );
+  final SustainedFlag _interference = SustainedFlag(
+    dwell: const Duration(seconds: 3),
+    clearDwell: const Duration(seconds: 1),
+  );
 
   bool _aligned = false;
+  DateTime? _lastAlignedCue;
+
+  /// The notice toasting under the header, if any. Each kind toasts once per
+  /// run of the app, however often the tab is opened; after that it waits
+  /// behind the header button.
+  _CompassNotice? _toast;
+  Timer? _toastTimer;
+  static final Set<String> _toasted = <String>{};
 
   bool _isError = false;
   String _errorMsg = '';
 
+  DateTime? _lastDiagnostic;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchQiblaDirection();
     _resolveEnvironment();
-    _keepTrueHeadingAlive();
-    _listenToCompass();
-    _timeoutTimer = Timer(_kCompassTimeout, () {
-      if (mounted && !_sawReading) setState(() => _timedOut = true);
-    });
+    _startSensors();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The sensors, and on iOS location updates, cost battery and nothing
+    // reads them while the app is out of sight.
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (_headingSub == null) _startSensors();
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _stopSensors();
+      case AppLifecycleState.inactive:
+        break;
+    }
   }
 
   void _fetchQiblaDirection() {
@@ -132,7 +195,39 @@ class _CompassScreenState extends State<CompassScreen> {
         _env = env;
         _envResolved = true;
       });
+      _syncToast();
     }
+  }
+
+  void _startSensors() {
+    _keepTrueHeadingAlive();
+    _headingSub = HeadingService.events().listen(
+      _onReading,
+      onError: (Object e) {
+        debugPrint('🧭 QiblaScreen: heading error - $e');
+        if (mounted) setState(() => _sensorError = true);
+      },
+    );
+    _gravitySub = HeadingService.gravity().listen(
+      _onGravity,
+      onError: (Object e) => debugPrint('🧭 QiblaScreen: tilt error - $e'),
+    );
+    if (!_sawReading) {
+      _timeoutTimer?.cancel();
+      _timeoutTimer = Timer(_kCompassTimeout, () {
+        if (mounted && !_sawReading) setState(() => _timedOut = true);
+      });
+    }
+  }
+
+  void _stopSensors() {
+    _timeoutTimer?.cancel();
+    _headingSub?.cancel();
+    _headingSub = null;
+    _gravitySub?.cancel();
+    _gravitySub = null;
+    _positionSub?.cancel();
+    _positionSub = null;
   }
 
   /// Keeps iOS location updates flowing so `trueHeading` stays valid.
@@ -151,37 +246,10 @@ class _CompassScreenState extends State<CompassScreen> {
         );
   }
 
-  void _listenToCompass() {
-    _compassSub = FlutterCompass.events?.listen(
-      _onCompassEvent,
-      onError: (Object e) {
-        debugPrint('🧭 QiblaScreen: compass error - $e');
-        if (mounted) setState(() => _sensorError = true);
-      },
-    );
-    if (Platform.isAndroid) {
-      _accuracySub = _accuracyChannel.receiveBroadcastStream().listen(
-        (status) {
-          if (status is int && mounted) {
-            setState(() => _magnetometerStatus = status);
-          }
-        },
-        onError: (Object e) =>
-            debugPrint('🧭 QiblaScreen: accuracy stream error - $e'),
-      );
-    }
-  }
-
-  void _onCompassEvent(CompassEvent event) {
-    final double? raw = event.heading;
-    // Android reports azimuth in [-180, 180], so negative headings are
-    // ordinary there; only iOS uses a negative value (-1) to mean "true north
-    // unavailable". A null or non-finite heading is unusable on either.
-    if (!QiblaMath.isHeadingUsable(
-      raw,
-      negativeMeansUnavailable: Platform.isIOS,
-    )) {
-      if (mounted) setState(() => _headingUnusable = true);
+  void _onReading(HeadingReading? reading) {
+    if (!mounted) return;
+    if (reading == null) {
+      setState(() => _headingUnusable = true);
       return;
     }
 
@@ -189,38 +257,132 @@ class _CompassScreenState extends State<CompassScreen> {
       _sawReading = true;
       _timeoutTimer?.cancel();
       debugPrint(
-        '🧭 QiblaScreen: first reading raw=$raw accuracy=${event.accuracy}',
+        '🧭 QiblaScreen: first reading ${reading.heading.toStringAsFixed(1)}° '
+        '${reading.reference.name} from ${reading.source.name}',
       );
     }
 
-    final double reading = QiblaMath.normalize(raw!);
-    final double smoothed = _rawHeading == null
-        ? reading
-        : QiblaMath.smoothAngle(_rawHeading!, reading, _kSmoothing);
+    // A magnetic heading means nothing for the Qibla until the declination
+    // is known, which takes a moment after the screen opens.
+    final CompassEnvironment? env = _env;
+    final bool magnetic = reading.reference == HeadingReference.magneticNorth;
+    if (magnetic && env == null) return;
 
+    // The Qibla bearing is from true north, so the heading must be too.
+    final double heading = magnetic
+        ? QiblaMath.magneticToTrue(reading.heading, env!.declination)
+        : reading.heading;
+    final double? previous = _heading;
+    final double smoothed = previous == null
+        ? heading
+        : QiblaMath.smoothAngle(previous, heading, _kSmoothing);
+
+    final DateTime now = DateTime.now();
     final bool aligned = _isAlignedFor(smoothed);
     // One short buzz on arriving at the Qibla, so the phone can be turned
     // without watching the screen.
-    if (aligned && !_aligned) HapticFeedback.mediumImpact();
+    final DateTime? lastCue = _lastAlignedCue;
+    if (aligned &&
+        !_aligned &&
+        (lastCue == null || now.difference(lastCue) >= _kAlignedCueGap)) {
+      _lastAlignedCue = now;
+      CompassCues.aligned();
+    }
 
-    if (!mounted) return;
+    final bool? poor = isPoorHeading(
+      errorDegrees: reading.errorDegrees,
+      magnetometerStatus: reading.magnetometerStatus,
+      wasPoor: _needsCalibration.value,
+    );
+    if (poor != null) _needsCalibration.update(poor, now);
+    final double? field = reading.fieldMicroTesla;
+    if (field != null && env != null) {
+      final double deviation = fieldDeviation(
+        measuredMicroTesla: field,
+        expectedNanoTesla: env.totalIntensity,
+      );
+      _interference.update(
+        deviation >
+            (_interference.value ? kFieldDeviationClear : kFieldDeviationWarn),
+        now,
+      );
+    }
+
+    if (kDebugMode || reading.verbose) {
+      _logDiagnostics(reading, heading, smoothed, now);
+    }
+
     setState(() {
-      _rawHeading = smoothed;
+      _heading = smoothed;
+      _reading = reading;
       _headingUnusable = false;
-      _iosAccuracy = event.accuracy;
       _aligned = aligned;
     });
+    _syncToast();
+  }
+
+  void _onGravity(Gravity gravity) {
+    if (!mounted) return;
+    final DeviceTilt next = DeviceTilt.fromGravity(gravity);
+    final DeviceTilt tilt = _sawTilt
+        ? _tilt.smoothTowards(next, _kTiltSmoothing)
+        : next;
+    _sawTilt = true;
+    _tilted.update(tilt.degrees > kTiltWarning, DateTime.now());
+    setState(() => _tilt = tilt);
+    _syncToast();
+  }
+
+  /// Leans the dial as if it lay level while the phone tilts, like a card
+  /// compass held in the hand. Flat when the system asks for less motion.
+  ///
+  /// [depth] pushes a slice of the dial's edge that far behind its face.
+  Matrix4 _dialTransform(BuildContext context, {double depth = 0}) {
+    if (MediaQuery.disableAnimationsOf(context)) return Matrix4.identity();
+    double clamp(double a) => a.clamp(-kMaxDialTilt, kMaxDialTilt);
+    // A raised edge of the phone leaves that side of the level dial lower,
+    // so it leans away.
+    return Matrix4.identity()
+      ..setEntry(3, 2, _kPerspective)
+      ..rotateX(-clamp(_tilt.pitch))
+      ..rotateY(-clamp(_tilt.roll))
+      ..translateByDouble(0, 0, depth, 1);
+  }
+
+  /// Once a second in debug builds, or when switched on natively: every stage from the platform's heading
+  /// to the needle, to compare with the native log (tag `QiblaHeading`).
+  void _logDiagnostics(
+    HeadingReading reading,
+    double heading,
+    double smoothed,
+    DateTime now,
+  ) {
+    final DateTime? last = _lastDiagnostic;
+    if (last != null && now.difference(last) < const Duration(seconds: 1)) {
+      return;
+    }
+    _lastDiagnostic = now;
+    final CompassEnvironment? env = _env;
+    final bool magnetic = reading.reference == HeadingReference.magneticNorth;
+    String f(double? v) => v?.toStringAsFixed(1) ?? '-';
+    debugPrint(
+      '🧭 Qibla: ${reading.source.name} '
+      'raw=${f(reading.heading)} ${reading.reference.name} '
+      'decl=${magnetic ? f(env?.declination) : '0 (already true)'} '
+      'true=${f(heading)} shown=${f(smoothed)} '
+      '±${f(reading.errorDegrees)} status=${reading.magnetometerStatus} '
+      '|B|=${f(reading.fieldMicroTesla)}uT '
+      'expected=${f(env == null ? null : env.totalIntensity / 1000)}uT '
+      'qibla=${f(_qiblaDirection)} '
+      'needle=${f(QiblaMath.needleAngle(_qiblaDirection, smoothed))} '
+      'calibrate=${_needsCalibration.value} interference=${_interference.value}',
+    );
   }
 
   /// Aligned within [_kAlignTolerance]; once aligned, stays so until past
-  /// [_kReleaseTolerance].
-  bool _isAlignedFor(double rawHeading) {
-    final env = _env;
-    if (env == null) return false;
-    final double needle = QiblaMath.needleAngle(
-      _qiblaDirection,
-      QiblaMath.magneticToTrue(rawHeading, env.declination),
-    );
+  /// [_kReleaseTolerance]. [heading] is from true north.
+  bool _isAlignedFor(double heading) {
+    final double needle = QiblaMath.needleAngle(_qiblaDirection, heading);
     return QiblaMath.isAligned(
       needle,
       tolerance: _aligned ? _kReleaseTolerance : _kAlignTolerance,
@@ -229,10 +391,9 @@ class _CompassScreenState extends State<CompassScreen> {
 
   @override
   void dispose() {
-    _timeoutTimer?.cancel();
-    _compassSub?.cancel();
-    _accuracySub?.cancel();
-    _positionSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _toastTimer?.cancel();
+    _stopSensors();
     super.dispose();
   }
 
@@ -258,26 +419,36 @@ class _CompassScreenState extends State<CompassScreen> {
               child: _buildHeader(),
             ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Fits any screen: the dial takes what is left after the
-                  // guidance and notices, never more than 340.
-                  final double size = math.min(
-                    math.min(constraints.maxWidth - 40, 340),
-                    constraints.maxHeight * 0.64,
-                  );
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [_buildCompassContent(size)],
-                      ),
-                    ),
-                  );
-                },
+              child: Stack(
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Fits any screen: the dial takes what is left after
+                      // the guidance, never more than 340.
+                      final double size = math.min(
+                        math.min(constraints.maxWidth - 40, 340),
+                        constraints.maxHeight * 0.64,
+                      );
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [_buildCompassContent(size)],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    top: AppSpace.sm,
+                    left: AppSpace.lg,
+                    right: AppSpace.lg,
+                    child: _buildToast(),
+                  ),
+                ],
               ),
             ),
           ],
@@ -321,21 +492,48 @@ class _CompassScreenState extends State<CompassScreen> {
             ],
           ),
         ),
+        if (_showingCompass) ...[
+          const SizedBox(width: AppSpace.sm),
+          _buildNoticesButton(_notices().length),
+        ],
       ],
     );
   }
 
-  /// Shows which magnetic model produced the correction, so the reading is
-  /// attributable rather than opaque.
+  /// Where the heading comes from and how far the platform trusts it, so the
+  /// reading is attributable rather than opaque.
   String? get _modelLine {
     final CompassEnvironment? env = _env;
     if (env == null) return null;
-    if (DeclinationService.platformReportsTrueNorth) {
-      return 'True north via Core Location';
-    }
+    final HeadingReading? reading = _reading;
+
     final String sign = env.declination >= 0 ? 'E' : 'W';
-    return '${env.modelName} · declination '
+    final String declination =
+        '${env.modelName} · declination '
         '${env.declination.abs().toStringAsFixed(1)}°$sign';
+    final String frame = switch (reading?.source) {
+      HeadingSource.fusedOrientation =>
+        'True north via Google fused orientation',
+      HeadingSource.coreLocation => 'True north via Core Location',
+      HeadingSource.rotationVector || HeadingSource.accelMag => declination,
+      null => Platform.isIOS ? 'True north via Core Location' : declination,
+    };
+
+    final double? error = reading?.errorDegrees;
+    final String? accuracy =
+        error != null &&
+            error.isFinite &&
+            error >= 0 &&
+            error < kNoEstimateError
+        ? '±${error.round()}°'
+        : switch (reading?.magnetometerStatus) {
+            3 => 'accuracy high',
+            2 => 'accuracy medium',
+            1 => 'accuracy low',
+            0 => 'accuracy unreliable',
+            _ => null,
+          };
+    return accuracy == null ? frame : '$accuracy · $frame';
   }
 
   /// A problem that stops the compass: a white card, like the location
@@ -370,35 +568,29 @@ class _CompassScreenState extends State<CompassScreen> {
     );
   }
 
-  /// A limitation worth knowing about, under the compass: a soft tint of its
-  /// colour rather than a dark box.
-  Widget _notice(
-    String message, {
-    required IconData icon,
-    required Color color,
-  }) {
+  /// A limitation worth knowing about: a soft tint of its colour rather than
+  /// a dark box. Listed in the notices sheet, and shown once as a toast.
+  Widget _notice(_CompassNotice notice) {
     return Container(
-      margin: const EdgeInsets.only(
-        top: AppSpace.sm,
-        left: AppSpace.lg,
-        right: AppSpace.lg,
-      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.md,
         vertical: AppSpace.sm + 2,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: Color.alphaBlend(
+          notice.color.withValues(alpha: 0.10),
+          AppSurface.card,
+        ),
         borderRadius: AppRadius.smAll,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 18),
+          Icon(notice.icon, color: notice.color, size: 18),
           const SizedBox(width: AppSpace.sm),
           Flexible(
             child: Text(
-              message,
+              notice.message,
               style: TextStyle(color: rtext, fontSize: 12, height: 1.35),
             ),
           ),
@@ -407,30 +599,56 @@ class _CompassScreenState extends State<CompassScreen> {
     );
   }
 
-  /// Every limitation worth telling the user about, most severe first.
+  /// Whether the dial is on screen, rather than a problem panel that already
+  /// says what is wrong.
+  bool get _showingCompass =>
+      !_isError &&
+      _env != null &&
+      CompassQualityMessage.canShowHeading(_env!.quality) &&
+      !_sensorError &&
+      !_headingUnusable &&
+      _heading != null;
+
+  /// Every limitation worth telling the user about, most severe first. They
+  /// live behind the header's notices button, so the compass never moves when
+  /// one comes or goes.
   ///
   /// The magnetic model is applied identically on every device, so anything
   /// listed here is a limit of the hardware or the location, not of the app.
-  List<Widget> _notices() {
+  List<_CompassNotice> _notices() {
     final CompassEnvironment? env = _env;
-    if (env == null) return const <Widget>[];
+    if (env == null || !_showingCompass) return const <_CompassNotice>[];
 
-    final List<Widget> notices = <Widget>[];
+    final List<_CompassNotice> notices = <_CompassNotice>[];
+
+    if (_tilted.value) {
+      notices.add(
+        const _CompassNotice(
+          'tilt',
+          'Hold your phone flat for the most accurate direction: centre the '
+              'bubble in the ring.',
+          icon: Icons.phone_android,
+          color: _kWarnAmber,
+        ),
+      );
+    }
 
     if (env.isBlackoutZone) {
       notices.add(
-        _notice(
-          'You are close to the magnetic pole, where Earth\'s horizontal field is '
-          'too weak for any magnetic compass to be reliable.',
+        const _CompassNotice(
+          'pole',
+          'You are close to the magnetic pole, where Earth\'s horizontal field '
+              'is too weak for any magnetic compass to be reliable.',
           icon: Icons.public_off,
           color: _kWarnRed,
         ),
       );
     } else if (env.isCautionZone) {
       notices.add(
-        _notice(
+        const _CompassNotice(
+          'pole',
           'Near the magnetic pole the horizontal field is weak, so compass '
-          'accuracy is reduced at this location.',
+              'accuracy is reduced at this location.',
           icon: Icons.public,
           color: _kWarnAmber,
         ),
@@ -440,17 +658,34 @@ class _CompassScreenState extends State<CompassScreen> {
     final String? hardware = CompassQualityMessage.forQuality(env.quality);
     if (hardware != null) {
       notices.add(
-        _notice(hardware, icon: Icons.sensors_off, color: _kWarnAmber),
+        _CompassNotice(
+          'hardware',
+          hardware,
+          icon: Icons.sensors_off,
+          color: _kWarnAmber,
+        ),
       );
     }
 
-    if (needsCalibration(
-      isAndroid: Platform.isAndroid,
-      magnetometerStatus: _magnetometerStatus,
-      iosAccuracyDegrees: _iosAccuracy,
-    )) {
+    // One accuracy notice at most: interference says what to move away
+    // from, which is also the first step of calibrating.
+    if (_interference.value && _reading?.fieldMicroTesla != null) {
       notices.add(
-        _notice(
+        const _CompassNotice(
+          'interference',
+          'Metal, magnets or electronics nearby may be affecting the compass. '
+              'Move away from them, or remove a magnetic case, for a more '
+              'accurate direction.',
+          icon: Icons.sensors,
+          color: _kWarnAmber,
+        ),
+      );
+    } else if (_needsCalibration.value) {
+      // Only when the platform's own estimate has stayed poor, so a heading
+      // that is good enough for the Qibla is never called unusable.
+      notices.add(
+        _CompassNotice(
+          'calibration',
           "The compass needs calibrating. Move your phone in a figure-8 a few times, away from metal and magnets."
               .tr,
           icon: Icons.warning_amber_rounded,
@@ -461,9 +696,10 @@ class _CompassScreenState extends State<CompassScreen> {
 
     if (!env.modelIsCurrent) {
       notices.add(
-        _notice(
+        _CompassNotice(
+          'model',
           'The bundled ${env.modelName} magnetic model is past its validity '
-          'period. Update the app for the latest correction.',
+              'period. Update the app for the latest correction.',
           icon: Icons.update,
           color: _kWarnAmber,
         ),
@@ -471,6 +707,172 @@ class _CompassScreenState extends State<CompassScreen> {
     }
 
     return notices;
+  }
+
+  /// Toasts a notice the first time it appears in this run of the app, and
+  /// takes the toast down early once its problem has gone.
+  void _syncToast() {
+    final List<_CompassNotice> notices = _notices();
+    final _CompassNotice? showing = _toast;
+    if (showing != null && !notices.any((n) => n.id == showing.id)) {
+      _hideToast();
+    }
+    if (_toast != null) return;
+    for (final _CompassNotice notice in notices) {
+      if (_toasted.add(notice.id)) {
+        _toastTimer?.cancel();
+        _toastTimer = Timer(_kToastDuration, _hideToast);
+        setState(() => _toast = notice);
+        return;
+      }
+    }
+  }
+
+  void _hideToast() {
+    _toastTimer?.cancel();
+    if (mounted && _toast != null) setState(() => _toast = null);
+  }
+
+  /// Every current notice, or word that there are none.
+  void _openNotices() {
+    _hideToast();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppSurface.card,
+      showDragHandle: true,
+      builder: (context) {
+        final List<_CompassNotice> notices = _notices();
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              0,
+              AppSpace.lg,
+              AppSpace.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  "Compass accuracy".tr,
+                  style: TextStyle(
+                    color: rtext,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.md),
+                if (notices.isEmpty)
+                  Text(
+                    "Nothing is affecting the compass right now.".tr,
+                    style: TextStyle(color: AppText.onPageMuted, fontSize: 14),
+                  )
+                else
+                  for (final (i, notice) in notices.indexed) ...[
+                    if (i > 0) const SizedBox(height: AppSpace.sm),
+                    _notice(notice),
+                  ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// The header's notices button: a warning sign, with a count while anything is
+  /// affecting the compass.
+  Widget _buildNoticesButton(int count) {
+    return Tooltip(
+      message: "Compass accuracy".tr,
+      child: InkWell(
+        onTap: _openNotices,
+        customBorder: const CircleBorder(),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpace.sm + 2),
+              decoration: BoxDecoration(
+                color: AppSurface.card,
+                shape: BoxShape.circle,
+                boxShadow: AppElevation.card,
+              ),
+              child: Icon(
+                count > 0
+                    ? Icons.warning_rounded
+                    : Icons.warning_amber_rounded,
+                color: count > 0 ? _kWarnAmber : rbluedark,
+                size: 22,
+              ),
+            ),
+            Positioned(
+              right: -2,
+              top: -2,
+              child: AnimatedScale(
+                scale: count > 0 ? 1 : 0,
+                duration: AppMotion.base,
+                curve: AppMotion.curve,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 18),
+                  height: 18,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _kWarnAmber,
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: AppSurface.card, width: 1.5),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A notice pinned under the header, over the compass rather than above
+  /// it, so nothing moves. Tapping it opens every notice.
+  Widget _buildToast() {
+    final _CompassNotice? toast = _toast;
+    return AnimatedSwitcher(
+      duration: AppMotion.base,
+      switchInCurve: AppMotion.curve,
+      switchOutCurve: AppMotion.curve,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -0.15),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      ),
+      child: toast == null
+          ? const SizedBox.shrink(key: ValueKey('none'))
+          : GestureDetector(
+              key: ValueKey(toast.id),
+              onTap: _openNotices,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.smAll,
+                  boxShadow: AppElevation.card,
+                ),
+                child: _notice(toast),
+              ),
+            ),
+    );
   }
 
   Widget _buildCompassContent(double size) {
@@ -486,88 +888,127 @@ class _CompassScreenState extends State<CompassScreen> {
 
     // A device with no magnetometer physically cannot produce a heading.
     if (!CompassQualityMessage.canShowHeading(_env!.quality)) {
-      return Column(
-        children: [
-          _panel(
-            CompassQualityMessage.forQuality(_env!.quality)!,
-            icon: Icons.explore_off,
-            color: _kWarnAmber,
-          ),
-          const SizedBox(height: AppSpace.lg),
-          _buildBearing(),
-        ],
+      return _withBearing(
+        _panel(
+          CompassQualityMessage.forQuality(_env!.quality)!,
+          icon: Icons.explore_off,
+          color: _kWarnAmber,
+        ),
       );
     }
 
     if (_sensorError) {
-      return _panel(
-        'Error reading compass sensor.',
-        icon: Icons.explore_off,
-        color: _kWarnRed,
+      return _withBearing(
+        _panel(
+          'Error reading compass sensor. Use the Qibla angle below with a '
+          'separate compass.',
+          icon: Icons.explore_off,
+          color: _kWarnRed,
+        ),
       );
     }
 
     if (_headingUnusable) {
-      return _panel(
-        'This device cannot provide a compass heading right now. Check that '
-        'location is enabled, or use the Qibla angle below with a separate '
-        'compass.',
-        icon: Icons.explore_off,
-        color: _kWarnAmber,
+      return _withBearing(
+        _panel(
+          'This device cannot provide a compass heading right now. Check that '
+          'location is enabled, or use the Qibla angle below with a separate '
+          'compass.',
+          icon: Icons.explore_off,
+          color: _kWarnAmber,
+        ),
       );
     }
 
-    final double? raw = _rawHeading;
-    if (raw == null) {
+    final double? heading = _heading;
+    if (heading == null) {
       if (_timedOut) {
-        return _panel(
-          'No compass reading from this device. Check that location is '
-          'enabled, or use the Qibla angle below with a separate compass.',
-          icon: Icons.explore_off,
-          color: _kWarnAmber,
+        return _withBearing(
+          _panel(
+            'No compass reading from this device. Check that location is '
+            'enabled, or use the Qibla angle below with a separate compass.',
+            icon: Icons.explore_off,
+            color: _kWarnAmber,
+          ),
         );
       }
       return CircularProgressIndicator(color: rbluedark);
     }
 
-    // Android reports a MAGNETIC heading; iOS reports a TRUE heading and
-    // resolves declination to 0. Adding declination puts both on true north,
-    // which is the reference the Qibla bearing already uses.
-    final double heading = QiblaMath.magneticToTrue(raw, _env!.declination);
+    // Both are from true north: see _onReading.
     final double turn = QiblaMath.signedDifference(_qiblaDirection, heading);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Fixed size whatever the state: alignment changes colour only, so
-        // nothing on the screen moves when the phone comes onto the Qibla.
-        TweenAnimationBuilder<double>(
-          tween: Tween(end: _aligned ? 1 : 0),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          builder: (context, glow, _) => SizedBox.square(
-            dimension: size,
-            child: CustomPaint(
-              painter: CompassPainter(
-                heading: heading,
-                qibla: _qiblaDirection,
-                glow: glow,
+    // Fades in, growing slightly, when the first heading arrives. The tween
+    // only ever ends at 1, so later rebuilds leave it alone.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: _kAppearDuration,
+      curve: AppMotion.curve,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.scale(scale: 0.97 + 0.03 * t, child: child),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Fixed size whatever the state: alignment changes colour only, so
+          // nothing on the screen moves when the phone comes onto the Qibla.
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: _aligned ? 1 : 0),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            builder: (context, glow, _) => SizedBox.square(
+              dimension: size,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // The dial's edge, deepest slice first, so it reads as a
+                  // solid disc rather than a slate when it leans.
+                  for (int i = _kDialEdgeSlices; i >= 1; i--)
+                    Transform(
+                      alignment: Alignment.center,
+                      transform: _dialTransform(
+                        context,
+                        depth: _kDialThickness * i / _kDialEdgeSlices,
+                      ),
+                      child: CustomPaint(
+                        painter: DialEdgePainter(
+                          depth: i / _kDialEdgeSlices,
+                          glow: glow,
+                        ),
+                      ),
+                    ),
+                  Transform(
+                    alignment: Alignment.center,
+                    transform: _dialTransform(context),
+                    child: CustomPaint(
+                      painter: CompassPainter(
+                        heading: heading,
+                        qibla: _qiblaDirection,
+                        glow: glow,
+                      ),
+                    ),
+                  ),
+                  // Not leaned with the dial: it shows the lean.
+                  CustomPaint(
+                    painter: LevelPainter(tilt: _tilt, glow: glow),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-        const SizedBox(height: AppSpace.xl),
-        _buildGuidance(turn),
-        if (_modelLine != null) ...[
-          const SizedBox(height: AppSpace.xs),
-          Text(
-            _modelLine!,
-            style: TextStyle(fontSize: 11, color: AppText.onPageMuted),
-          ),
+          const SizedBox(height: AppSpace.xl),
+          _buildGuidance(turn),
+          if (_modelLine != null) ...[
+            const SizedBox(height: AppSpace.xs),
+            Text(
+              _modelLine!,
+              style: TextStyle(fontSize: 11, color: AppText.onPageMuted),
+            ),
+          ],
+          const SizedBox(height: AppSpace.lg),
         ],
-        ..._notices(),
-        const SizedBox(height: AppSpace.lg),
-      ],
+      ),
     );
   }
 
@@ -620,6 +1061,15 @@ class _CompassScreenState extends State<CompassScreen> {
     return AnimatedSwitcher(duration: AppMotion.base, child: content);
   }
 
+  /// A problem panel with the bearing under it, which its text refers to.
+  Widget _withBearing(Widget panel) => Column(
+    children: [
+      panel,
+      const SizedBox(height: AppSpace.lg),
+      _buildBearing(),
+    ],
+  );
+
   /// The bearing on its own, for a phone with no compass to point with.
   Widget _buildBearing() {
     return Column(
@@ -642,6 +1092,49 @@ class _CompassScreenState extends State<CompassScreen> {
       ],
     );
   }
+}
+
+/// The dial's radius in a box of [size], leaving room for the top mark and
+/// the glow.
+double compassDialRadius(Size size) => size.shortestSide / 2 - 18;
+
+/// One slice of the dial's edge, [depth] of the way (0 to 1) from its face to
+/// its base: darker the deeper, like the side of a solid disc in shade.
+class DialEdgePainter extends CustomPainter {
+  DialEdgePainter({required this.depth, required this.glow});
+
+  final double depth;
+  final double glow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Color side = Color.lerp(
+      AppSurface.raised,
+      rbluedark,
+      AppPalette.isDark ? 0.15 + 0.25 * depth : 0.18 + 0.3 * depth,
+    )!;
+    final Offset center = size.center(Offset.zero);
+    final double r = compassDialRadius(size);
+    // The deepest slice carries the shadow, so it falls under the whole disc.
+    if (depth == 1) {
+      canvas.drawCircle(
+        center + const Offset(0, 6),
+        r,
+        Paint()
+          ..color = Colors.black.withValues(alpha: 0.10)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+      );
+    }
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()..color = Color.lerp(side, _kGoldInk, glow * 0.6)!,
+    );
+  }
+
+  @override
+  bool shouldRepaint(DialEdgePainter old) =>
+      old.depth != depth || old.glow != glow;
 }
 
 /// The whole compass in one paint: a white dial that turns with the phone,
@@ -670,18 +1163,11 @@ class CompassPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = size.center(Offset.zero);
-    // Leaves room for the top mark and the glow inside the box.
-    final double r = size.shortestSide / 2 - 18;
+    final double r = compassDialRadius(size);
     final Rect face = Rect.fromCircle(center: center, radius: r);
 
-    // Soft shadow, then the gold glow when aligned, both behind the face.
-    canvas.drawCircle(
-      center + const Offset(0, 6),
-      r,
-      Paint()
-        ..color = Colors.black.withValues(alpha: 0.08)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
-    );
+    // The gold glow when aligned, behind the face. The shadow is under the
+    // dial's edge: see DialEdgePainter.
     if (glow > 0) {
       canvas.drawCircle(
         center,
@@ -883,4 +1369,67 @@ class CompassPainter extends CustomPainter {
   @override
   bool shouldRepaint(CompassPainter old) =>
       old.heading != heading || old.qibla != qibla || old.glow != glow;
+}
+
+/// A bubble level at the centre of the compass. The bubble drifts to the
+/// high side of the phone and settles in the ring, turning gold, when the
+/// phone lies flat — which is when the heading is most accurate.
+class LevelPainter extends CustomPainter {
+  LevelPainter({required this.tilt, required this.glow});
+
+  final DeviceTilt tilt;
+  final double glow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double travel = size.shortestSide * 0.13;
+    final Color color = tilt.isFlat ? _kGold : rbluedark;
+
+    canvas.drawCircle(
+      center,
+      19,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: tilt.isFlat ? 0.9 : 0.35),
+    );
+
+    final ({double dx, double dy}) b = tilt.bubble;
+    final Offset at = center + Offset(b.dx, b.dy) * travel;
+    canvas.drawCircle(
+      at,
+      12,
+      Paint()..color = Color.lerp(color, _kGold, glow)!.withValues(alpha: 0.55),
+    );
+    // A highlight, so it reads as a bubble.
+    canvas.drawCircle(
+      at + const Offset(-3.8, -3.8),
+      3.2,
+      Paint()..color = Colors.white.withValues(alpha: 0.7),
+    );
+  }
+
+  @override
+  bool shouldRepaint(LevelPainter old) =>
+      old.tilt.pitch != tilt.pitch ||
+      old.tilt.roll != tilt.roll ||
+      old.tilt.degrees != tilt.degrees ||
+      old.glow != glow;
+}
+
+/// Something limiting the compass, for the header's notices button.
+class _CompassNotice {
+  const _CompassNotice(
+    this.id,
+    this.message, {
+    required this.icon,
+    required this.color,
+  });
+
+  /// Which kind of notice this is, so each kind toasts only once.
+  final String id;
+  final String message;
+  final IconData icon;
+  final Color color;
 }
