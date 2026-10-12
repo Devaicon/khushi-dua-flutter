@@ -156,7 +156,7 @@ class _AudioCoverageTabState extends State<AudioCoverageTab> {
                         style: AdminText.cardTitle,
                       ),
                       const Spacer(),
-                      const Text('Only sections with gaps', style: AdminText.muted),
+                      Text('Only sections with gaps', style: AdminText.muted),
                       Switch(
                         value: _gapsOnly,
                         onChanged: (v) => setState(() => _gapsOnly = v),
@@ -206,7 +206,7 @@ class _AudioCoverageTabState extends State<AudioCoverageTab> {
 
   Widget _cell(Coverage cov, AudioSlot slot) {
     final total = cov.total[slot] ?? 0;
-    if (total == 0) return const Text('–', style: AdminText.muted);
+    if (total == 0) return Text('–', style: AdminText.muted);
     final missing = cov.missing(slot);
     return Row(
       children: [

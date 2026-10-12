@@ -11,16 +11,17 @@ class AudioPlayButton extends StatelessWidget {
     required this.url,
     this.tooltip,
     this.size = 20,
-    this.color = Palette.brand,
+    this.color,
   });
 
   final String url;
   final String? tooltip;
   final double size;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Palette.brand;
     return GetBuilder<PanelAudioController>(
       builder: (audio) {
         final playing = audio.isPlaying(url);

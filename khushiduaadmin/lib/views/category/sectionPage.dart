@@ -92,7 +92,7 @@ class _SectionPageState extends State<SectionPage> {
                 children: [
                   Row(
                     children: [
-                      const Text('As seen by ', style: AdminText.muted),
+                      Text('As seen by ', style: AdminText.muted),
                       const SizedBox(width: Space.sm),
                       SegmentedButton<AgeGroup?>(
                         segments: [
@@ -165,7 +165,7 @@ class _SectionPageState extends State<SectionPage> {
                           url: d.recitationFor(_group ?? AgeGroup.grownUps),
                           tooltip: 'Play ${(_group ?? AgeGroup.grownUps).label}',
                         ),
-                        const Icon(Icons.chevron_right_rounded,
+                        Icon(Icons.chevron_right_rounded,
                             color: Palette.textMuted),
                       ],
                     ),

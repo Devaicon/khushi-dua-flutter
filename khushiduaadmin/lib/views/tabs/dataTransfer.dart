@@ -215,7 +215,7 @@ class ImportPreviewDialog extends StatelessWidget {
             ),
             if (plan.schema.dataset == CsvDataset.notifications) ...[
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Imported notifications appear in the app's notification list. They are not sent to phones.",
                 style: TextStyle(color: Palette.warning),
               ),
@@ -224,10 +224,10 @@ class ImportPreviewDialog extends StatelessWidget {
             if (plan.fileErrors.isNotEmpty)
               ...plan.fileErrors.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Text("• $e", style: const TextStyle(color: Palette.danger)),
+                    child: Text("• $e", style: TextStyle(color: Palette.danger)),
                   ))
             else if (visibleRows.isEmpty)
-              const Text("Every row matches the database. Nothing to import.",
+              Text("Every row matches the database. Nothing to import.",
                   style: AdminText.muted)
             else
               Expanded(
@@ -288,10 +288,10 @@ class ImportPreviewDialog extends StatelessWidget {
                 style: const TextStyle(fontSize: 13)),
           ),
         for (final error in row.errors)
-          Text("• $error", style: const TextStyle(color: Palette.danger, fontSize: 13)),
+          Text("• $error", style: TextStyle(color: Palette.danger, fontSize: 13)),
         for (final warning in row.warnings)
           Text("• $warning",
-              style: const TextStyle(color: Palette.warning, fontSize: 13)),
+              style: TextStyle(color: Palette.warning, fontSize: 13)),
       ],
     );
   }

@@ -129,7 +129,7 @@ class _CategoriesTabState extends State<CategoriesTab> {
                                 context, ItemEditor.category(category: cat)),
                             icon: const Icon(Icons.edit_outlined, size: 20),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
+                          Icon(Icons.chevron_right_rounded,
                               color: Palette.textMuted),
                         ],
                       );

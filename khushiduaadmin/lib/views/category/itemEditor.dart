@@ -293,7 +293,7 @@ class _ItemEditorState extends State<ItemEditor> {
                                 child: _imagePreview != null
                                     ? Image.network(_imagePreview!, fit: BoxFit.contain)
                                     : (_draft.imageUrl.isEmpty
-                                        ? const Icon(Icons.image_outlined,
+                                        ? Icon(Icons.image_outlined,
                                             color: Palette.textMuted, size: 48)
                                         : Image.network(_draft.imageUrl, fit: BoxFit.contain)),
                               ),
@@ -320,7 +320,7 @@ class _ItemEditorState extends State<ItemEditor> {
                                         });
                                         _touch();
                                       },
-                                      icon: const Icon(Icons.close_rounded, color: Palette.danger),
+                                      icon: Icon(Icons.close_rounded, color: Palette.danger),
                                     ),
                                 ],
                               ),

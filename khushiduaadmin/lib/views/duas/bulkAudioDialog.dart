@@ -85,7 +85,7 @@ class _BulkAudioDialogState extends State<BulkAudioDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Name each file after its dua id and the recording, e.g. '
               '0tgKka3QG4SmpwiCyVfV_english.mp3. Recordings: littleKids, '
               'olderKids, grownUps, english, urdu. "Download missing list" on '

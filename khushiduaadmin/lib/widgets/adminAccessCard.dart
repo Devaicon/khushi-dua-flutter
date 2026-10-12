@@ -103,9 +103,9 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
                 StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: adminInvitesRef.snapshots(),
                   builder: (context, snapshot) {
-                    final invites = snapshot.data?.docs ?? const [];
+                    final invites = snapshot.data?.docs ?? [];
                     if (invites.isEmpty) {
-                      return const Text("No pending invites.", style: AdminText.muted);
+                      return Text("No pending invites.", style: AdminText.muted);
                     }
                     return Column(
                       children: [
@@ -136,11 +136,11 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
                 stream: managementRef.snapshots(),
                 builder: (context, snapshot) {
                   final admins = [
-                    for (final doc in snapshot.data?.docs ?? const [])
+                    for (final doc in snapshot.data?.docs ?? [])
                       ManagementModel.fromMap({...doc.data(), 'id': doc.id}),
                   ]..sort((a, b) => a.email.compareTo(b.email));
                   if (admins.isEmpty) {
-                    return const Text("Loading admins…", style: AdminText.muted);
+                    return Text("Loading admins…", style: AdminText.muted);
                   }
                   return Column(
                     children: [
@@ -247,7 +247,7 @@ class _PersonRow extends StatelessWidget {
             radius: 16,
             backgroundColor: Palette.brandSoft,
             child: Text(title.characters.firstOrNull?.toUpperCase() ?? '?',
-                style: const TextStyle(color: Palette.brand, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: Palette.brand, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(width: Space.md),
           Expanded(

@@ -53,7 +53,7 @@ class _DuaPreviewState extends State<DuaPreview> {
       children: [
         Row(
           children: [
-            const Expanded(child: Text('PREVIEW', style: AdminText.label)),
+            Expanded(child: Text('PREVIEW', style: AdminText.label)),
             DropdownButton<String>(
               value: _language,
               underline: const SizedBox(),
@@ -92,7 +92,7 @@ class _DuaPreviewState extends State<DuaPreview> {
           opacity: hidden ? 0.55 : 1,
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Palette.card,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: color.withValues(alpha: 0.5), width: 1.2),
               boxShadow: Elevation.card,
@@ -231,7 +231,7 @@ class _DuaPreviewState extends State<DuaPreview> {
                   ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(top: BorderSide(color: Palette.line)),
                   ),
                   child: Row(

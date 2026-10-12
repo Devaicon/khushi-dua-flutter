@@ -149,7 +149,7 @@ class _AppControlsTabState extends State<AppControlsTab> {
                   enabled ? 'Active in the app' : 'Greyed out in the app',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Off greys out Practice on every dua; tapping it tells '
                   'readers it is coming soon. Applies within seconds.',
                   style: AdminText.muted,
@@ -251,7 +251,7 @@ class _AppControlsTabState extends State<AppControlsTab> {
                 value: _donationsEnabled,
                 title: const Text('Show donation prompts',
                     style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: const Text(
+                subtitle: Text(
                     'Off hides every prompt below, whatever its own switch.',
                     style: AdminText.muted),
                 onChanged: (v) => setState(() => _donationsEnabled = v),

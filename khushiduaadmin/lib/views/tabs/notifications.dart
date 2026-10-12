@@ -119,7 +119,7 @@ class _NotificationTabState extends State<NotificationTab> {
                               : IconButton(
                                   tooltip: 'Delete',
                                   onPressed: () => _delete(n),
-                                  icon: const Icon(Icons.delete_outline_rounded,
+                                  icon: Icon(Icons.delete_outline_rounded,
                                       color: Palette.danger, size: 20),
                                 ),
                         ];

@@ -122,7 +122,7 @@ class CategoryPage extends StatelessWidget {
                             pushPage(context, ItemEditor.section(section: s)),
                         icon: const Icon(Icons.edit_outlined, size: 20),
                       ),
-                      const Icon(Icons.chevron_right_rounded,
+                      Icon(Icons.chevron_right_rounded,
                           color: Palette.textMuted),
                     ],
                   );

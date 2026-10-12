@@ -102,7 +102,7 @@ class _UsersTabState extends State<UsersTab> {
                               backgroundColor: Palette.brandSoft,
                               child: Text(
                                 (u.name.isNotEmpty ? u.name : u.email).characters.firstOrNull?.toUpperCase() ?? '?',
-                                style: const TextStyle(color: Palette.brand, fontWeight: FontWeight.w700),
+                                style: TextStyle(color: Palette.brand, fontWeight: FontWeight.w700),
                               ),
                             ),
                             const SizedBox(width: Space.md),
@@ -130,7 +130,7 @@ class _UsersTabState extends State<UsersTab> {
                           alignment: Alignment.centerLeft,
                           child: u.isMember
                               ? const StatusChip('Member', tone: Tone.brand, icon: Icons.star_rounded)
-                              : const Text('Free', style: AdminText.muted),
+                              : Text('Free', style: AdminText.muted),
                         ),
                         Align(
                           alignment: Alignment.centerLeft,
@@ -329,8 +329,8 @@ class NotificationPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(Space.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
+        gradient: LinearGradient(
+          colors: Palette.authGradient,
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -339,12 +339,12 @@ class NotificationPreview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('PREVIEW', style: AdminText.label),
+          Text('PREVIEW', style: AdminText.label),
           const SizedBox(height: Space.md),
           Container(
             padding: const EdgeInsets.all(Space.md),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Palette.card.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(

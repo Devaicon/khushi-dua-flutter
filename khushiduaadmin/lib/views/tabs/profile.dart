@@ -30,7 +30,7 @@ class ProfileTab extends StatelessWidget {
                         backgroundColor: Palette.brandSoft,
                         child: Text(
                           (name.isNotEmpty ? name : me.email).characters.firstOrNull?.toUpperCase() ?? 'A',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: Palette.brand, fontSize: 28, fontWeight: FontWeight.w800),
                         ),
                       ),
