@@ -1,20 +1,59 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/constants/firebaseRef.dart';
-import 'package:khushiduaadmin/controllers/duaController.dart';
-import 'package:khushiduaadmin/models/duaModel.dart';
-import 'package:khushiduaadmin/views/duas/createNewDua.dart';
-import 'package:khushiduaadmin/views/duas/editDua.dart';
 
-import '../../constants/colors.dart';
+import '../../constants/languages.dart';
+import '../../constants/theme.dart';
+import '../../controllers/categoryController.dart';
+import '../../controllers/duaController.dart';
+import '../../controllers/shellController.dart';
+import '../../models/audioSlot.dart';
+import '../../models/duaModel.dart';
 import '../../search/adminSearch.dart';
 import '../../widgets/adminSearchField.dart';
-import '../../widgets/topBar.dart';
+import '../../widgets/audioBadges.dart';
+import '../../widgets/audioPlayButton.dart';
+import '../../widgets/ui.dart';
+import '../duas/duaEditor.dart';
+
+/// Which duas the list shows, beyond the search.
+class DuaFilter {
+  String? categoryId;
+  String? sectionId;
+  AgeGroup? ageGroup;
+
+  /// null: any; true: live only; false: hidden only.
+  bool? live;
+
+  /// Show only duas missing this recording; [anyAudio] for any.
+  AudioSlot? missing;
+  bool anyAudio = false;
+
+  bool get active =>
+      categoryId != null ||
+      sectionId != null ||
+      ageGroup != null ||
+      live != null ||
+      missing != null ||
+      anyAudio;
+
+  bool matches(DuaModel d, CategoryController c) {
+    if (sectionId != null && !d.subCategoryIds.contains(sectionId)) return false;
+    if (categoryId != null &&
+        !d.subCategoryIds
+            .any((id) => c.sectionById(id)?.categoryId == categoryId)) {
+      return false;
+    }
+    if (ageGroup != null && !d.shownTo(ageGroup!)) return false;
+    if (live != null && d.isEnabled != live) return false;
+    if (missing != null && !d.missingAudio.contains(missing)) return false;
+    if (anyAudio && d.missingAudio.isEmpty) return false;
+    return true;
+  }
+}
 
 class DuasTab extends StatefulWidget {
-  const DuasTab({super.key});
+  const DuasTab({super.key, this.initialFilter});
+  final DuaFilter? initialFilter;
 
   @override
   State<DuasTab> createState() => _DuasTabState();
@@ -22,422 +61,254 @@ class DuasTab extends StatefulWidget {
 
 class _DuasTabState extends State<DuasTab> {
   String _query = '';
-
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-  }
+  late final DuaFilter _filter = widget.initialFilter ?? DuaFilter();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rBlack,
-      body: GetBuilder<DuaController>(
-        builder: (duaController) {
-          final searching = hasSearchText(_query);
-          final visibleDuas =
-              filterBySearch(duaController.allDuas, _query, duaSearchFields);
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const TopBar(title: "Duas"),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff955C00),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: duaController.allDuas.length),
-                                  duration: const Duration(seconds: 2),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Total Duas",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff883232),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Text("${coinController.allCoins.length??0}",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: duaController.allDuas
-                                          .where((element) =>
-                                              element.isEnabled == false)
-                                          .toList()
-                                          .length),
-                                  duration: const Duration(seconds: 1),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Disabled Duas",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff008A3F),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Text("3,450",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: duaController.allDuas
-                                          .where((element) =>
-                                              element.isEnabled == true)
-                                          .toList()
-                                          .length),
-                                  duration: const Duration(seconds: 1),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Enabled Duas",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(child: Container())
-                  ],
-                ).marginOnly(top: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "All Duas",
-                      style: TextStyle(
-                          color: rWhite,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 20),
-                    ),
-                    Expanded(
-                      child: AdminSearchField(
-                        hint: "Search duas by any language, id or benefits",
-                        matchCount: visibleDuas.length,
-                        totalCount: duaController.allDuas.length,
-                        onChanged: (value) => setState(() => _query = value),
-                      ).marginSymmetric(horizontal: 24),
-                    ),
-                    InkWell(
-                      splashColor: Colors.transparent,
-                      onTap: () {
-                        Get.to(const CreateNewDua(),
-                            transition: Transition.upToDown);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                            color: rGreen,
-                            borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset("assets/svgs/add.svg"),
-                            const Text(
-                              "Create a new Dua",
-                              style: TextStyle(color: rWhite),
-                            ).marginOnly(left: 8)
-                          ],
-                        ).marginAll(12),
-                      ),
-                    )
-                  ],
-                ).marginOnly(top: 12),
-                const SizedBox(
-                  height: 20,
+      body: GetBuilder<CategoryController>(
+        builder: (categories) => GetBuilder<DuaController>(
+          builder: (duaController) {
+            final all = duaController.allDuas;
+            final filtered = filterBySearch(
+              [for (final d in all) if (_filter.matches(d, categories)) d],
+              _query,
+              duaSearchFields,
+            );
+            final live = all.where((d) => d.isEnabled).length;
+            final missing =
+                all.where((d) => d.missingRecitations.isNotEmpty).length;
+
+            return AdminPage(
+              scroll: false,
+              title: 'Duas',
+              subtitle:
+                  '${formatCount(all.length)} duas · ${formatCount(live)} live · '
+                  '${formatCount(missing)} missing a recitation',
+              actions: [
+                AdminButton.secondary(
+                  label: 'Audio coverage',
+                  icon: Icons.graphic_eq_rounded,
+                  onPressed: () =>
+                      Get.find<ShellController>().go(PanelTab.audio),
                 ),
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12), color: rBg),
-                  child: Column(
-                    children: [
-                      TableHeader(),
-                      if (searching) ...[
-                        SearchResultsNote(
-                          query: _query,
-                          matchCount: visibleDuas.length,
-                          itemLabel: "duas",
-                          reorderPaused: true,
-                        ),
-                        for (final dua in visibleDuas)
-                          DuaTile(dua, key: ValueKey(dua.id)),
-                      ] else
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          iconTheme: const IconThemeData(color: Colors.white),
-                        ),
-                        child: ReorderableListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          onReorder: (oldIndex, newIndex) async {
-                            if (newIndex > oldIndex) newIndex -= 1;
-
-                            final movedDua =
-                                duaController.allDuas.removeAt(oldIndex);
-                            duaController.allDuas.insert(newIndex, movedDua);
-
-                            final batch = FirebaseFirestore.instance.batch();
-                            for (int i = 0;
-                                i < duaController.allDuas.length;
-                                i++) {
-                              final dua = duaController.allDuas[i];
-                              dua.order = i;
-                              batch.update(duaRef.doc(dua.id), {"order": i});
-                            }
-
-                            try {
-                              duaController.update();
-                              await batch.commit();
-                            } catch (e) {
-                              debugPrint("Error updating dua order: $e");
-                            }
-                          },
-                          children: [
-                            for (int index = 0;
-                                index < duaController.allDuas.length;
-                                index++)
-                              DuaTile(
-                                duaController.allDuas[index],
-                                key: ValueKey(duaController.allDuas[index].id),
-                              ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                )
+                AdminButton(
+                  label: 'New dua',
+                  icon: Icons.add_rounded,
+                  onPressed: () => pushPage(context,
+                      DuaEditor(sectionId: _filter.sectionId)),
+                ),
               ],
-            ).marginSymmetric(horizontal: 12, vertical: 12),
-          );
-        },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AdminSearchField(
+                    hint: 'Search by any language, id, benefits or notes',
+                    matchCount: filtered.length,
+                    totalCount: all.length,
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
+                  const SizedBox(height: Space.md),
+                  _filters(categories),
+                  const SizedBox(height: Space.lg),
+                  Expanded(
+                    child: AdminTable(
+                      columns: const [
+                        TableCol('Dua', flex: 5),
+                        TableCol('Sections', flex: 3),
+                        TableCol('Ages', width: 64),
+                        TableCol('Recordings', width: 236),
+                        TableCol('Status', width: 96),
+                        TableCol('', width: 88),
+                      ],
+                      rowCount: filtered.length,
+                      onRowTap: (i) =>
+                          pushPage(context, DuaEditor(dua: filtered[i])),
+                      empty: EmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: duaController.loaded
+                            ? 'No duas match'
+                            : 'Loading duas…',
+                        message: duaController.loaded
+                            ? 'Try a different search or clear the filters.'
+                            : null,
+                      ),
+                      rowBuilder: (i) => _row(filtered[i], categories),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  List<Widget> _row(DuaModel d, CategoryController categories) {
+    return [
+      Padding(
+        padding: const EdgeInsets.only(right: Space.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(d.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(
+              d.arabic.replaceAll('\n', ' '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textDirection: TextDirection.rtl,
+              style: AdminText.muted,
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(right: Space.md),
+        child: Text(
+          d.subCategoryIds.isEmpty
+              ? 'No section'
+              : d.subCategoryIds.map(categories.sectionPath).join('\n'),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            color: d.subCategoryIds.isEmpty ? Palette.danger : Palette.textMuted,
+          ),
+        ),
+      ),
+      AgeDots(shownTo: d.shownTo),
+      AudioBadges(d),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: StatusChip(d.isEnabled ? 'Live' : 'Hidden',
+            tone: d.isEnabled ? Tone.success : Tone.neutral),
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          AudioPlayButton(url: d.grownUpsAudio, tooltip: 'Play Grown-ups'),
+          IconButton(
+            tooltip: 'Edit',
+            onPressed: () => pushPage(context, DuaEditor(dua: d)),
+            icon: const Icon(Icons.edit_outlined, size: 20),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _filters(CategoryController c) {
+    final sections =
+        _filter.categoryId == null ? c.allSubCategories : c.sectionsOf(_filter.categoryId!);
+    return Wrap(
+      spacing: Space.sm,
+      runSpacing: Space.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _Dropdown<String>(
+          hint: 'All categories',
+          value: _filter.categoryId,
+          items: {for (final cat in c.allCategories) cat.id: cat.title},
+          onChanged: (v) => setState(() {
+            _filter.categoryId = v;
+            _filter.sectionId = null;
+          }),
+        ),
+        _Dropdown<String>(
+          hint: 'All sections',
+          value: _filter.sectionId,
+          items: {for (final s in sections) s.id: s.title},
+          onChanged: (v) => setState(() => _filter.sectionId = v),
+        ),
+        _Dropdown<AgeGroup>(
+          hint: 'All ages',
+          value: _filter.ageGroup,
+          items: {for (final g in AgeGroup.values) g: g.label},
+          onChanged: (v) => setState(() => _filter.ageGroup = v),
+        ),
+        _Dropdown<bool>(
+          hint: 'Live and hidden',
+          value: _filter.live,
+          items: const {true: 'Live only', false: 'Hidden only'},
+          onChanged: (v) => setState(() => _filter.live = v),
+        ),
+        _Dropdown<String>(
+          hint: 'Any recordings',
+          value: _filter.anyAudio ? 'any' : _filter.missing?.name,
+          items: {
+            'any': 'Missing any recording',
+            for (final s in AudioSlot.values) s.name: 'Missing ${s.label}',
+          },
+          onChanged: (v) => setState(() {
+            _filter.anyAudio = v == 'any';
+            _filter.missing =
+                AudioSlot.values.firstWhereOrNull((s) => s.name == v);
+          }),
+        ),
+        if (_filter.active)
+          AdminButton.ghost(
+            label: 'Clear filters',
+            icon: Icons.filter_alt_off_rounded,
+            dense: true,
+            onPressed: () => setState(() {
+              _filter
+                ..categoryId = null
+                ..sectionId = null
+                ..ageGroup = null
+                ..live = null
+                ..missing = null
+                ..anyAudio = false;
+            }),
+          ),
+      ],
     );
   }
 }
 
-Widget TableHeader() {
-  return Container(
-    decoration: BoxDecoration(
-      color: rWhite.withOpacity(0.05),
-    ),
-    child: const Row(
-      children: [
-        Expanded(
-            flex: 1,
-            child: Text(
-              "ID",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              "Title",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.bold),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Status",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Action",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10),
-  );
-}
+/// A compact dropdown whose first entry clears the filter.
+class _Dropdown<T> extends StatelessWidget {
+  const _Dropdown({
+    required this.hint,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
 
-class DuaTile extends StatefulWidget {
-  final DuaModel duaModel;
+  final String hint;
+  final T? value;
+  final Map<T, String> items;
+  final ValueChanged<T?> onChanged;
 
-  const DuaTile(this.duaModel, {super.key});
-
-  @override
-  State<DuaTile> createState() => _DuaTileState();
-}
-
-class _DuaTileState extends State<DuaTile> {
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Row(
-        children: [
-          Expanded(
-              flex: 1,
-              child: Text(
-                "${widget.duaModel.id.substring(0, 5)}...",
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-              flex: 2,
-              child: Text(
-                widget.duaModel.english,
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-              flex: 1,
-              child: Text(
-                widget.duaModel.isEnabled ? "Enabled" : "Disabled",
-                style: TextStyle(
-                    color: widget.duaModel.isEnabled ? rGreen : rRed,
-                    fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-            flex: 1,
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () {
-                    debugPrint(
-                        "Navigating to EditDua for: ${widget.duaModel.english}");
-                    Get.to(() => EditDua(duaModel: widget.duaModel),
-                        transition: Transition.rightToLeft);
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Tooltip(
-                      message: "Edit Dua",
-                      child: SvgPicture.asset(
-                        "assets/svgs/eye.svg",
-                        width: 24,
-                        height: 24,
-                        color: rWhite,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ).marginSymmetric(horizontal: 12, vertical: 10),
+    final active = value != null && items.containsKey(value);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+      decoration: BoxDecoration(
+        color: active ? Palette.brandSoft : Palette.card,
+        borderRadius: Radii.smAll,
+        border: Border.all(color: active ? Palette.brand : Palette.line),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T?>(
+          value: active ? value : null,
+          hint: Text(hint, style: const TextStyle(fontSize: 13)),
+          isDense: true,
+          borderRadius: Radii.smAll,
+          style: const TextStyle(color: Palette.text, fontSize: 13),
+          items: [
+            DropdownMenuItem<T?>(value: null, child: Text(hint)),
+            for (final e in items.entries)
+              DropdownMenuItem<T?>(value: e.key, child: Text(e.value)),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

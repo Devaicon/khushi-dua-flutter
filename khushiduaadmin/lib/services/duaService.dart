@@ -1,236 +1,177 @@
-import 'dart:html';
+import 'dart:html' as html;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/constants/firebaseRef.dart';
-import 'package:khushiduaadmin/controllers/duaController.dart';
-import 'package:khushiduaadmin/models/duaModel.dart';
 
-import '../widgets/customSnackbar.dart';
+import '../constants/firebaseRef.dart';
+import '../controllers/contentController.dart';
+import '../controllers/duaController.dart';
+import '../models/auditEntry.dart';
+import '../models/audioSlot.dart';
+import '../models/duaModel.dart';
+import 'auditService.dart';
+import 'storageService.dart';
 
+/// Reads and writes duas. Every write is recorded in the change history and
+/// tells phones that content changed.
+///
+/// Throws on failure; screens decide what to say and where to go.
 class DuaService {
   final DuaController _duaController = Get.find<DuaController>();
 
-  getAllDuas() async {
+  void listen() {
     duaRef.snapshots().listen((event) {
-      bool changed = false;
-      for (var element in event.docChanges) {
-        if (element.type == DocumentChangeType.added ||
-            element.type == DocumentChangeType.modified) {
+      for (final change in event.docChanges) {
+        if (change.type == DocumentChangeType.removed) {
+          _duaController.removeDuaFromList(change.doc.id, shouldUpdate: false);
+        } else {
+          final data = change.doc.data();
+          if (data == null) continue;
           _duaController.addDuaToList(
-            DuaModel.fromMap(element.doc.data()!),
+            DuaModel.fromMap({...data, 'id': change.doc.id}),
             shouldUpdate: false,
           );
-          changed = true;
         }
       }
-      if (changed) {
-        _duaController.update();
-      }
-    });
+      _duaController.markLoaded();
+    }, onError: (Object e) => debugPrint('Duas unavailable: $e'));
   }
 
-  createDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File,
-      File? olderKidmp3File) async {
-    _duaController.setLoading(true);
-    duaModel.id = duaRef.doc().id;
-    try {
-      debugPrint("=========================================");
-      debugPrint("CREATING NEW DUA");
-      debugPrint("=========================================");
-      debugPrint("Generated Dua ID: ${duaModel.id}");
-      debugPrint("Firestore Path: /Dua/${duaModel.id}");
-      debugPrint("-----------------------------------------");
-
-      if (olderKidmp3File != null) {
-        duaModel.olderKidsAudio = (await uploadFileToFirebase(
-            olderKidmp3File, "${duaModel.id}/olderKidsAudio"))!;
-      }
-      if (littleKidmp3File != null) {
-        duaModel.littleKidsAudio = (await uploadFileToFirebase(
-            littleKidmp3File, "${duaModel.id}/littleKidsAudio"))!;
-      }
-      if (grownUpmp3File != null) {
-        duaModel.grownUpsAudio = (await uploadFileToFirebase(
-            grownUpmp3File, "${duaModel.id}/grownUpsAudio"))!;
-      }
-
-      final duaMap = duaModel.toMap();
-      duaRef.doc(duaModel.id).set(duaMap);
-
-      debugPrint("Dua Data Saved Successfully!");
-      debugPrint("-----------------------------------------");
-      debugPrint("COMPLETE DUA DATA:");
-      debugPrint("ID: ${duaModel.id}");
-      debugPrint("Arabic: ${duaModel.arabic}");
-      debugPrint("English: ${duaModel.english}");
-      debugPrint("Transliteration: ${duaModel.transliteration}");
-      debugPrint("Description: ${duaModel.description ?? 'N/A'}");
-      debugPrint("Benefits: ${duaModel.benefits ?? 'N/A'}");
-      debugPrint("Order: ${duaModel.order}");
-      debugPrint("SubCategoryIds: ${duaModel.subCategoryIds}");
-      debugPrint("LittleKids: ${duaModel.littleKids}");
-      debugPrint("OlderKids: ${duaModel.olderKids}");
-      debugPrint("GrownUps: ${duaModel.grownUps}");
-      debugPrint("IsEnabled: ${duaModel.isEnabled}");
-      debugPrint("CreatedAt: ${duaModel.createdAt}");
-      debugPrint("UpdatedAt: ${duaModel.updatedAt}");
-      debugPrint("LittleKidsAudio: ${duaModel.littleKidsAudio}");
-      debugPrint("OlderKidsAudio: ${duaModel.olderKidsAudio}");
-      debugPrint("GrownUpsAudio: ${duaModel.grownUpsAudio}");
-      debugPrint("-----------------------------------------");
-      debugPrint("ALL FIELDS (JSON):");
-      duaMap.forEach((key, value) {
-        if (value is String && value.length > 100) {
-          debugPrint("$key: ${value.substring(0, 100)}... (truncated)");
-        } else {
-          debugPrint("$key: $value");
-        }
-      });
-      debugPrint("=========================================");
-
-      _duaController.setLoading(false);
-      Get.back();
-      CustomSnackbar.show(
-          "Success", "Dua added successfully!\nID: ${duaModel.id}");
-    } catch (e) {
-      debugPrint("ERROR CREATING DUA: $e");
-      _duaController.setLoading(false);
-      CustomSnackbar.show("Error", "Something went wrong", isSuccess: false);
-      return false;
+  /// Saves [dua], first uploading any [files] picked for its recordings.
+  /// A new dua (empty id) gets an id and goes to the end of its sections.
+  Future<DuaModel> save(
+    DuaModel dua, {
+    Map<AudioSlot, html.File> files = const {},
+    void Function(String status)? onStatus,
+  }) async {
+    final isNew = dua.id.isEmpty;
+    if (isNew) {
+      dua.id = duaRef.doc().id;
+      dua.createdAt = DateTime.now();
     }
+    final before =
+        isNew ? null : (await duaRef.doc(dua.id).get()).data();
+
+    for (final MapEntry(key: slot, value: file) in files.entries) {
+      onStatus?.call('Uploading ${slot.label}…');
+      dua.setAudio(
+        slot,
+        await StorageService.upload(file, '${dua.id}/${slot.storageName}'),
+      );
+    }
+
+    onStatus?.call('Saving…');
+    dua.updatedAt = DateTime.now();
+    final after = dua.toMap();
+    // Merge, so fields this panel does not know about survive an edit.
+    await duaRef.doc(dua.id).set(after, SetOptions(merge: !isNew));
+
+    await AuditService.record(
+      action: isNew ? AuditAction.create : AuditAction.update,
+      collection: 'Dua',
+      docId: dua.id,
+      label: dua.title,
+      before: before,
+      after: after,
+    );
+    Get.find<ContentController>().contentChanged();
+    return dua;
   }
 
-  updateDua(DuaModel duaModel, File? grownUpmp3File, File? littleKidmp3File,
-      File? olderKidmp3File, File? englishTrans, File? urduTrans) async {
-    _duaController.setLoading(true);
-    debugPrint("=========================================");
-    debugPrint("UPDATING DUA");
-    debugPrint("=========================================");
-    debugPrint("Dua ID: ${duaModel.id}");
-    debugPrint("Firestore Path: /Dua/${duaModel.id}");
-    debugPrint("-----------------------------------------");
-
-    if (grownUpmp3File != null) {
-      duaModel.grownUpsAudio = (await uploadFileToFirebase(
-          grownUpmp3File, "${duaModel.id}/grownUpsAudio"))!;
-      debugPrint("Updated GrownUpsAudio");
-    }
-    if (littleKidmp3File != null) {
-      duaModel.littleKidsAudio = (await uploadFileToFirebase(
-          littleKidmp3File, "${duaModel.id}/littleKidsAudio"))!;
-      debugPrint("Updated LittleKidsAudio");
-    }
-    if (olderKidmp3File != null) {
-      duaModel.olderKidsAudio = (await uploadFileToFirebase(
-          olderKidmp3File, "${duaModel.id}/olderKidsAudio"))!;
-      debugPrint("Updated OlderKidsAudio");
-    }
-    if (englishTrans != null) {
-      duaModel.englishTranslation = (await uploadFileToFirebase(
-          englishTrans, "${duaModel.id}/englishTransAudio"))!;
-      debugPrint("Updated EnglishTranslationAudio");
-    }
-    if (urduTrans != null) {
-      duaModel.urduTranslation = (await uploadFileToFirebase(
-          urduTrans, "${duaModel.id}/urduTransAudio"))!;
-      debugPrint("Updated UrduTranslationAudio");
-    }
-
-    // Use set with merge to ensure all fields including benefits are saved
-    final duaMap = duaModel.toMap();
-    await duaRef.doc(duaModel.id).set(duaMap, SetOptions(merge: true));
-
-    debugPrint("Dua Data Updated Successfully!");
-    debugPrint("-----------------------------------------");
-    debugPrint("COMPLETE UPDATED DUA DATA:");
-    debugPrint("ID: ${duaModel.id}");
-    debugPrint("Arabic: ${duaModel.arabic}");
-    debugPrint("English: ${duaModel.english}");
-    debugPrint("Transliteration: ${duaModel.transliteration}");
-    debugPrint("Description: ${duaModel.description ?? 'N/A'}");
-    debugPrint("Benefits: ${duaModel.benefits ?? 'N/A'}");
-    debugPrint("Order: ${duaModel.order}");
-    debugPrint("SubCategoryIds: ${duaModel.subCategoryIds}");
-    debugPrint("LittleKids: ${duaModel.littleKids}");
-    debugPrint("OlderKids: ${duaModel.olderKids}");
-    debugPrint("GrownUps: ${duaModel.grownUps}");
-    debugPrint("IsEnabled: ${duaModel.isEnabled}");
-    debugPrint("UpdatedAt: ${duaModel.updatedAt}");
-    debugPrint("LittleKidsAudio: ${duaModel.littleKidsAudio}");
-    debugPrint("OlderKidsAudio: ${duaModel.olderKidsAudio}");
-    debugPrint("GrownUpsAudio: ${duaModel.grownUpsAudio}");
-    debugPrint("EnglishTranslation: ${duaModel.englishTranslation ?? 'N/A'}");
-    debugPrint("UrduTranslation: ${duaModel.urduTranslation ?? 'N/A'}");
-    debugPrint("-----------------------------------------");
-    debugPrint("ALL FIELDS (JSON):");
-    duaMap.forEach((key, value) {
-      if (value is String && value.length > 100) {
-        debugPrint("$key: ${value.substring(0, 100)}... (truncated)");
-      } else {
-        debugPrint("$key: $value");
-      }
-    });
-    debugPrint("=========================================");
-
-    _duaController.setLoading(false);
-    Get.back();
-    CustomSnackbar.show(
-        "Success", "Dua updated successfully!\nID: ${duaModel.id}");
+  /// Shows or hides [dua] in the app.
+  Future<void> setEnabled(DuaModel dua, bool enabled) async {
+    final updated = dua.copy()..isEnabled = enabled;
+    await save(updated);
   }
 
-  deleteDua(DuaModel duaModel,
-      {required bool deleteLittleKids,
-      required bool deleteOlderKids,
-      required bool deleteGrownUps}) async {
-    _duaController.setLoading(true);
-    try {
-      final bool newLittleKids = duaModel.littleKids && !deleteLittleKids;
-      final bool newOlderKids = duaModel.olderKids && !deleteOlderKids;
-      final bool newGrownUps = duaModel.grownUps && !deleteGrownUps;
-
-      if (!newLittleKids && !newOlderKids && !newGrownUps) {
-        await duaRef.doc(duaModel.id).delete();
-        _duaController.removeDuaFromList(duaModel.id);
-        _duaController.setLoading(false);
-        Get.back();
-        CustomSnackbar.show("Success", "Dua deleted successfully!");
-      } else {
-        duaModel.littleKids = newLittleKids;
-        duaModel.olderKids = newOlderKids;
-        duaModel.grownUps = newGrownUps;
-        await duaRef.doc(duaModel.id).update({
-          'littleKids': newLittleKids,
-          'olderKids': newOlderKids,
-          'grownUps': newGrownUps,
-        });
-        _duaController.addDuaToList(duaModel);
-        _duaController.setLoading(false);
-        Get.back();
-        CustomSnackbar.show("Success", "Dua removed from selected sections!");
-      }
-    } catch (e) {
-      debugPrint("ERROR DELETING DUA: $e");
-      _duaController.setLoading(false);
-      CustomSnackbar.show("Error", "Something went wrong", isSuccess: false);
-    }
+  /// Deletes [dua]. Its recordings stay in Storage so the delete can be
+  /// undone from History.
+  Future<void> delete(DuaModel dua) async {
+    final before = (await duaRef.doc(dua.id).get()).data();
+    await duaRef.doc(dua.id).delete();
+    await AuditService.record(
+      action: AuditAction.delete,
+      collection: 'Dua',
+      docId: dua.id,
+      label: dua.title,
+      before: before,
+    );
+    Get.find<ContentController>().contentChanged();
   }
 
-  Future<String?> uploadFileToFirebase(File file, String path) async {
-    try {
-      final storageRef = FirebaseStorage.instance.ref().child(path);
+  /// Takes [dua] out of one section, leaving it in its others.
+  Future<void> removeFromSection(DuaModel dua, String sectionId) async {
+    final updated = dua.copy()
+      ..subCategoryIds = [
+        for (final id in dua.subCategoryIds)
+          if (id != sectionId) id,
+      ];
+    await save(updated);
+  }
 
-      final uploadTask = storageRef.putBlob(file);
+  /// Saves the order of the duas in one section, as listed.
+  ///
+  /// The app sorts each section by `order`, so only the duas shown together
+  /// need consistent numbers; the old Duas tab renumbered all 400+ at once.
+  Future<void> reorder(List<DuaModel> ordered, {required String sectionName}) =>
+      _reorder(duaRef, 'Dua', ordered.map((d) => (d.id, d.order)).toList(),
+          label: 'duas in $sectionName', apply: (i) => ordered[i].order = i);
 
-      final snapshot = await uploadTask.whenComplete(() {});
-
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      debugPrint("Error uploading file: $e");
-      return null;
+  /// Uploads one recording for each pair and saves it on its dua.
+  Future<void> attachAudio(
+    List<({DuaModel dua, AudioSlot slot, html.File file})> items, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      final dua = item.dua.copy();
+      await save(dua, files: {item.slot: item.file});
+      onProgress?.call(i + 1, items.length);
     }
   }
 }
+
+/// Renumbers [items] (id, current order) 0, 1, 2… in the order given,
+/// writing only those whose position changed, and records one history entry
+/// that can put them all back.
+Future<void> _reorder(
+  CollectionReference<Map<String, dynamic>> ref,
+  String collection,
+  List<(String, int)> items, {
+  required String label,
+  required void Function(int index) apply,
+}) async {
+  final before = <String, dynamic>{};
+  final after = <String, dynamic>{};
+  final batch = firestore.batch();
+  for (var i = 0; i < items.length; i++) {
+    final (id, order) = items[i];
+    apply(i);
+    if (order == i) continue;
+    before[id] = order;
+    after[id] = i;
+    batch.update(ref.doc(id), {'order': i, 'updatedAt': DateTime.now()});
+  }
+  if (after.isEmpty) return;
+  await batch.commit();
+  await AuditService.record(
+    action: AuditAction.reorder,
+    collection: collection,
+    docId: '',
+    label: label,
+    before: before,
+    after: after,
+  );
+  Get.find<ContentController>().contentChanged();
+}
+
+/// Shared with the category service.
+Future<void> reorderDocs(
+  CollectionReference<Map<String, dynamic>> ref,
+  String collection,
+  List<(String, int)> items, {
+  required String label,
+  required void Function(int index) apply,
+}) =>
+    _reorder(ref, collection, items, label: label, apply: apply);

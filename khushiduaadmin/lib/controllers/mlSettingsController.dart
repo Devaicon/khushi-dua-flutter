@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
+
 import '../models/mlSettingsModel.dart';
 import '../services/mlSettingsService.dart';
 
+/// The Practice button's settings, as last read.
 class MLSettingsController extends GetxController {
   MLSettingsModel? _mlSettings;
   MLSettingsModel? get mlSettings => _mlSettings;
@@ -9,39 +11,21 @@ class MLSettingsController extends GetxController {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  setLoading(bool value) {
+  void setLoading(bool value) {
     _isLoading = value;
     update();
   }
 
-  setMLSettings(MLSettingsModel? mlSettings) {
+  void setMLSettings(MLSettingsModel? mlSettings) {
     _mlSettings = mlSettings;
     update();
   }
 
-  getMLSettings() async {
-    await MLSettingsService().getMLSettings();
-  }
+  Future<void> getMLSettings() => MLSettingsService().getMLSettings();
 
-  createMLSettings(String baseUrl) async {
-    await MLSettingsService().createMLSettings(baseUrl);
-  }
-
-  updateMLSettings(String baseUrl) async {
-    if (_mlSettings != null) {
-      await MLSettingsService().updateMLSettings(_mlSettings!, baseUrl);
-    }
-  }
+  Future<void> saveUrl(String url) => MLSettingsService().saveUrl(url);
 
   /// Publishes the Practice switch straight away; the app follows it live.
-  Future<void> setPracticeEnabled(bool enabled) async {
-    await MLSettingsService().setPracticeEnabled(enabled);
-  }
-
-  deleteMLSettings() async {
-    if (_mlSettings != null) {
-      await MLSettingsService().deleteMLSettings(_mlSettings!.id);
-    }
-  }
+  Future<void> setPracticeEnabled(bool enabled) =>
+      MLSettingsService().setPracticeEnabled(enabled);
 }
-

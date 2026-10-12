@@ -1,3 +1,5 @@
+import 'modelValues.dart';
+
 class NotificationModel{
 
   String id="";
@@ -14,15 +16,16 @@ class NotificationModel{
     this.sentTo
 });
 
-  factory NotificationModel.fromMap(Map<String,dynamic>map){
+  factory NotificationModel.fromMap(Map<String, dynamic> map) {
     return NotificationModel(
-      id: map["id"],
-      title: map["title"],
-      message: map["message"],
-      createdAt: map["createdAt"].toDate(),
-      sentTo: map["sentTo"]
+      id: readString(map["id"]),
+      title: readString(map["title"]),
+      message: readString(map["message"]),
+      createdAt: readDate(map["createdAt"]),
+      sentTo: map["sentTo"] is String ? map["sentTo"] as String : null,
     );
   }
+
   Map<String, dynamic> toMap(){
     return {
       "id":id,

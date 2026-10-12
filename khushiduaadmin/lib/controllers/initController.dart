@@ -7,6 +7,11 @@ import 'package:khushiduaadmin/controllers/userController.dart';
 import 'package:khushiduaadmin/controllers/mlSettingsController.dart';
 import 'package:khushiduaadmin/controllers/donationController.dart';
 
+import 'contentController.dart';
+import 'historyController.dart';
+import 'panelAudioController.dart';
+import 'shellController.dart';
+
 class InitController extends Bindings {
   @override
   void dependencies() {
@@ -17,5 +22,9 @@ class InitController extends Bindings {
     Get.put(NotificationController(), permanent: true);
     Get.put(MLSettingsController(), permanent: true);
     Get.put(DonationController(), permanent: true);
+    Get.put(ContentController(), permanent: true);
+    Get.put(HistoryController(), permanent: true);
+    Get.put(PanelAudioController(), permanent: true);
+    Get.put(ShellController(), permanent: true);
   }
 }

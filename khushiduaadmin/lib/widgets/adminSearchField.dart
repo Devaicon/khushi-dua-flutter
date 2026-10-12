@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../constants/colors.dart';
+import '../constants/theme.dart';
+import 'ui.dart';
 
 /// Search box for the admin lists. Reports every keystroke through
 /// [onChanged]; Escape or the clear button empties it.
@@ -48,52 +49,39 @@ class _AdminSearchFieldState extends State<AdminSearchField> {
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): _clear},
       child: TextField(
         controller: _controller,
-        style: const TextStyle(color: rWhite),
-        cursorColor: rGreen,
         onChanged: (value) {
           widget.onChanged(value);
           setState(() {});
         },
         decoration: InputDecoration(
           hintText: widget.hint,
-          hintStyle: const TextStyle(color: rHint),
-          isDense: true,
-          filled: true,
-          fillColor: rBg,
-          prefixIcon: const Icon(Icons.search_rounded, color: rHint, size: 20),
+          prefixIcon: const Icon(Icons.search_rounded,
+              color: Palette.textMuted, size: 20),
           suffixIcon: hasText
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       "${widget.matchCount} of ${widget.totalCount}",
-                      style: const TextStyle(color: rHint, fontSize: 12),
+                      style: AdminText.muted,
                     ),
                     IconButton(
                       tooltip: "Clear search (Esc)",
                       icon: const Icon(Icons.close_rounded,
-                          color: rHint, size: 18),
+                          color: Palette.textMuted, size: 18),
                       onPressed: _clear,
                     ),
                   ],
                 )
               : null,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: rHint.withOpacity(0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: rGreen),
-          ),
         ),
       ),
     );
   }
 }
 
-/// Shown in place of a list's rows while searching: either that nothing
-/// matched, or that drag-to-reorder is off until the search is cleared.
+/// Shown above a list's rows while searching: either that nothing matched,
+/// or that drag-to-reorder is off until the search is cleared.
 class SearchResultsNote extends StatelessWidget {
   const SearchResultsNote({
     super.key,
@@ -121,8 +109,9 @@ class SearchResultsNote extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      child: Text(text, style: const TextStyle(color: rHint)),
+      padding: const EdgeInsets.symmetric(
+          horizontal: Space.lg, vertical: Space.md),
+      child: Text(text, style: AdminText.muted),
     );
   }
 }

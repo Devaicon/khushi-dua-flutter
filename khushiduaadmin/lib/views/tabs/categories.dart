@@ -1,18 +1,22 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/constants/firebaseRef.dart';
-import 'package:khushiduaadmin/controllers/categoryController.dart';
-import 'package:khushiduaadmin/models/categoryModel.dart';
-import 'package:khushiduaadmin/views/category/editCategory.dart';
-import 'package:khushiduaadmin/widgets/topBar.dart';
 
-import '../../constants/colors.dart';
+import '../../constants/theme.dart';
+import '../../controllers/categoryController.dart';
+import '../../controllers/duaController.dart';
+import '../../controllers/shellController.dart';
+import '../../models/categoryModel.dart';
 import '../../search/adminSearch.dart';
+import '../../services/categoryService.dart';
 import '../../widgets/adminSearchField.dart';
-import '../category/createNew.dart';
+import '../../widgets/customSnackbar.dart';
+import '../../widgets/reorderList.dart';
+import '../../widgets/ui.dart';
+import '../category/categoryPage.dart';
+import '../category/itemEditor.dart';
 
+/// The home screen's categories, in the app's order. Drag to reorder; open
+/// one for its sections.
 class CategoriesTab extends StatefulWidget {
   const CategoriesTab({super.key});
 
@@ -23,460 +27,120 @@ class CategoriesTab extends StatefulWidget {
 class _CategoriesTabState extends State<CategoriesTab> {
   String _query = '';
 
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+  Future<void> _reorder(List<CategoryModel> next) async {
+    final controller = Get.find<CategoryController>();
+    final saving = CategoryService().reorder(next, label: 'categories');
+    controller.resort();
+    try {
+      await saving;
+    } catch (e) {
+      CustomSnackbar.show("Couldn't save the new order", '$e', isSuccess: false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rBlack,
-      body: GetBuilder<CategoryController>(
-        builder: (categoryController) {
-          final searching = hasSearchText(_query);
-          final visibleCategories =
-              filterBySearch(categoryController.allCategories, _query, categorySearchFields);
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const TopBar(title: "Categories"),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff955C00),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: categoryController
-                                          .allCategories.length),
-                                  duration: const Duration(seconds: 2),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Total Categories",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff883232),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Text("${coinController.allCoins.length??0}",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: categoryController.allCategories
-                                          .where((element) =>
-                                              element.isEnabled == false)
-                                          .toList()
-                                          .length),
-                                  duration: const Duration(seconds: 1),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Disabled Categories",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 125,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rBg),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xff008A3F),
-                                  shape: BoxShape.circle),
-                              alignment: Alignment.center,
-                              child: SvgPicture.asset("assets/svgs/coins.svg"),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Text("3,450",style: TextStyle(color: rWhite,fontWeight: FontWeight.bold,fontSize: 30),),
-                                TweenAnimationBuilder<int>(
-                                  tween: IntTween(
-                                      begin: 0,
-                                      end: categoryController.allCategories
-                                          .where((element) =>
-                                              element.isEnabled == true)
-                                          .toList()
-                                          .length),
-                                  duration: const Duration(seconds: 1),
-                                  builder: (context, value, child) {
-                                    return Text(
-                                      _formatNumber(value),
-                                      style: const TextStyle(
-                                          color: rWhite,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 30),
-                                    );
-                                  },
-                                ),
-                                const Text(
-                                  "Enabled Categories",
-                                  style: TextStyle(
-                                      color: rWhite,
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 16),
-                                ),
-                              ],
-                            ).marginOnly(left: 12)
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Expanded(child: Container())
-                  ],
-                ).marginOnly(top: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "All Categories",
-                      style: TextStyle(
-                          color: rWhite,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 20),
-                    ),
-                    Expanded(
-                      child: AdminSearchField(
-                        hint: "Search categories by any language or id",
-                        matchCount: visibleCategories.length,
-                        totalCount: categoryController.allCategories.length,
-                        onChanged: (value) => setState(() => _query = value),
-                      ).marginSymmetric(horizontal: 24),
-                    ),
-                    InkWell(
-                      splashColor: Colors.transparent,
-                      onTap: () {
-                        Get.to(const CreateNewCategory(),
-                            transition: Transition.upToDown);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                            color: rGreen,
-                            borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset("assets/svgs/add.svg"),
-                            const Text(
-                              "Create a new Category",
-                              style: TextStyle(color: rWhite),
-                            ).marginOnly(left: 8)
-                          ],
-                        ).marginAll(12),
-                      ),
-                    )
-                  ],
-                ).marginOnly(top: 12),
-                const SizedBox(
-                  height: 20,
+      body: GetBuilder<DuaController>(
+        builder: (duas) => GetBuilder<CategoryController>(
+          builder: (c) {
+            final searching = hasSearchText(_query);
+            final visible =
+                filterBySearch(c.allCategories, _query, categorySearchFields);
+            return AdminPage(
+              title: 'Categories',
+              subtitle: '${c.allCategories.length} categories · '
+                  '${c.allSubCategories.length} sections. Drag to change the '
+                  'order on the app\'s home screen.',
+              actions: [
+                AdminButton(
+                  label: 'New category',
+                  icon: Icons.add_rounded,
+                  onPressed: () =>
+                      pushPage(context, const ItemEditor.category()),
                 ),
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12), color: rBg),
-                  child: Column(
-                    children: [
-                      TableHeader(),
-                      if (searching) ...[
-                        SearchResultsNote(
-                          query: _query,
-                          matchCount: visibleCategories.length,
-                          itemLabel: "categories",
-                          reorderPaused: true,
-                        ),
-                        for (final item in visibleCategories)
-                          CategoryTile(item, key: ValueKey(item.id)),
-                      ] else
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          iconTheme: const IconThemeData(color: Colors.white),
-                        ),
-                        child: ReorderableListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          onReorder: (oldIndex, newIndex) async {
-                            if (newIndex > oldIndex) newIndex -= 1;
-
-                            final movedCategory = categoryController
-                                .allCategories
-                                .removeAt(oldIndex);
-                            categoryController.allCategories
-                                .insert(newIndex, movedCategory);
-
-                            // Optimization: Use WriteBatch for multiple updates
-                            final batch = FirebaseFirestore.instance.batch();
-                            for (int i = 0;
-                                i < categoryController.allCategories.length;
-                                i++) {
-                              final category =
-                                  categoryController.allCategories[i];
-                              category.order = i; // Update local model order
-                              batch.update(
-                                  categoryRef.doc(category.id), {"order": i});
-                            }
-
-                            try {
-                              categoryController
-                                  .update(); // Trigger UI update locally first
-                              await batch.commit();
-                            } catch (e) {
-                              debugPrint("Error updating order: $e");
-                            }
-                          },
-                          children: [
-                            for (int index = 0;
-                                index < categoryController.allCategories.length;
-                                index++)
-                              CategoryTile(
-                                categoryController.allCategories[index],
-                                key: ValueKey(
-                                    categoryController.allCategories[index].id),
-                              ),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                )
               ],
-            ).marginSymmetric(horizontal: 12, vertical: 12),
-          );
-        },
-      ),
-    );
-  }
-}
-
-Widget TableHeader() {
-  return Container(
-    decoration: BoxDecoration(
-      color: rWhite.withOpacity(0.05),
-    ),
-    child: const Row(
-      children: [
-        Expanded(
-            flex: 1,
-            child: Text(
-              "ID",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Order",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              "Logo",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 2,
-            child: Text(
-              "Title",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.bold),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Status",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Action",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10),
-  );
-}
-
-class CategoryTile extends StatefulWidget {
-  final CategoryModel categoryModel;
-
-  const CategoryTile(this.categoryModel, {super.key});
-
-  @override
-  State<CategoryTile> createState() => _CategoryTileState();
-}
-
-class _CategoryTileState extends State<CategoryTile> {
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Row(
-        children: [
-          Expanded(
-              flex: 1,
-              child: Text(
-                "${widget.categoryModel.id.substring(0, 5)}...",
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-              flex: 1,
-              child: Text(
-                "${widget.categoryModel.order}",
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-              flex: 2,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.network(
-                    widget.categoryModel.logo,
-                    width: 40,
-                    height: 40,
+                  AdminSearchField(
+                    hint: 'Search categories by any language or id',
+                    matchCount: visible.length,
+                    totalCount: c.allCategories.length,
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
+                  if (searching)
+                    SearchResultsNote(
+                      query: _query,
+                      matchCount: visible.length,
+                      itemLabel: 'categories',
+                      reorderPaused: true,
+                    ),
+                  const SizedBox(height: Space.lg),
+                  ReorderList<CategoryModel>(
+                    items: visible,
+                    idOf: (cat) => cat.id,
+                    reorderable: !searching,
+                    onReorder: _reorder,
+                    onTap: (cat) =>
+                        pushPage(context, CategoryPage(categoryId: cat.id)),
+                    empty: EmptyState(
+                      icon: Icons.folder_off_outlined,
+                      title: c.loaded ? 'No categories match' : 'Loading…',
+                    ),
+                    rowBuilder: (cat) {
+                      final sections = c.sectionsOf(cat.id);
+                      final duaCount = {
+                        for (final s in sections)
+                          for (final d in duas.inSection(s.id)) d.id,
+                      }.length;
+                      return Row(
+                        children: [
+                          ItemThumb(cat.logo),
+                          const SizedBox(width: Space.lg),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(cat.title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15)),
+                                Text(
+                                  '${sections.length} sections · $duaCount duas'
+                                  '${cat.urdu.isEmpty ? '' : ' · ${cat.urdu}'}',
+                                  style: AdminText.muted,
+                                ),
+                              ],
+                            ),
+                          ),
+                          AgeDots(shownTo: cat.shownTo),
+                          const SizedBox(width: Space.lg),
+                          SizedBox(
+                            width: 80,
+                            child: StatusChip(
+                              cat.isEnabled ? 'Live' : 'Hidden',
+                              tone: cat.isEnabled ? Tone.success : Tone.neutral,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Edit category',
+                            onPressed: () => pushPage(
+                                context, ItemEditor.category(category: cat)),
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                          ),
+                          const Icon(Icons.chevron_right_rounded,
+                              color: Palette.textMuted),
+                        ],
+                      );
+                    },
                   ),
                 ],
-              )),
-          Expanded(
-              flex: 2,
-              child: Text(
-                widget.categoryModel.english,
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-              flex: 1,
-              child: Text(
-                widget.categoryModel.isEnabled ? "Enabled" : "Disabled",
-                style: TextStyle(
-                    color: widget.categoryModel.isEnabled ? rGreen : rRed,
-                    fontWeight: FontWeight.normal),
-              )),
-          Expanded(
-            flex: 1,
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () {
-                    debugPrint(
-                        "Navigating to EditCategory for: ${widget.categoryModel.english}");
-                    Get.to(() => EditCategory(model: widget.categoryModel),
-                        transition: Transition.rightToLeft);
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    child: Tooltip(
-                      message: "Edit Category",
-                      child: SvgPicture.asset(
-                        "assets/svgs/eye.svg",
-                        width: 24,
-                        height: 24,
-                        color: rWhite,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ).marginSymmetric(horizontal: 12, vertical: 10),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

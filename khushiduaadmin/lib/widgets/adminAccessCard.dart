@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../constants/colors.dart';
 import '../constants/firebaseRef.dart';
+import '../constants/theme.dart';
 import '../controllers/authController.dart';
 import '../models/managementModel.dart';
 import 'customSnackbar.dart';
+import 'ui.dart';
 
 /// Who can use the admin panel. Super admins invite people by Google email,
 /// cancel pending invites, and remove admins; everyone else sees the list.
@@ -49,11 +50,11 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
     setState(() => _sending = false);
 
     if (error != null) {
-      CustomSnackbar.show("Error", error, isSuccess: false);
+      CustomSnackbar.show("Couldn't invite", error, isSuccess: false);
       return;
     }
     CustomSnackbar.show(
-        "Success", "Invited $email. They can now sign in with Google.");
+        "Invited", "$email can now sign in with Google.");
     _email.clear();
     _firstName.clear();
     _lastName.clear();
@@ -61,34 +62,21 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
   }
 
   Future<void> _confirmRevoke(AuthController auth, ManagementModel admin) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: rBg,
-        title: const Text("Remove admin access?",
-            style: TextStyle(color: rWhite, fontWeight: FontWeight.bold)),
-        content: Text(
-          "${admin.email} will be signed out and lose access to the admin panel.",
-          style: const TextStyle(color: rWhite),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(color: rHint)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Remove access", style: TextStyle(color: rRed)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    if (!await confirmAction(
+      context,
+      title: 'Remove admin access?',
+      message:
+          '${admin.email} will be signed out and lose access to the admin panel.',
+      confirmLabel: 'Remove access',
+      danger: true,
+    )) {
+      return;
+    }
 
     final error = await auth.revokeAdmin(admin.id);
     CustomSnackbar.show(
-      error == null ? "Success" : "Error",
-      error ?? "Removed ${admin.email}.",
+      error == null ? "Access removed" : "Couldn't remove",
+      error ?? "${admin.email} can no longer sign in.",
       isSuccess: error == null,
     );
   }
@@ -100,67 +88,50 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
         final me = auth.adminModel;
         final isSuper = me.isSuperAdmin;
 
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: rBg,
-          ),
-          padding: const EdgeInsets.all(24),
+        return AdminCard(
+          title: 'Admin access',
+          subtitle: isSuper
+              ? 'Invite people by their Google email. They get access the first time they sign in.'
+              : 'Only a super admin can invite or remove admins.',
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text("Admin access",
-                  style: TextStyle(
-                      color: rWhite,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(
-                isSuper
-                    ? "Invite people by their Google email. They get access the first time they sign in."
-                    : "Only a super admin can invite or remove admins.",
-                style: const TextStyle(color: rHint),
-              ),
               if (isSuper) ...[
-                const SizedBox(height: 20),
                 _inviteForm(auth),
-                const SizedBox(height: 28),
-                const _SectionLabel("Pending invites"),
+                const SizedBox(height: Space.xl),
+                const FieldLabel('Pending invites'),
                 StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: adminInvitesRef.snapshots(),
                   builder: (context, snapshot) {
                     final invites = snapshot.data?.docs ?? const [];
                     if (invites.isEmpty) {
-                      return const _Note("No pending invites.");
+                      return const Text("No pending invites.", style: AdminText.muted);
                     }
                     return Column(
                       children: [
                         for (final invite in invites)
                           _PersonRow(
-                            title: (invite.data()['email'] ?? invite.id)
-                                .toString(),
-                            subtitle:
-                                (invite.data()['role'] ?? 'Admin').toString(),
-                            action: TextButton(
+                            title: (invite.data()['email'] ?? invite.id).toString(),
+                            subtitle: (invite.data()['role'] ?? 'Admin').toString(),
+                            action: AdminButton.ghost(
+                              label: 'Cancel invite',
+                              dense: true,
                               onPressed: () async {
-                                final error =
-                                    await auth.cancelInvite(invite.id);
+                                final error = await auth.cancelInvite(invite.id);
                                 if (error != null) {
-                                  CustomSnackbar.show("Error", error,
+                                  CustomSnackbar.show("Couldn't cancel", error,
                                       isSuccess: false);
                                 }
                               },
-                              child: const Text("Cancel invite",
-                                  style: TextStyle(color: rRed)),
                             ),
                           ),
                       ],
                     );
                   },
                 ),
+                const SizedBox(height: Space.xl),
               ],
-              const SizedBox(height: 28),
-              const _SectionLabel("Admins"),
+              const FieldLabel('Admins'),
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: managementRef.snapshots(),
                 builder: (context, snapshot) {
@@ -168,23 +139,24 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
                     for (final doc in snapshot.data?.docs ?? const [])
                       ManagementModel.fromMap({...doc.data(), 'id': doc.id}),
                   ]..sort((a, b) => a.email.compareTo(b.email));
-                  if (admins.isEmpty) return const _Note("Loading admins…");
+                  if (admins.isEmpty) {
+                    return const Text("Loading admins…", style: AdminText.muted);
+                  }
                   return Column(
                     children: [
                       for (final admin in admins)
                         _PersonRow(
-                          title: "${admin.firstName} ${admin.lastName}"
-                                  .trim()
-                                  .isEmpty
+                          title: "${admin.firstName} ${admin.lastName}".trim().isEmpty
                               ? admin.email
                               : "${admin.firstName} ${admin.lastName}".trim(),
                           subtitle:
-                              "${admin.email} · ${admin.role}${admin.id == me.id ? ' · you' : ''}",
+                              "${admin.email} · ${admin.isSuperAdmin ? 'Super admin' : 'Admin'}"
+                              "${admin.id == me.id ? ' · you' : ''}",
                           action: isSuper && admin.id != me.id
-                              ? TextButton(
+                              ? AdminButton.ghost(
+                                  label: 'Remove',
+                                  dense: true,
                                   onPressed: () => _confirmRevoke(auth, admin),
-                                  child: const Text("Remove",
-                                      style: TextStyle(color: rRed)),
                                 )
                               : null,
                         ),
@@ -203,41 +175,37 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFormField(
             controller: _email,
-            style: const TextStyle(color: rWhite),
-            decoration: _decoration("Google email"),
+            decoration: const InputDecoration(labelText: "Google email"),
             validator: (value) => _emailPattern.hasMatch((value ?? '').trim())
                 ? null
                 : "Enter a valid email address",
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.md),
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _firstName,
-                  style: const TextStyle(color: rWhite),
-                  decoration: _decoration("First name"),
+                  decoration: const InputDecoration(labelText: "First name"),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: Space.md),
               Expanded(
                 child: TextFormField(
                   controller: _lastName,
-                  style: const TextStyle(color: rWhite),
-                  decoration: _decoration("Last name"),
+                  decoration: const InputDecoration(labelText: "Last name"),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Space.md),
           DropdownButtonFormField<String>(
             initialValue: _role,
-            dropdownColor: rBg,
-            style: const TextStyle(color: rWhite),
-            decoration: _decoration("Role"),
+            decoration: const InputDecoration(labelText: "Role"),
             items: const [
               DropdownMenuItem(value: 'Admin', child: Text("Admin")),
               DropdownMenuItem(
@@ -246,67 +214,20 @@ class _AdminAccessCardState extends State<AdminAccessCard> {
             ],
             onChanged: (value) => setState(() => _role = value ?? 'Admin'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Space.lg),
           Align(
             alignment: Alignment.centerRight,
-            child: ElevatedButton(
-              onPressed: _sending ? null : () => _invite(auth),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: rGreen,
-                foregroundColor: rWhite,
-              ),
-              child: Text(_sending ? "Sending…" : "Send invite"),
+            child: AdminButton(
+              label: "Send invite",
+              icon: Icons.person_add_alt_1_rounded,
+              busy: _sending,
+              onPressed: () => _invite(auth),
             ),
           ),
         ],
       ),
     );
   }
-
-  InputDecoration _decoration(String label) => InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: rHint),
-        filled: true,
-        fillColor: rBlack,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: rHint.withOpacity(0.4)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: rGreen),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: rRed),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: rRed),
-        ),
-      );
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text,
-            style: const TextStyle(
-                color: rWhite, fontSize: 16, fontWeight: FontWeight.bold)),
-      );
-}
-
-class _Note extends StatelessWidget {
-  const _Note(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) =>
-      Text(text, style: const TextStyle(color: rHint));
 }
 
 class _PersonRow extends StatelessWidget {
@@ -319,16 +240,22 @@ class _PersonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Space.sm),
       child: Row(
         children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Palette.brandSoft,
+            child: Text(title.characters.firstOrNull?.toUpperCase() ?? '?',
+                style: const TextStyle(color: Palette.brand, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: Space.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: rWhite)),
-                Text(subtitle,
-                    style: const TextStyle(color: rHint, fontSize: 12)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(subtitle, style: AdminText.muted),
               ],
             ),
           ),

@@ -1,23 +1,28 @@
-import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/controllers/categoryController.dart';
-import 'package:khushiduaadmin/controllers/duaController.dart';
-import 'package:khushiduaadmin/controllers/notificationController.dart';
-import 'package:khushiduaadmin/controllers/userController.dart';
-import 'package:khushiduaadmin/views/tabs/categories.dart';
-import 'package:khushiduaadmin/views/tabs/duas.dart';
-import 'package:khushiduaadmin/views/tabs/home.dart';
-import 'package:khushiduaadmin/views/tabs/notifications.dart';
-import 'package:khushiduaadmin/views/tabs/profile.dart';
-import 'package:khushiduaadmin/views/tabs/users.dart';
-import 'package:khushiduaadmin/views/tabs/mlSettings.dart';
-import 'package:khushiduaadmin/views/tabs/donations.dart';
-import 'package:khushiduaadmin/views/tabs/dataTransfer.dart';
-import '../constants/colors.dart';
-import '../controllers/authController.dart';
 
+import '../constants/theme.dart';
+import '../controllers/authController.dart';
+import '../controllers/categoryController.dart';
+import '../controllers/contentController.dart';
+import '../controllers/duaController.dart';
+import '../controllers/historyController.dart';
+import '../controllers/notificationController.dart';
+import '../controllers/shellController.dart';
+import '../controllers/userController.dart';
+import '../widgets/ui.dart';
+import 'tabs/appControls.dart';
+import 'tabs/audioCoverage.dart';
+import 'tabs/categories.dart';
+import 'tabs/dataTransfer.dart';
+import 'tabs/duas.dart';
+import 'tabs/history.dart';
+import 'tabs/home.dart';
+import 'tabs/notifications.dart';
+import 'tabs/profile.dart';
+import 'tabs/users.dart';
+
+/// The signed-in panel: a sidebar of sections beside the one showing.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -26,239 +31,288 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedTab = 0;
-
-  final List<Widget> _tabs = const [
-    HomeTab(),
-    CategoriesTab(),
-    UsersTab(),
-    DuasTab(),
-    NotificationTab(),
-    ProfileTab(),
-    MLSettingsTab(),
-    DonationsTab(),
-    DataTransferTab(),
-  ];
-
   @override
   void initState() {
     super.initState();
     _initData();
   }
 
-  void _initData() async {
-    final authController = Get.find<AuthController>();
-    final categoryController = Get.find<CategoryController>();
-    final duaController = Get.find<DuaController>();
-    final userController = Get.find<UserController>();
-    final notificationController = Get.find<NotificationController>();
-
-    await authController.restoreSession();
-    categoryController.getAllCategories();
-    categoryController.getAllSubCategories();
-    duaController.getAllDuas();
-    userController.getAllUsers();
-    notificationController.getAllNotifications();
+  Future<void> _initData() async {
+    await Get.find<AuthController>().restoreSession();
+    Get.find<CategoryController>().listen();
+    Get.find<DuaController>().getAllDuas();
+    Get.find<UserController>().getAllUsers();
+    Get.find<NotificationController>().getAllNotifications();
+    Get.find<HistoryController>().start();
   }
 
-  void _onTabSelected(int index) {
-    if (index == 99) {
-      // Logout
-      showLogOutPopup();
-      return;
-    }
-    setState(() {
-      _selectedTab = index;
-    });
-  }
+  static Widget _rootOf(PanelTab tab) => switch (tab) {
+        PanelTab.overview => const HomeTab(),
+        PanelTab.duas => const DuasTab(),
+        PanelTab.categories => const CategoriesTab(),
+        PanelTab.audio => const AudioCoverageTab(),
+        PanelTab.users => const UsersTab(),
+        PanelTab.notifications => const NotificationTab(),
+        PanelTab.appControls => const AppControlsTab(),
+        PanelTab.transfer => const DataTransferTab(),
+        PanelTab.history => const HistoryTab(),
+        PanelTab.profile => const ProfileTab(),
+      };
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: rBg,
-      body: Row(
-        children: [
-          _buildSidebar(),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedTab < _tabs.length ? _selectedTab : 0,
-              children: _tabs,
-            ),
+    return GetBuilder<ShellController>(
+      builder: (shell) {
+        final compact = MediaQuery.sizeOf(context).width < 1100;
+        return Scaffold(
+          body: Row(
+            children: [
+              _Sidebar(shell: shell, compact: compact),
+              Expanded(
+                child: IndexedStack(
+                  index: shell.tab.index,
+                  children: [
+                    for (final tab in PanelTab.values)
+                      // Each section keeps its own page stack.
+                      HeroControllerScope.none(
+                        child: Navigator(
+                          key: shell.navigators[tab],
+                          onGenerateRoute: (_) => pageRoute(_rootOf(tab)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
 
-  // Helper for Sidebar build to keep build method clean
-  Widget _buildSidebar() {
-    final sidebarWidth = MediaQuery.of(context).size.width * 0.16;
-    return SizedBox(
-      width: sidebarWidth,
-      height: double.infinity,
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({required this.shell, required this.compact});
+  final ShellController shell;
+  final bool compact;
+
+  static const _groups = <(String, List<PanelTab>)>[
+    ('Content', [PanelTab.overview, PanelTab.duas, PanelTab.categories, PanelTab.audio]),
+    ('Audience', [PanelTab.users, PanelTab.notifications]),
+    ('App', [PanelTab.appControls, PanelTab.transfer, PanelTab.history]),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: compact ? 76 : 248,
+      decoration: const BoxDecoration(
+        color: Palette.card,
+        border: Border(right: BorderSide(color: Palette.line)),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _brand(),
           Expanded(
             child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: Space.md),
               children: [
-                _buildSidebarHeader(),
-                _buildSidebarItem(0, 'Dashboard', 'assets/svgs/dashboard.svg'),
-                _buildSidebarItem(1, 'Categories', 'assets/svgs/coins.svg'),
-                _buildSidebarItem(3, 'Duas', 'assets/svgs/ad.svg'),
-                _buildSidebarItem(2, 'Users', 'assets/svgs/users.svg'),
-                _buildSidebarItem(4, 'Notifications', null,
-                    iconData: Icons.notifications_active_outlined),
+                for (final (label, tabs) in _groups) ...[
+                  if (!compact)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          Space.md, Space.lg, Space.md, Space.sm),
+                      child: Text(label.toUpperCase(), style: AdminText.label),
+                    )
+                  else
+                    const SizedBox(height: Space.md),
+                  for (final tab in tabs) _item(tab),
+                ],
               ],
             ),
           ),
-          Column(
-            children: [
-              _buildSidebarItem(5, 'Profile', 'assets/svgs/user.svg'),
-              _buildSidebarItem(8, 'Import / Export', null,
-                  iconData: Icons.import_export_rounded),
-              _buildSidebarItem(7, 'Donations', null,
-                  iconData: Icons.volunteer_activism_outlined),
-              _buildSidebarItem(6, 'ML Settings', null,
-                  iconData: Icons.settings_applications),
-              _buildSidebarItem(99, 'Logout', 'assets/svgs/logout.svg',
-                  isLogout: true),
-              const SizedBox(height: 20),
-            ],
+          const _PublishStatus(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.md),
+            child: Column(
+              children: [
+                _item(PanelTab.profile),
+                _NavItem(
+                  icon: Icons.logout_rounded,
+                  label: 'Sign out',
+                  compact: compact,
+                  selected: false,
+                  danger: true,
+                  onTap: () => _signOut(context),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSidebarHeader() {
-    return Align(
-      alignment: Alignment.center,
+  Widget _brand() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          compact ? Space.md : Space.xl, Space.xl, Space.md, Space.md),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment:
+            compact ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
-          const Text(
-            "Khushi Dua Admin",
-            style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: rWhite),
+          ClipRRect(
+            borderRadius: Radii.smAll,
+            child: Image.asset('assets/images/logo.png', width: 40, height: 40),
           ),
-          const SizedBox(width: 8),
-          Image.asset("assets/images/logo.png", width: 30, height: 30),
-        ],
-      ),
-    ).marginSymmetric(vertical: 20);
-  }
-
-  Widget _buildSidebarItem(int index, String title, String? svgPath,
-      {IconData? iconData, bool isLogout = false}) {
-    bool isSelected = _selectedTab == index;
-    Color color = isSelected ? rWhite : rHint;
-    Color bgColor = isSelected ? rGreen : Colors.transparent;
-
-    return ListTile(
-      tileColor: bgColor,
-      leading: svgPath != null
-          ? SvgPicture.asset(svgPath, color: color, width: 20)
-          : Icon(iconData, color: color, size: 20),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: color,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-          if (!isLogout) Icon(Icons.arrow_forward_ios, color: color, size: 12),
-        ],
-      ),
-      onTap: () => _onTabSelected(index),
-    );
-  }
-
-  showLogOutPopup() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return ElasticIn(
-          child: AlertDialog(
-            backgroundColor: rBg,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Center(
-                child: Text("Are you sure?",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, color: rWhite))),
-            content: const Text(
-              "You want to Logout",
-              style: TextStyle(fontSize: 16, color: rWhite),
-            ),
-            actions: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          if (!compact) ...[
+            const SizedBox(width: Space.md),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.15,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: rGreen),
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          colors: [
-                            rGreen.withOpacity(0.22),
-                            rGreen.withOpacity(0.02),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text("Cancel",
-                          style: TextStyle(
-                              color: rWhite,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      Get.find<AuthController>().signOut();
-                    },
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.15,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: rRed),
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          colors: [
-                            rRed,
-                            rRed,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text("Logout",
-                          style: TextStyle(
-                              color: rWhite,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ),
+                  Text('Khushi Dua',
+                      style: TextStyle(
+                          color: Palette.brand,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800)),
+                  Text('Admin panel', style: AdminText.muted),
                 ],
               ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _item(PanelTab tab) => _NavItem(
+        icon: shell.tab == tab ? tab.selectedIcon : tab.icon,
+        label: tab.label,
+        compact: compact,
+        selected: shell.tab == tab,
+        onTap: () => shell.go(tab),
+      );
+
+  Future<void> _signOut(BuildContext context) async {
+    if (await confirmAction(
+      context,
+      title: 'Sign out?',
+      message: 'You will need to sign in with Google again to use the panel.',
+      confirmLabel: 'Sign out',
+    )) {
+      Get.find<AuthController>().signOut();
+    }
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.compact,
+    required this.selected,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool compact;
+  final bool selected;
+  final bool danger;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger
+        ? Palette.danger
+        : (selected ? Palette.brand : Palette.textMuted);
+    final tile = Material(
+      color: selected ? Palette.brandSoft : Colors.transparent,
+      borderRadius: Radii.smAll,
+      child: InkWell(
+        borderRadius: Radii.smAll,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+              horizontal: compact ? 0 : Space.md, vertical: Space.md - 2),
+          child: Row(
+            mainAxisAlignment:
+                compact ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(icon, size: 21, color: color),
+              if (!compact) ...[
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: danger
+                          ? Palette.danger
+                          : (selected ? Palette.brand : Palette.text),
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ],
-            actionsAlignment: MainAxisAlignment.center,
+          ),
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: compact ? Tooltip(message: label, child: tile) : tile,
+    );
+  }
+}
+
+/// Whether phones have been told about the latest content changes.
+class _PublishStatus extends StatelessWidget {
+  const _PublishStatus();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<ContentController>(
+      builder: (content) {
+        final busy = content.pending || content.publishing;
+        final compact = MediaQuery.sizeOf(context).width < 1100;
+        final label = busy
+            ? 'Sending changes to phones…'
+            : (content.publishedAt == null
+                ? 'Phones refresh content daily'
+                : 'Phones told ${relativeTime(content.publishedAt!)}');
+        final icon = Icon(
+          busy ? Icons.sync_rounded : Icons.cloud_done_outlined,
+          size: 18,
+          color: busy ? Palette.warning : Palette.success,
+        );
+        return Tooltip(
+          message: 'When content changes, phones download it again on their '
+              'next launch. Version ${content.version ?? '–'}.',
+          child: Container(
+            margin: const EdgeInsets.all(Space.md),
+            padding: const EdgeInsets.all(Space.md),
+            decoration: BoxDecoration(
+              color: Palette.raised,
+              borderRadius: Radii.smAll,
+            ),
+            child: compact
+                ? icon
+                : Row(
+                    children: [
+                      icon,
+                      const SizedBox(width: Space.sm),
+                      Expanded(
+                        child: Text(label,
+                            style: const TextStyle(
+                                color: Palette.text, fontSize: 12)),
+                      ),
+                    ],
+                  ),
           ),
         );
       },

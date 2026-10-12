@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:khushiduaadmin/controllers/initController.dart';
 import 'package:khushiduaadmin/views/auth/login.dart';
 import 'package:khushiduaadmin/views/dashboard.dart';
+import 'constants/theme.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -64,12 +65,7 @@ class MyApp extends StatelessWidget {
           transition: Transition.fade,
         ),
       ],
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xff1E1E1E),
-        useMaterial3: true,
-      ),
+      theme: buildAdminTheme(),
     );
   }
 }

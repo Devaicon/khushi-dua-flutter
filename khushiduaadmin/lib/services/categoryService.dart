@@ -1,157 +1,112 @@
-import 'dart:html';
+import 'dart:html' as html;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/constants/firebaseRef.dart';
-import 'package:khushiduaadmin/controllers/categoryController.dart';
-import 'package:khushiduaadmin/models/categoryModel.dart';
-import 'package:khushiduaadmin/models/subCategoryModel.dart';
 
-import '../widgets/customSnackbar.dart';
+import '../constants/firebaseRef.dart';
+import '../controllers/categoryController.dart';
+import '../controllers/contentController.dart';
+import '../models/auditEntry.dart';
+import '../models/categoryModel.dart';
+import '../models/subCategoryModel.dart';
+import '../models/translatedItem.dart';
+import 'auditService.dart';
+import 'duaService.dart';
+import 'storageService.dart';
 
+/// Reads and writes categories and their sections (subcategories).
+///
+/// Throws on failure; screens decide what to say and where to go.
 class CategoryService {
-  final CategoryController _categoryController = Get.find<CategoryController>();
+  final CategoryController _controller = Get.find<CategoryController>();
 
-  createCategory(CategoryModel categoryModel, File catLogo) async {
-    _categoryController.setLoading(true);
-    categoryModel.id = categoryRef.doc().id;
-    try {
-      // categoryModel.image = (await uploadFileToFirebase(catImage, "${categoryModel.id}/categoryImage"))!;
-      categoryModel.logo = (await uploadFileToFirebase(
-          catLogo, "${categoryModel.id}/categoryLogo"))!;
-
-      await categoryRef.doc(categoryModel.id).set(categoryModel.toMap());
-      _categoryController.setLoading(false);
-      Get.back();
-      CustomSnackbar.show("Success", "Category added successfully");
-      return true;
-    } catch (e) {
-      CustomSnackbar.show("Error", "Something went wrong", isSuccess: false);
-      _categoryController.setLoading(false);
-      return false;
-    }
-  }
-
-  Future<String?> uploadFileToFirebase(File file, String path) async {
-    try {
-      final storageRef = FirebaseStorage.instance.ref().child(path);
-
-      final uploadTask = storageRef.putBlob(file);
-
-      final snapshot = await uploadTask.whenComplete(() {});
-
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      debugPrint("Error uploading file: $e");
-      return null;
-    }
-  }
-
-  getAllCategories() async {
+  void listen() {
     categoryRef.snapshots().listen((event) {
-      bool changed = false;
-      for (var element in event.docChanges) {
-        if (element.type == DocumentChangeType.added ||
-            element.type == DocumentChangeType.modified) {
-          _categoryController.addCategoryToList(
-            CategoryModel.fromMap(element.doc.data()!),
-            shouldUpdate: false, // Don't update individual items
-          );
-          changed = true;
+      for (final change in event.docChanges) {
+        if (change.type == DocumentChangeType.removed) {
+          _controller.removeCategory(change.doc.id);
+        } else if (change.doc.data() != null) {
+          _controller.putCategory(
+              CategoryModel.fromMap({...change.doc.data()!, 'id': change.doc.id}));
         }
       }
-      if (changed) {
-        _categoryController.update(); // Update once per snapshot
-      }
-    });
-  }
-
-  updateCategory(CategoryModel categoryModel, File? catLogo) async {
-    _categoryController.setLoading(true);
-
-    try {
-      // if (catImage != null) {
-      //   // categoryModel.image = (await uploadFileToFirebase(catImage, "${categoryModel.id}/categoryImage"))!;
-      // }
-      if (catLogo != null) {
-        categoryModel.logo = (await uploadFileToFirebase(
-            catLogo, "${categoryModel.id}/categoryLogo"))!;
-      }
-      await categoryRef.doc(categoryModel.id).update(categoryModel.toMap());
-      _categoryController.setLoading(false);
-      Get.back();
-      CustomSnackbar.show("Success", "Category updated successfully");
-    } catch (e) {
-      CustomSnackbar.show("Error", "Something went wrong", isSuccess: false);
-      _categoryController.setLoading(false);
-      return false;
-    }
-  }
-
-  Future<List<SubCategoryModel>> getSubCategories(
-      CategoryModel categoryModel) async {
-    try {
-      _categoryController.setLoading(true);
-      final snapshot = await subCategoryRef
-          .where("categoryId", isEqualTo: categoryModel.id)
-          .orderBy("order")
-          .get();
-
-      final List<SubCategoryModel> subCategories = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return SubCategoryModel.fromMap(data);
-      }).toList();
-
-      debugPrint("✅ Subcategories fetched: ${subCategories.length}");
-      return subCategories;
-    } catch (e, stack) {
-      debugPrint("❌ ERROR in getSubCategories: $e");
-      debugPrint("📍 StackTrace: $stack");
-      return [];
-    } finally {
-      _categoryController.setLoading(false);
-    }
-  }
-
-  createSubCategory(SubCategoryModel subCategoryModel, File catImage) async {
-    _categoryController.setLoading(true);
-    subCategoryModel.id = subCategoryRef.doc().id;
-    subCategoryModel.image = (await uploadFileToFirebase(
-        catImage, "${subCategoryModel.id}/subCategoryImage"))!;
-    await subCategoryRef.doc(subCategoryModel.id).set(subCategoryModel.toMap());
-    _categoryController.setLoading(false);
-    Get.back();
-    Get.back();
-    Get.back();
-    CustomSnackbar.show("Success", "Sub Category created successfully");
-  }
-
-  getAllSubCategories() {
+      _controller.markLoaded();
+    }, onError: (Object e) => debugPrint('Categories unavailable: $e'));
     subCategoryRef.snapshots().listen((event) {
-      for (var element in event.docChanges) {
-        if (element.type == DocumentChangeType.added ||
-            element.type == DocumentChangeType.modified) {
-          _categoryController.addSubCategoryToList(
-              SubCategoryModel.fromMap(element.doc.data()!));
+      for (final change in event.docChanges) {
+        if (change.type == DocumentChangeType.removed) {
+          _controller.removeSection(change.doc.id);
+        } else if (change.doc.data() != null) {
+          _controller.putSection(SubCategoryModel.fromMap(
+              {...change.doc.data()!, 'id': change.doc.id}));
         }
       }
-    });
+      _controller.markLoaded();
+    }, onError: (Object e) => debugPrint('Sections unavailable: $e'));
   }
 
-  editSubCategory(SubCategoryModel subCategoryModel, image) async {
-    if (image != null) {
-      subCategoryModel.image = (await uploadFileToFirebase(
-          image, "${subCategoryModel.id}/subCategoryImage"))!;
-    }
-    await subCategoryRef
-        .doc(subCategoryModel.id)
-        .update(subCategoryModel.toMap());
-    Get.back();
-    Get.back();
+  static (CollectionReference<Map<String, dynamic>>, String, String) _where(
+      TranslatedItem item) {
+    return item is CategoryModel
+        ? (categoryRef, 'Category', 'categoryLogo')
+        : (subCategoryRef, 'SubCategory', 'subCategoryImage');
+  }
 
-    CustomSnackbar.show("Success", "Sub Category updated successfully");
+  /// Saves a category or section, first uploading a newly picked [image].
+  /// A new one (empty id) gets an id and goes to the end of its list.
+  Future<void> save(TranslatedItem item, {html.File? image}) async {
+    final (ref, collection, imageName) = _where(item);
+    final isNew = item.id.isEmpty;
+    if (isNew) {
+      item.id = ref.doc().id;
+      item.createdAt = DateTime.now();
+    }
+    final before = isNew ? null : (await ref.doc(item.id).get()).data();
+    if (image != null) {
+      item.imageUrl =
+          await StorageService.upload(image, '${item.id}/$imageName');
+    }
+    item.updatedAt = DateTime.now();
+    final after = item.toMap();
+    await ref.doc(item.id).set(after, SetOptions(merge: !isNew));
+    await AuditService.record(
+      action: isNew ? AuditAction.create : AuditAction.update,
+      collection: collection,
+      docId: item.id,
+      label: item.title,
+      before: before,
+      after: after,
+    );
+    Get.find<ContentController>().contentChanged();
+  }
+
+  /// Deletes a category or section. Callers make sure it is empty first:
+  /// a category's sections, or a section's duas, would be left orphaned.
+  Future<void> delete(TranslatedItem item) async {
+    final (ref, collection, _) = _where(item);
+    final before = (await ref.doc(item.id).get()).data();
+    await ref.doc(item.id).delete();
+    await AuditService.record(
+      action: AuditAction.delete,
+      collection: collection,
+      docId: item.id,
+      label: item.title,
+      before: before,
+    );
+    Get.find<ContentController>().contentChanged();
+  }
+
+  /// Saves the order of [ordered], all categories or one category's sections.
+  Future<void> reorder(List<TranslatedItem> ordered, {required String label}) {
+    if (ordered.isEmpty) return Future.value();
+    final (ref, collection, _) = _where(ordered.first);
+    return reorderDocs(
+      ref,
+      collection,
+      [for (final item in ordered) (item.id, item.order)],
+      label: label,
+      apply: (i) => ordered[i].order = i,
+    );
   }
 }

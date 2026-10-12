@@ -11,3 +11,6 @@ final sysConfigRef = firestore.collection('SystemConfiguration');
 final mlSettingsRef = firestore.collection('MLSettings');
 final adminInvitesRef = firestore.collection('AdminInvites');
 
+
+/// Changes made from the panel, for the History screen and undo.
+final auditLogRef = firestore.collection('AuditLog');

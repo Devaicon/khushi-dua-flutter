@@ -32,7 +32,7 @@ class NotificationService {
           } else if (element.type == DocumentChangeType.added ||
               element.type == DocumentChangeType.modified) {
             _notificationController.addNotificationToList(
-              NotificationModel.fromMap(element.doc.data()!),
+              NotificationModel.fromMap({...element.doc.data()!, 'id': element.doc.id}),
               shouldUpdate: false,
             );
             changed = true;
