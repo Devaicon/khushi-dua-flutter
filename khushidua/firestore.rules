@@ -37,6 +37,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // The admin panel's change history. Admins add entries and read them;
+    // nobody rewrites history, except to mark an entry undone.
+    match /AuditLog/{entry} {
+      allow read, create: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['undone']);
+      allow delete: if false;
+    }
+
     // App users own their profile; the admin panel lists and edits them.
     match /Users/{userId} {
       allow read, write: if isAdmin()

@@ -36,10 +36,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   get:
-  loading_indicator:
-  flutter_svg:
-  animate_do:
-  dotted_border:
   intl:
   http:
 
@@ -75,7 +71,6 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/svgs/
     - assets/images/
   #   - images/a_dot_ham.jpeg
 

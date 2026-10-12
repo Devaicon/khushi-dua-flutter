@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/controllers/notificationController.dart';
-import 'package:khushiduaadmin/models/notificationModel.dart';
-import 'package:intl/intl.dart';
-import '../../constants/colors.dart';
+
+import '../../constants/theme.dart';
+import '../../controllers/notificationController.dart';
+import '../../controllers/userController.dart';
+import '../../models/notificationModel.dart';
 import '../../search/adminSearch.dart';
 import '../../widgets/adminSearchField.dart';
-import '../../widgets/customSnackbar.dart';
-import '../../widgets/topBar.dart';
+import '../../widgets/ui.dart';
+import 'users.dart';
 
+/// Notifications sent to readers, and sending a new one to everyone.
 class NotificationTab extends StatefulWidget {
   const NotificationTab({super.key});
 
@@ -19,424 +20,118 @@ class NotificationTab extends StatefulWidget {
 
 class _NotificationTabState extends State<NotificationTab> {
   String _query = '';
+  final Set<String> _deleting = {};
+
+  Future<void> _delete(NotificationModel n) async {
+    if (!await confirmAction(
+      context,
+      title: 'Delete this notification?',
+      message: n.sentTo == null
+          ? '"${n.title}" will be removed from every reader\'s notifications '
+              'in the app. Pushes already on phones stay there.'
+          : '"${n.title}" will be removed from this reader\'s notifications.',
+      confirmLabel: 'Delete',
+      danger: true,
+    )) {
+      return;
+    }
+    setState(() => _deleting.add(n.id));
+    final ok = await Get.find<NotificationController>().deleteNotification(n);
+    if (!ok && mounted) setState(() => _deleting.remove(n.id));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rBlack,
-      body: GetBuilder<NotificationController>(
-        builder: (notificationController) {
-          final visibleNotifications = filterBySearch(
-              notificationController.allNotifications,
-              _query,
-              notificationSearchFields);
-          return Column(
-            children: [
-              const TopBar(title: "Notifications"),
-              const SizedBox(
-                height: 20,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: GetBuilder<UserController>(
+        builder: (users) => GetBuilder<NotificationController>(
+          builder: (c) {
+            final all = c.allNotifications;
+            final visible = filterBySearch(all, _query, notificationSearchFields);
+            return AdminPage(
+              scroll: false,
+              title: 'Notifications',
+              subtitle: 'What readers see in the app\'s notifications list. '
+                  'Sending one also pushes it to their phones.',
+              actions: [
+                AdminButton(
+                  label: 'Notify everyone',
+                  icon: Icons.campaign_outlined,
+                  onPressed: () => showMessageDialog(context),
+                ),
+              ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: AdminSearchField(
-                      hint: "Search notifications by title or message",
-                      matchCount: visibleNotifications.length,
-                      totalCount:
-                          notificationController.allNotifications.length,
-                      onChanged: (value) => setState(() => _query = value),
-                    ).marginOnly(right: 24),
+                  AdminSearchField(
+                    hint: 'Search by title or message',
+                    matchCount: visible.length,
+                    totalCount: all.length,
+                    onChanged: (v) => setState(() => _query = v),
                   ),
-                  InkWell(
-                    splashColor: Colors.transparent,
-                    onTap: () {
-                      showSendNotificationPopup();
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                          color: rGreen,
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Row(
-                        children: [
-                          SvgPicture.asset("assets/svgs/add.svg"),
-                          const Text(
-                            "Send a global notification",
-                            style: TextStyle(color: rWhite),
-                          ).marginOnly(left: 8)
-                        ],
-                      ).marginAll(12),
+                  const SizedBox(height: Space.lg),
+                  Expanded(
+                    child: AdminTable(
+                      columns: const [
+                        TableCol('Notification', flex: 5),
+                        TableCol('Sent to', flex: 2),
+                        TableCol('When', flex: 1),
+                        TableCol('', width: 48),
+                      ],
+                      rowCount: visible.length,
+                      empty: const EmptyState(
+                        icon: Icons.notifications_off_outlined,
+                        title: 'No notifications',
+                      ),
+                      rowBuilder: (i) {
+                        final n = visible[i];
+                        final recipient = n.sentTo == null
+                            ? null
+                            : users.allUsers.firstWhereOrNull((u) => u.id == n.sentTo);
+                        return [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(n.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text(n.message,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AdminText.muted),
+                            ],
+                          ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: n.sentTo == null
+                                ? const StatusChip('Everyone', tone: Tone.brand, icon: Icons.public_rounded)
+                                : Text(
+                                    recipient == null
+                                        ? 'One reader'
+                                        : (recipient.name.isEmpty ? recipient.email : recipient.name),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                          ),
+                          Text(relativeTime(n.createdAt), style: AdminText.muted),
+                          _deleting.contains(n.id)
+                              ? const Center(
+                                  child: SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2)))
+                              : IconButton(
+                                  tooltip: 'Delete',
+                                  onPressed: () => _delete(n),
+                                  icon: const Icon(Icons.delete_outline_rounded,
+                                      color: Palette.danger, size: 20),
+                                ),
+                        ];
+                      },
                     ),
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 20,
-              ),
-              Container(
-                width: MediaQuery.of(context).size.width,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12), color: rBg),
-                child: Column(
-                  children: [
-                    TableHeader(),
-                    if (hasSearchText(_query))
-                      SearchResultsNote(
-                        query: _query,
-                        matchCount: visibleNotifications.length,
-                        itemLabel: "notifications",
-                      ),
-                    ListView.builder(
-                      itemCount: visibleNotifications.length,
-                      shrinkWrap: true,
-                      itemBuilder: (context, index) {
-                        return NotificationTile(visibleNotifications[index],
-                            key: ValueKey(visibleNotifications[index].id));
-                      },
-                    ),
-                  ],
-                ),
-              )
-            ],
-          ).marginSymmetric(horizontal: 12, vertical: 12);
-        },
+            );
+          },
+        ),
       ),
     );
-  }
-
-  showSendNotificationPopup() async {
-    NotificationController notificationController =
-        Get.find<NotificationController>();
-    TextEditingController notificationTitleController = TextEditingController();
-    TextEditingController notificationDescriptionController =
-        TextEditingController();
-
-    await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Dialog(
-              child: StatefulBuilder(
-                builder: (context, setState) {
-                  return GetBuilder<NotificationController>(
-                    builder: (controller) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: rWhite),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.only(
-                                      topRight: Radius.circular(16),
-                                      topLeft: Radius.circular(16)),
-                                  color: rBlack.withOpacity(0.7)),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Send notification",
-                                    style: TextStyle(color: rWhite),
-                                  ),
-                                  Container(
-                                      width: 25,
-                                      height: 25,
-                                      decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: rWhite),
-                                      child: InkWell(
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Icon(
-                                            Icons.close,
-                                            color: rBlack.withOpacity(0.7),
-                                          )))
-                                ],
-                              ).marginSymmetric(horizontal: 20, vertical: 12),
-                            ),
-
-                            //entries
-                            //Title and Description
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                //Title
-                                Material(
-                                  elevation: 8,
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: SizedBox(
-                                    // height: 42,
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.8,
-                                    child: TextFormField(
-                                      textInputAction: TextInputAction.done,
-                                      controller: notificationTitleController,
-                                      keyboardType: TextInputType.text,
-                                      style: const TextStyle(color: rBlack),
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        // hintText: "Product name",
-                                        labelText: "Notification Title *",
-                                        fillColor: rWhite,
-                                        filled: true,
-                                        // contentPadding: const EdgeInsets.all(12),
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          borderSide: const BorderSide(
-                                              color: rWhite, width: 1),
-                                        ),
-                                        enabledBorder:
-                                            const UnderlineInputBorder(
-                                                borderSide: BorderSide(
-                                                    width: 2, color: rWhite)),
-                                        focusedBorder:
-                                            const UnderlineInputBorder(
-                                                borderSide: BorderSide(
-                                                    width: 2, color: rWhite)),
-                                        disabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          borderSide: const BorderSide(
-                                              color: rWhite, width: 1),
-                                        ),
-                                        hintStyle: TextStyle(
-                                            color: rBlack.withOpacity(0.7)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(
-                                  height: 20,
-                                ),
-                                //Description
-                                Material(
-                                  elevation: 8,
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: SizedBox(
-                                    // height: 42,
-                                    width:
-                                        MediaQuery.of(context).size.width * 0.8,
-                                    child: TextFormField(
-                                      textInputAction: TextInputAction.done,
-                                      controller:
-                                          notificationDescriptionController,
-                                      keyboardType: TextInputType.text,
-                                      style: const TextStyle(color: rBlack),
-                                      maxLines: 3,
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        // hintText: "Product name",
-                                        labelText: "Notification Description *",
-                                        fillColor: rWhite,
-                                        filled: true,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          borderSide: const BorderSide(
-                                              color: rWhite, width: 1),
-                                        ),
-                                        enabledBorder:
-                                            const UnderlineInputBorder(
-                                                borderSide: BorderSide(
-                                                    width: 2, color: rWhite)),
-                                        focusedBorder:
-                                            const UnderlineInputBorder(
-                                                borderSide: BorderSide(
-                                                    width: 2, color: rWhite)),
-                                        disabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          borderSide: const BorderSide(
-                                              color: rWhite, width: 1),
-                                        ),
-                                        hintStyle: TextStyle(
-                                            color: rBlack.withOpacity(0.7)),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                                .marginSymmetric(horizontal: 30)
-                                .marginOnly(top: 40),
-
-                            const SizedBox(
-                              height: 60,
-                            ),
-
-                            //action buttons
-                            Row(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    InkWell(
-                                      onTap: () async {
-                                        if (notificationTitleController
-                                            .text.isEmpty) {
-                                          CustomSnackbar.show(
-                                              "Error", "Title is required",
-                                              isSuccess: false);
-                                          return;
-                                        } else if (notificationDescriptionController
-                                            .text.isEmpty) {
-                                          CustomSnackbar.show("Error",
-                                              "Description is required",
-                                              isSuccess: false);
-                                          return;
-                                        } else {
-                                          Navigator.pop(context);
-                                          await notificationController
-                                              .sendGlobalNotification(
-                                                  notificationTitleController
-                                                      .text,
-                                                  notificationDescriptionController
-                                                      .text);
-                                        }
-                                      },
-                                      child: Container(
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            color: rGreen),
-                                        child: const Text(
-                                          "Send",
-                                          style: TextStyle(color: rWhite),
-                                        )
-                                            .marginAll(10)
-                                            .marginOnly(left: 20, right: 20),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      width: 20,
-                                    ),
-                                    InkWell(
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: Container(
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            color: rBlack.withOpacity(0.7)),
-                                        child: Text(
-                                          "Cancel".tr,
-                                          style: const TextStyle(color: rWhite),
-                                        )
-                                            .marginAll(10)
-                                            .marginOnly(left: 20, right: 20),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                //resetButton for other popups goes here
-                                Container()
-                              ],
-                            )
-                                .marginSymmetric(horizontal: 30)
-                                .marginOnly(bottom: 20)
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ));
-  }
-}
-
-Widget TableHeader() {
-  return Container(
-    decoration: BoxDecoration(
-      color: rWhite.withOpacity(0.05),
-    ),
-    child: const Row(
-      children: [
-        Expanded(
-            flex: 1,
-            child: Text(
-              "ID",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Title",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 4,
-            child: Text(
-              "Message",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              "Created at",
-              style: TextStyle(color: rHint, fontWeight: FontWeight.w600),
-            )),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10),
-  );
-}
-
-class NotificationTile extends StatefulWidget {
-  final NotificationModel notificationModel;
-
-  const NotificationTile(this.notificationModel, {super.key});
-
-  @override
-  State<NotificationTile> createState() => _NotificationTileState();
-}
-
-class _NotificationTileState extends State<NotificationTile> {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-            flex: 1,
-            child: Text(
-              "${widget.notificationModel.id.substring(0, 5)}...",
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              widget.notificationModel.title,
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 4,
-            child: Text(
-              widget.notificationModel.message,
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-        Expanded(
-            flex: 1,
-            child: Text(
-              DateFormat('d MMMM y').format(widget.notificationModel.createdAt),
-              style:
-                  const TextStyle(color: rWhite, fontWeight: FontWeight.normal),
-            )),
-      ],
-    ).marginSymmetric(horizontal: 12, vertical: 10);
   }
 }

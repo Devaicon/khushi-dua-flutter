@@ -4,11 +4,11 @@ import 'dart:math' as math;
 ///
 /// The bearing produced by `Qibla.qibla()` is a great-circle bearing and is
 /// therefore always referenced to **true north**. Device compass headings are
-/// not: iOS reports `CLHeading.trueHeading` (true north) while the Android
-/// implementation of `flutter_compass` reports the azimuth of the rotation
-/// vector, which is referenced to **magnetic north**. Subtracting one from the
-/// other without reconciling the references leaves an error equal to the
-/// magnetic declination at the user's location.
+/// not always: iOS's `CLHeading.trueHeading` and Google's fused orientation
+/// are true north, but Android's platform sensors (rotation vector,
+/// accelerometer plus magnetometer) are **magnetic north**. Subtracting one
+/// from the other without reconciling the references leaves an error equal to
+/// the magnetic declination at the user's location.
 ///
 /// Everything here is deliberately free of Flutter and sensor dependencies so
 /// the angle handling can be exercised directly in unit tests.
@@ -63,8 +63,8 @@ class QiblaMath {
   /// compass:
   ///
   /// * Android's `SensorManager.getOrientation` returns azimuth in
-  ///   `[-180, 180]`, which `flutter_compass` forwards unmodified. A negative
-  ///   heading there is an ordinary bearing between south and north via west.
+  ///   `[-180, 180]`. A negative heading there is an ordinary bearing between
+  ///   south and north via west.
   /// * iOS's `CLHeading.trueHeading` is `[0, 360)` and uses `-1` to signal that
   ///   true north could not be resolved.
   ///

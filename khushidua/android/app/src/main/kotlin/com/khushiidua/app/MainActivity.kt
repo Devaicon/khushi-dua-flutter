@@ -2,14 +2,13 @@ package com.khushiidua.app
 
 import android.content.Context
 import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -22,12 +21,11 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val COMPASS_CHANNEL = "com.khushiidua.app/compass"
         const val ALERT_PREVIEW_CHANNEL = "com.khushiidua.app/alertPreview"
-        const val COMPASS_ACCURACY_CHANNEL = "com.khushiidua.app/compassAccuracy"
+        const val HEADING_CHANNEL = "com.khushiidua.app/heading"
     }
 
-    /// Listens to the magnetometer only for its calibration status while the
-    /// Qibla screen is open.
-    private var accuracyListener: SensorEventListener? = null
+    /// Streams the heading while the Qibla screen is open.
+    private var headingStream: HeadingStreamHandler? = null
 
     /// The sound currently previewing, so a new choice or leaving the screen
     /// can stop it.
@@ -36,55 +34,27 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // The Qibla screen applies the World Magnetic Model itself, so it does not
-        // need anything from the platform to correct magnetic north to true north.
-        // What it cannot determine from Dart is which sensors this device
-        // physically has, which decides how good the heading can possibly be.
+        // Which sensors this device physically has, which decides how good the
+        // heading can possibly be. Dart cannot find that out by itself.
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             COMPASS_CHANNEL,
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getCompassCapabilities" -> result.success(compassCapabilities())
+                "haptic" -> result.success(compassHaptic(call.arguments as? String))
                 else -> result.notImplemented()
             }
         }
 
-        // The magnetometer's calibration status (SensorManager.SENSOR_STATUS_*)
-        // for the Qibla screen. flutter_compass reports "unreliable" as -1 and
-        // mixes in the accelerometer's status, so its accuracy cannot tell the
-        // screen when to ask for the figure-8 calibration.
-        EventChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            COMPASS_ACCURACY_CHANNEL,
-        ).setStreamHandler(object : EventChannel.StreamHandler {
-            override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
-                stopAccuracyUpdates()
-                val sensorManager =
-                    getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
-                val magnetometer =
-                    sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) ?: return
-                var last = Int.MIN_VALUE
-                fun report(status: Int) {
-                    if (status == last) return
-                    last = status
-                    events.success(status)
-                }
-                val listener = object : SensorEventListener {
-                    override fun onSensorChanged(event: SensorEvent) = report(event.accuracy)
-                    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) =
-                        report(accuracy)
-                }
-                accuracyListener = listener
-                sensorManager.registerListener(
-                    listener,
-                    magnetometer,
-                    SensorManager.SENSOR_DELAY_UI,
-                )
-            }
-
-            override fun onCancel(arguments: Any?) = stopAccuracyUpdates()
-        })
+        // The heading for the Qibla screen. See HeadingStreamHandler for why it
+        // does not come from flutter_compass on Android.
+        headingStream = HeadingStreamHandler(this).also {
+            EventChannel(
+                flutterEngine.dartExecutor.binaryMessenger,
+                HEADING_CHANNEL,
+            ).setStreamHandler(it)
+        }
 
         // Lets the Salah settings play an alert the moment it is chosen. A
         // preview posted as a notification was unreliable: Android's
@@ -109,15 +79,8 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun stopAccuracyUpdates() {
-        val listener = accuracyListener ?: return
-        (getSystemService(Context.SENSOR_SERVICE) as? SensorManager)
-            ?.unregisterListener(listener)
-        accuracyListener = null
-    }
-
     override fun onDestroy() {
-        stopAccuracyUpdates()
+        headingStream?.stop()
         stopPreview()
         super.onDestroy()
     }
@@ -144,15 +107,50 @@ class MainActivity : FlutterActivity() {
         return true
     }
 
-    private fun vibrate(pattern: LongArray): Boolean {
-        stopPreview()
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    private fun vibrator(): Vibrator? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
                 ?.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
             getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
+
+    /// The Qibla compass's one cue, felt without watching the screen: a tap
+    /// on reaching the Qibla.
+    ///
+    /// Played as a notification-type vibration. Flutter's HapticFeedback
+    /// goes through touch feedback, which many people turn off, and Android
+    /// treats any short vibration without a stated purpose as touch feedback
+    /// too, so these cues were never felt.
+    private fun compassHaptic(name: String?): Boolean {
+        val vibrator = vibrator()?.takeIf { it.hasVibrator() } ?: return false
+        if (name != "aligned") return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(60L)
+            return true
+        }
+        val effect = VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            vibrator.vibrate(
+                effect,
+                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_NOTIFICATION),
+            )
+        } else {
+            vibrator.vibrate(
+                effect,
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build(),
+            )
+        }
+        return true
+    }
+
+    private fun vibrate(pattern: LongArray): Boolean {
+        stopPreview()
+        val vibrator = vibrator()
         if (vibrator == null || !vibrator.hasVibrator() || pattern.isEmpty()) {
             return false
         }

@@ -42,8 +42,21 @@ class Dashboard extends StatefulWidget {
   State<Dashboard> createState() => _DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class _DashboardState extends State<Dashboard>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = AppTabs.home;
+
+  /// A tab chosen from the navbar fades in, rising a few pixels: quick and
+  /// slight, so switching tabs feels responsive rather than staged.
+  late final AnimationController _entrance = AnimationController(
+    vsync: this,
+    duration: AppMotion.base,
+    value: 1,
+  );
+  late final Animation<double> _entranceCurve = CurvedAnimation(
+    parent: _entrance,
+    curve: AppMotion.curve,
+  );
 
   /// Swiping left or right moves between neighbouring tabs. Pages are built
   /// the first time they are shown, not all at start-up.
@@ -69,6 +82,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   void dispose() {
     AppTabs._goTo = null;
+    _entrance.dispose();
     _pages.dispose();
     super.dispose();
   }
@@ -156,17 +170,10 @@ class _DashboardState extends State<Dashboard> {
   void _onItemTapped(int index) {
     if (index == _selectedIndex || !_pages.hasClients) return;
     setState(() => _selectedIndex = index);
-    // A neighbour slides in as a swipe would. A distant tab jumps, so the
-    // tabs in between are not built just to be scrolled past.
-    if ((index - (_pages.page ?? _selectedIndex)).abs() <= 1) {
-      _pages.animateToPage(
-        index,
-        duration: AppMotion.slow,
-        curve: AppMotion.curve,
-      );
-    } else {
-      _pages.jumpToPage(index);
-    }
+    // Jumps, so the tabs in between are not built just to be scrolled past,
+    // and the new tab fades in instead. Swiping still slides.
+    _pages.jumpToPage(index);
+    if (!MediaQuery.disableAnimationsOf(context)) _entrance.forward(from: 0);
   }
 
   @override
@@ -174,11 +181,21 @@ class _DashboardState extends State<Dashboard> {
     return Scaffold(
       backgroundColor: AppSurface.page,
       body: SafeArea(
-        child: PageView.builder(
-          controller: _pages,
-          itemCount: AppTabs.count,
-          onPageChanged: (index) => setState(() => _selectedIndex = index),
-          itemBuilder: (context, index) => _buildPage(index),
+        child: AnimatedBuilder(
+          animation: _entranceCurve,
+          builder: (context, child) => Transform.translate(
+            offset: Offset(0, 8 * (1 - _entranceCurve.value)),
+            child: child,
+          ),
+          child: FadeTransition(
+            opacity: _entranceCurve,
+            child: PageView.builder(
+              controller: _pages,
+              itemCount: AppTabs.count,
+              onPageChanged: (index) => setState(() => _selectedIndex = index),
+              itemBuilder: (context, index) => _buildPage(index),
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: _buildNavBar(),

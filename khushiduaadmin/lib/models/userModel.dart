@@ -1,3 +1,5 @@
+import 'modelValues.dart';
+
 class UserModel {
   String id = "";
   String name = "";
@@ -24,19 +26,21 @@ class UserModel {
       required this.createdAt,
       required this.updatedAt});
 
+  /// Lenient: profiles written by older app versions miss fields, and one
+  /// bad profile used to crash the whole Users list.
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-        id: map["id"],
-        name: map["name"],
-        email: map["email"],
-        points: map["points"],
-        fcmToken: map["fcmToken"],
-        isLoggedIn: map["isLoggedIn"],
-        isMember: map["isMember"],
-        isBlocked: map["isBlocked"],
-        readDuas: List<String>.from(map["readDuas"] ?? []),
-        createdAt: map["createdAt"].toDate(),
-        updatedAt: map["updatedAt"].toDate());
+        id: readString(map["id"]),
+        name: readString(map["name"]),
+        email: readString(map["email"]),
+        points: readInt(map["points"]),
+        fcmToken: readString(map["fcmToken"]),
+        isLoggedIn: readBool(map["isLoggedIn"], fallback: false),
+        isMember: readBool(map["isMember"], fallback: false),
+        isBlocked: readBool(map["isBlocked"], fallback: false),
+        readDuas: readStringList(map["readDuas"]),
+        createdAt: readDate(map["createdAt"]),
+        updatedAt: readDate(map["updatedAt"]));
   }
 
   Map<String, dynamic> toMap() {

@@ -62,10 +62,14 @@ class _QiblaTabState extends State<QiblaTab> {
     } catch (e) {
       debugPrint('🧭 QiblaTab: last known position failed: $e');
     }
+    // Only for a real move: a new position replaces the compass, and the
+    // last known fix is never exactly the cached one.
     if (position != null && mounted) {
       setState(() {
         _loading = false;
-        _position = _cached = position;
+        if (_movedEnough(_position, position!)) {
+          _position = _cached = position;
+        }
       });
     }
 

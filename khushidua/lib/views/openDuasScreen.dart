@@ -11,10 +11,10 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:khushidua/constants/firebaseRef.dart';
 import 'package:khushidua/controllers/duaController.dart';
 import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/audioController.dart';
+import 'package:khushidua/controllers/practiceController.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:share_plus/share_plus.dart';
@@ -437,7 +437,8 @@ class DuaTile extends StatefulWidget {
 
 class _DuaTileState extends State<DuaTile> {
   final AudioRecorder _audioRecorder = AudioRecorder();
-  String baseUrl = "";
+  /// Where Practice sends recordings, set in the admin panel.
+  String get baseUrl => Get.find<PracticeController>().settings.url;
   bool _isSharing = false;
 
   final List<String> imagePaths = [
@@ -454,7 +455,6 @@ class _DuaTileState extends State<DuaTile> {
   void initState() {
     super.initState();
     randomImage = imagePaths[Random().nextInt(imagePaths.length)];
-    getBaseUrl();
 
     debugPrint(
       "OpenDuasScreen: Share feature initialized with random image: $randomImage",
@@ -465,19 +465,6 @@ class _DuaTileState extends State<DuaTile> {
   void dispose() {
     _audioRecorder.dispose();
     super.dispose();
-  }
-
-  getBaseUrl() async {
-    await sysConfigRef
-        .doc("MemoizationURL")
-        .get()
-        .then((value) {
-          baseUrl = value.data()!["URL"];
-        })
-        .catchError((error) {
-          debugPrint('Error fetching base URL from Firebase: $error');
-          baseUrl = 'http://34.238.195.141:3400/transcribe/'; // Fallback
-        });
   }
 
   void _openRecordingDialog() {
@@ -497,10 +484,6 @@ class _DuaTileState extends State<DuaTile> {
             dialogRecorder ??= AudioRecorder();
 
             Future<void> sendToApi(String audioPath) async {
-              if (baseUrl.isEmpty) {
-                await getBaseUrl();
-              }
-
               setDialogState(() => dialogIsLoading = true);
               setDialogState(() => dialogApiResponse = null);
 
@@ -1828,13 +1811,28 @@ class _DuaTileState extends State<DuaTile> {
             ),
           ),
           const SizedBox(width: AppSpace.sm),
+          // Greyed out while the admin panel has Practice switched off.
           Expanded(
             flex: 3,
-            child: _ActionButton(
-              icon: Icons.mic_none_rounded,
-              label: "Practice".tr,
-              color: accent,
-              onTap: _openRecordingDialog,
+            child: GetBuilder<PracticeController>(
+              builder: (practice) {
+                final enabled = practice.settings.enabled;
+                return _ActionButton(
+                  icon: Icons.mic_none_rounded,
+                  label: "Practice".tr,
+                  color: enabled ? accent : Colors.grey,
+                  onTap: enabled
+                      ? _openRecordingDialog
+                      : () => Get.snackbar(
+                          "Practice".tr,
+                          "Practice is coming soon".tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.black54,
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 2),
+                        ),
+                );
+              },
             ),
           ),
           if (canShare) ...[

@@ -1,136 +1,71 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../constants/firebaseRef.dart';
 import '../controllers/mlSettingsController.dart';
+import '../models/auditEntry.dart';
 import '../models/mlSettingsModel.dart';
 import '../widgets/customSnackbar.dart';
+import 'auditService.dart';
 
+/// Reads and writes `SystemConfiguration/MemoizationURL`: the Practice
+/// button's switch and the server it sends recordings to. The app listens to
+/// this document, so changes reach running apps within seconds.
 class MLSettingsService {
-  final MLSettingsController _mlSettingsController =
-      Get.find<MLSettingsController>();
+  static const String docId = 'MemoizationURL';
+
+  final MLSettingsController _controller = Get.find<MLSettingsController>();
 
   Future<void> getMLSettings() async {
     try {
-      _mlSettingsController.setLoading(true);
-      // Use SystemConfiguration/MemoizationURL
-      final docSnapshot = await sysConfigRef.doc('MemoizationURL').get();
-
-      if (docSnapshot.exists && docSnapshot.data() != null) {
-        final data = docSnapshot.data()!;
-        final mlSettings = MLSettingsModel.fromMap({
-          ...data,
-          "id": docSnapshot.id,
-        });
-        _mlSettingsController.setMLSettings(mlSettings);
-      } else {
-        _mlSettingsController.setMLSettings(null);
-      }
-      _mlSettingsController.setLoading(false);
+      _controller.setLoading(true);
+      final snap = await sysConfigRef.doc(docId).get();
+      _controller.setMLSettings(snap.exists && snap.data() != null
+          ? MLSettingsModel.fromMap({...snap.data()!, "id": snap.id})
+          : null);
     } catch (e) {
       debugPrint("Error getting ML Settings: $e");
-      _mlSettingsController.setLoading(false);
-      CustomSnackbar.show("Error", "Failed to load ML Settings",
+      CustomSnackbar.show("Couldn't load", "The Practice settings could not be read.",
           isSuccess: false);
+    } finally {
+      _controller.setLoading(false);
     }
   }
 
-  Future<void> createMLSettings(String baseUrl) async {
+  Future<void> _write(Map<String, dynamic> changes, String done) async {
     try {
-      _mlSettingsController.setLoading(true);
-      // Use SystemConfiguration/MemoizationURL with existing "URL" field
-      final mlSettings = MLSettingsModel(
-        id: "MemoizationURL",
-        baseUrl: baseUrl,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+      _controller.setLoading(true);
+      final before = (await sysConfigRef.doc(docId).get()).data();
+      await sysConfigRef.doc(docId).set(
+          {...changes, "updatedAt": DateTime.now()}, SetOptions(merge: true));
+      final after = (await sysConfigRef.doc(docId).get()).data();
+      await AuditService.record(
+        action: before == null ? AuditAction.create : AuditAction.update,
+        collection: 'SystemConfiguration',
+        docId: docId,
+        label: 'Practice settings',
+        before: before,
+        after: after,
       );
-
-      // Save to SystemConfiguration/MemoizationURL - only update URL field
-      await sysConfigRef.doc('MemoizationURL').set(
-          {
-            "URL": baseUrl,
-            "updatedAt": DateTime.now(),
-          },
-          SetOptions(
-              merge: true)); // merge: true se existing data preserve rahega
-
-      _mlSettingsController.setMLSettings(mlSettings);
-      _mlSettingsController.setLoading(false);
-
-      debugPrint("=========================================");
-      debugPrint("ML SETTINGS CREATED SUCCESSFULLY");
-      debugPrint("=========================================");
-      debugPrint("Firebase Path: /SystemConfiguration/MemoizationURL");
-      debugPrint("Field: URL");
-      debugPrint("Value: ${mlSettings.baseUrl}");
-      debugPrint("=========================================");
-
-      CustomSnackbar.show("Success",
-          "ML Settings saved successfully!\nPath: /SystemConfiguration/MemoizationURL");
+      await getMLSettings();
+      CustomSnackbar.show("Saved", done);
     } catch (e) {
-      debugPrint("Error creating ML Settings: $e");
-      _mlSettingsController.setLoading(false);
-      CustomSnackbar.show("Error", "Failed to save ML Settings",
-          isSuccess: false);
+      debugPrint("Error saving ML Settings: $e");
+      _controller.setLoading(false);
+      CustomSnackbar.show("Couldn't save", "$e", isSuccess: false);
     }
   }
 
-  Future<void> updateMLSettings(
-      MLSettingsModel mlSettings, String baseUrl) async {
-    try {
-      _mlSettingsController.setLoading(true);
-      mlSettings.baseUrl = baseUrl;
-      mlSettings.updatedAt = DateTime.now();
+  /// Sets the transcription server Practice sends recordings to.
+  Future<void> saveUrl(String url) =>
+      _write({"URL": url}, "Practice now sends recordings to $url");
 
-      // Update SystemConfiguration/MemoizationURL - only update URL field
-      await sysConfigRef.doc('MemoizationURL').update({
-        "URL": baseUrl,
-        "updatedAt": DateTime.now(),
-      });
-
-      _mlSettingsController.setMLSettings(mlSettings);
-      _mlSettingsController.setLoading(false);
-
-      debugPrint("=========================================");
-      debugPrint("ML SETTINGS UPDATED SUCCESSFULLY");
-      debugPrint("=========================================");
-      debugPrint("Firebase Path: /SystemConfiguration/MemoizationURL");
-      debugPrint("Field: URL");
-      debugPrint("Value: ${mlSettings.baseUrl}");
-      debugPrint("Updated At: ${mlSettings.updatedAt}");
-      debugPrint("=========================================");
-
-      CustomSnackbar.show("Success",
-          "ML Settings updated successfully!\nPath: /SystemConfiguration/MemoizationURL");
-    } catch (e) {
-      debugPrint("Error updating ML Settings: $e");
-      _mlSettingsController.setLoading(false);
-      CustomSnackbar.show("Error", "Failed to update ML Settings",
-          isSuccess: false);
-    }
-  }
-
-  Future<void> deleteMLSettings(String id) async {
-    try {
-      _mlSettingsController.setLoading(true);
-      // Delete from SystemConfiguration/MemoizationURL
-      await sysConfigRef.doc('MemoizationURL').delete();
-      _mlSettingsController.setMLSettings(null);
-      _mlSettingsController.setLoading(false);
-
-      debugPrint("=========================================");
-      debugPrint("ML SETTINGS DELETED SUCCESSFULLY");
-      debugPrint("=========================================");
-      debugPrint("Deleted Path: /SystemConfiguration/MemoizationURL");
-      debugPrint("=========================================");
-
-      CustomSnackbar.show("Success", "ML Settings deleted successfully");
-    } catch (e) {
-      debugPrint("Error deleting ML Settings: $e");
-      _mlSettingsController.setLoading(false);
-      CustomSnackbar.show("Error", "Failed to delete ML Settings",
-          isSuccess: false);
-    }
-  }
+  /// Turns the app's Practice button on or off.
+  Future<void> setPracticeEnabled(bool enabled) => _write(
+        {"practiceEnabled": enabled},
+        enabled
+            ? "Practice is on in the app"
+            : "Practice is greyed out in the app",
+      );
 }

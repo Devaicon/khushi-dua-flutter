@@ -9,8 +9,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../animations/fadeInAnimationBTT.dart';
-import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
 import '../../constants/theme.dart';
 import '../../controllers/localization.dart';
@@ -530,66 +528,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              FadeInAnimationTTB(
-                delay: 1,
-                child: GestureDetector(
-                  onTap: _showAvatarPopup,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const ProfileAvatar(size: 72, showBorder: false),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppSurface.card,
-                            shape: BoxShape.circle,
-                            boxShadow: AppElevation.card,
-                          ),
-                          child: Icon(
-                            Icons.edit_rounded,
-                            size: 13,
-                            color: rbluedark,
-                          ),
+              GestureDetector(
+                onTap: _showAvatarPopup,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const ProfileAvatar(size: 72, showBorder: false),
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppSurface.card,
+                          shape: BoxShape.circle,
+                          boxShadow: AppElevation.card,
+                        ),
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 13,
+                          color: rbluedark,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: AppSpace.lg),
               Expanded(
-                child: FadeInAnimationBTT(
-                  delay: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppText.onSurface,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        name,
+                        email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppText.onSurface,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                        style: TextStyle(
+                          color: AppText.onSurfaceMuted,
+                          fontSize: 13,
                         ),
                       ),
-                      if (email.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          email,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppText.onSurfaceMuted,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
             ],

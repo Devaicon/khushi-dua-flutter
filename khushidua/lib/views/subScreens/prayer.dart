@@ -619,6 +619,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   : _buildPrayerList(),
             ),
           ),
+          if (!isLoadingPrayerTimes)
+            _section(_buildMethodHint(), top: AppSpace.sm),
 
           DonationPlacement(
             placement: 'prayer',
@@ -692,12 +694,59 @@ class _PrayerScreenState extends State<PrayerScreen> {
         _headerButton(
           icon: Icons.tune_rounded,
           tooltip: "Prayer Times".tr,
-          onTap: () => Get.to(
-            () => const PrayerTimeSettings(),
-            transition: Transition.fade,
-          ),
+          onTap: _openPrayerSettings,
         ),
       ],
+    );
+  }
+
+  void _openPrayerSettings() =>
+      Get.to(() => const PrayerTimeSettings(), transition: Transition.fade);
+
+  /// Under the times: the method they are calculated with, and a way to the
+  /// settings that change it, for anyone whose times differ from their
+  /// mosque's and who would not think to look behind the header button.
+  Widget _buildMethodHint() {
+    return GetBuilder<PrayerSettingsController>(
+      builder: (settings) => InkWell(
+        onTap: _openPrayerSettings,
+        borderRadius: AppRadius.smAll,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.md,
+            vertical: AppSpace.sm,
+          ),
+          child: Column(
+            children: [
+              Text(
+                '${"Calculation Method".tr}: '
+                '${PrayerSettingsController.methods[settings.method]!.tr}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppText.onPageMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.tune_rounded, size: 14, color: rbluedark),
+                  const SizedBox(width: AppSpace.xs),
+                  Flexible(
+                    child: Text(
+                      "Times differ from your local mosque? Tap to change.".tr,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: rbluedark,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

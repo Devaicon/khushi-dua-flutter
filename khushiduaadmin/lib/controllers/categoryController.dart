@@ -1,11 +1,10 @@
-import 'dart:html';
-
 import 'package:get/get.dart';
-import 'package:khushiduaadmin/models/subCategoryModel.dart';
-import 'package:khushiduaadmin/services/categoryService.dart';
 
 import '../models/categoryModel.dart';
+import '../models/subCategoryModel.dart';
+import '../services/categoryService.dart';
 
+/// Every category and section (subcategory), kept live.
 class CategoryController extends GetxController {
   final List<CategoryModel> _allCategories = [];
   List<CategoryModel> get allCategories => _allCategories;
@@ -13,76 +12,57 @@ class CategoryController extends GetxController {
   final List<SubCategoryModel> _allSubCategories = [];
   List<SubCategoryModel> get allSubCategories => _allSubCategories;
 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  bool _loaded = false;
+  bool get loaded => _loaded;
 
-  @override
-  void onClose() {
-    // for (var sub in _subscriptions.values) {
-    //   sub.cancel();
-    // }
-    super.onClose();
+  void listen() => CategoryService().listen();
+
+  CategoryModel? categoryById(String id) =>
+      _allCategories.firstWhereOrNull((c) => c.id == id);
+
+  SubCategoryModel? sectionById(String id) =>
+      _allSubCategories.firstWhereOrNull((s) => s.id == id);
+
+  /// A category's sections, in the app's order.
+  List<SubCategoryModel> sectionsOf(String categoryId) =>
+      [for (final s in _allSubCategories) if (s.categoryId == categoryId) s];
+
+  /// "Salah › Before Salah", for a section id.
+  String sectionPath(String sectionId) {
+    final section = sectionById(sectionId);
+    if (section == null) return 'Missing section';
+    final category = categoryById(section.categoryId);
+    return '${category?.title ?? 'No category'} › ${section.title}';
   }
 
-  setLoading(bool value) {
-    _isLoading = value;
+  void putCategory(CategoryModel category) {
+    final i = _allCategories.indexWhere((c) => c.id == category.id);
+    i == -1 ? _allCategories.add(category) : _allCategories[i] = category;
+  }
+
+  void removeCategory(String id) =>
+      _allCategories.removeWhere((c) => c.id == id);
+
+  void putSection(SubCategoryModel section) {
+    final i = _allSubCategories.indexWhere((s) => s.id == section.id);
+    i == -1 ? _allSubCategories.add(section) : _allSubCategories[i] = section;
+  }
+
+  void removeSection(String id) =>
+      _allSubCategories.removeWhere((s) => s.id == id);
+
+  void markLoaded() {
+    _loaded = true;
+    int byOrder(dynamic a, dynamic b) {
+      final c = (a.order as int).compareTo(b.order as int);
+      return c != 0 ? c : (a.id as String).compareTo(b.id as String);
+    }
+
+    _allCategories.sort(byOrder);
+    _allSubCategories.sort(byOrder);
     update();
   }
 
-  createCategory(CategoryModel categoryModel, File catLogo) async {
-    await CategoryService().createCategory(categoryModel, catLogo);
-  }
-
-  addCategoryToList(CategoryModel categoryModel, {bool shouldUpdate = true}) {
-    int existingIndex =
-        _allCategories.indexWhere((cat) => cat.id == categoryModel.id);
-
-    if (existingIndex == -1) {
-      _allCategories.add(categoryModel);
-    } else {
-      _allCategories[existingIndex] = categoryModel;
-    }
-    _allCategories.sort((a, b) => a.order.compareTo(b.order));
-    if (shouldUpdate) update();
-  }
-
-  addSubCategoryToList(SubCategoryModel subCategoryModel,
-      {bool shouldUpdate = true}) {
-    int existingIndex =
-        _allSubCategories.indexWhere((cat) => cat.id == subCategoryModel.id);
-    if (existingIndex == -1) {
-      _allSubCategories.add(subCategoryModel);
-    } else {
-      _allSubCategories[existingIndex] = subCategoryModel;
-    }
-    _allSubCategories.sort((a, b) => a.order.compareTo(b.order));
-    if (shouldUpdate) update();
-  }
-
-  getAllCategories() {
-    CategoryService().getAllCategories();
-  }
-
-  updateCategory(CategoryModel categoryModel, File? catLogo) async {
-    await CategoryService().updateCategory(categoryModel, catLogo);
-  }
-
-  Future<List<SubCategoryModel>> getSubCategories(
-      CategoryModel categoryModel) async {
-    List<SubCategoryModel> allSubCategories =
-        await CategoryService().getSubCategories(categoryModel);
-    return allSubCategories;
-  }
-
-  createSubCategory(SubCategoryModel subCategoryModel, File image) async {
-    await CategoryService().createSubCategory(subCategoryModel, image);
-  }
-
-  getAllSubCategories() {
-    CategoryService().getAllSubCategories();
-  }
-
-  editSubCategory(SubCategoryModel subCategoryModel, File? subCatImage) async {
-    await CategoryService().editSubCategory(subCategoryModel, subCatImage);
-  }
+  /// Re-sorts after a local reorder, before Firestore echoes it back.
+  void resort() => markLoaded();
 }

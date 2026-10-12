@@ -292,9 +292,9 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     bool isSelected = themeController.selectedAgeGroup == index;
     double screenWidth = MediaQuery.of(context).size.width;
-    double horizontalPadding = screenWidth < 360 ? 6 : 10;
+    double horizontalPadding = screenWidth < 360 ? 6 : 8;
     double verticalPadding = screenWidth < 360 ? 10 : 14;
-    double fontSize = screenWidth < 360 ? 13 : 16;
+    double fontSize = screenWidth < 360 ? 12 : 14;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -313,11 +313,13 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: AppRadius.pillAll,
           boxShadow: AppElevation.card,
         ),
-        child: Center(
+        // Shrinks a label too long for its third of the row, as some
+        // translations are, rather than cutting it off.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
           child: Text(
             title,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: isSelected ? AppText.onSurface : AppText.onPageMuted,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,

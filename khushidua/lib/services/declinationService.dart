@@ -9,11 +9,16 @@ import '../helpers/worldMagneticModel.dart';
 /// Everything the Qibla screen needs to know about how trustworthy a heading is
 /// on this device, in this place.
 class CompassEnvironment {
-  /// Magnetic declination in degrees east of true north.
+  /// Magnetic declination here, in degrees east of true north. Added only to
+  /// headings referenced to magnetic north.
   final double declination;
 
   /// Horizontal field intensity in nT, used for the polar reliability zones.
   final double horizontalIntensity;
+
+  /// Total field intensity in nT, against which the magnetometer's reading is
+  /// checked for interference.
+  final double totalIntensity;
 
   /// What the device's sensors are physically capable of.
   final CompassCapabilities capabilities;
@@ -27,6 +32,7 @@ class CompassEnvironment {
   const CompassEnvironment({
     required this.declination,
     required this.horizontalIntensity,
+    required this.totalIntensity,
     required this.capabilities,
     required this.modelIsCurrent,
     required this.modelName,
@@ -48,14 +54,14 @@ class CompassEnvironment {
 /// of 2025, and older devices carry older epochs again — so evaluating the model
 /// in-app is what makes the correction identical on every device.
 ///
-/// iOS reports `CLHeading.trueHeading`, which Core Location has already
-/// corrected to true north, so the declination is not applied there.
+/// Whether the declination is applied depends on the heading, not the
+/// platform: each `HeadingReading` says which north it is referenced to. iOS's
+/// `CLHeading.trueHeading` and Google's fused orientation are already true;
+/// only the Android platform-sensor fallback is magnetic.
 class DeclinationService {
-  static const MethodChannel _channel =
-      MethodChannel('com.khushiidua.app/compass');
-
-  /// Whether this platform's heading is already referenced to true north.
-  static bool get platformReportsTrueNorth => !Platform.isAndroid;
+  static const MethodChannel _channel = MethodChannel(
+    'com.khushiidua.app/compass',
+  );
 
   static Future<CompassEnvironment> resolve({
     required double latitude,
@@ -63,8 +69,7 @@ class DeclinationService {
     DateTime? now,
   }) async {
     final WorldMagneticModel wmm = WorldMagneticModel.wmm2025();
-    final double year =
-        WorldMagneticModel.decimalYear(now ?? DateTime.now());
+    final double year = WorldMagneticModel.decimalYear(now ?? DateTime.now());
 
     final GeomagneticField field = wmm.calculate(
       latitude: latitude,
@@ -72,20 +77,17 @@ class DeclinationService {
       decimalYear: year,
     );
 
-    // iOS already hands back a true-north heading, so there is nothing to add.
-    final double declination =
-        platformReportsTrueNorth ? 0.0 : field.declination;
-
     debugPrint(
       '🧭 DeclinationService: ${wmm.model} @ ${year.toStringAsFixed(3)} '
       'declination=${field.declination.toStringAsFixed(3)}° '
-      'applied=${declination.toStringAsFixed(3)}° '
-      'H=${field.horizontalIntensity.toStringAsFixed(0)}nT',
+      'H=${field.horizontalIntensity.toStringAsFixed(0)}nT '
+      'F=${field.totalIntensity.toStringAsFixed(0)}nT',
     );
 
     return CompassEnvironment(
-      declination: declination,
+      declination: field.declination,
       horizontalIntensity: field.horizontalIntensity,
+      totalIntensity: field.totalIntensity,
       capabilities: await _capabilities(),
       modelIsCurrent: wmm.isValidFor(year),
       modelName: wmm.model,
@@ -96,14 +98,11 @@ class DeclinationService {
     if (!Platform.isAndroid) return CompassCapabilities.unknown;
 
     try {
-      final Map<Object?, Object?>? map =
-          await _channel.invokeMethod<Map<Object?, Object?>>(
-        'getCompassCapabilities',
-      );
+      final Map<Object?, Object?>? map = await _channel
+          .invokeMethod<Map<Object?, Object?>>('getCompassCapabilities');
       if (map == null) return CompassCapabilities.unknown;
 
-      final CompassCapabilities capabilities =
-          CompassCapabilities.fromMap(map);
+      final CompassCapabilities capabilities = CompassCapabilities.fromMap(map);
       debugPrint(
         '🧭 DeclinationService: sensors '
         'mag=${capabilities.hasMagnetometer} '
@@ -115,7 +114,9 @@ class DeclinationService {
       );
       return capabilities;
     } on PlatformException catch (e) {
-      debugPrint('🧭 DeclinationService: capability probe failed - ${e.message}');
+      debugPrint(
+        '🧭 DeclinationService: capability probe failed - ${e.message}',
+      );
       return CompassCapabilities.unknown;
     } on MissingPluginException {
       debugPrint('🧭 DeclinationService: compass channel not registered');

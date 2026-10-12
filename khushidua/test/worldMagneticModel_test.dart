@@ -26,9 +26,9 @@ void main() {
     // Reference values generated with pygeomag 1.1.0 using NOAA's official
     // WMM_2025.COF, across a global grid plus named cities. See
     // test/wmm_reference.json.
-    final List<dynamic> reference = jsonDecode(
-      File('test/wmm_reference.json').readAsStringSync(),
-    ) as List<dynamic>;
+    final List<dynamic> reference =
+        jsonDecode(File('test/wmm_reference.json').readAsStringSync())
+            as List<dynamic>;
 
     test('reference dataset is present and non-trivial', () {
       expect(reference.length, greaterThan(300));
@@ -58,7 +58,8 @@ void main() {
         final double error = (actual - expected).abs();
         if (error > worst) {
           worst = error;
-          worstAt = '${row['name'] ?? ''} lat=$lat lon=$lon t=$time '
+          worstAt =
+              '${row['name'] ?? ''} lat=$lat lon=$lon t=$time '
               'expected=$expected actual=$actual';
         }
       }
@@ -69,7 +70,12 @@ void main() {
 
   group('named locations', () {
     // Sanity anchors so a regression is legible without diffing the grid.
-    void expectDeclination(String name, double lat, double lon, double expected) {
+    void expectDeclination(
+      String name,
+      double lat,
+      double lon,
+      double expected,
+    ) {
       test(name, () {
         final double d = wmm
             .calculate(latitude: lat, longitude: lon, decimalYear: 2026.7)
@@ -88,8 +94,11 @@ void main() {
 
   group('polar reliability zones', () {
     test('mid-latitudes are neither blackout nor caution', () {
-      final GeomagneticField f =
-          wmm.calculate(latitude: 31.5497, longitude: 74.3436, decimalYear: 2026.7);
+      final GeomagneticField f = wmm.calculate(
+        latitude: 31.5497,
+        longitude: 74.3436,
+        decimalYear: 2026.7,
+      );
       expect(f.isBlackoutZone, isFalse);
       expect(f.isCautionZone, isFalse);
       expect(f.horizontalIntensity, greaterThan(6000));
@@ -97,8 +106,11 @@ void main() {
 
     test('the north magnetic pole region is a blackout zone', () {
       // The north magnetic pole sits in the Arctic Ocean; H collapses there.
-      final GeomagneticField f =
-          wmm.calculate(latitude: 86.0, longitude: 150.0, decimalYear: 2026.7);
+      final GeomagneticField f = wmm.calculate(
+        latitude: 86.0,
+        longitude: 150.0,
+        decimalYear: 2026.7,
+      );
       expect(f.horizontalIntensity, lessThan(2000));
       expect(f.isBlackoutZone, isTrue);
     });
@@ -106,28 +118,38 @@ void main() {
 
   group('geographic poles do not blow up', () {
     test('north pole returns a finite declination', () {
-      final GeomagneticField f =
-          wmm.calculate(latitude: 90.0, longitude: 0.0, decimalYear: 2026.7);
+      final GeomagneticField f = wmm.calculate(
+        latitude: 90.0,
+        longitude: 0.0,
+        decimalYear: 2026.7,
+      );
       expect(f.declination.isFinite, isTrue);
       expect(f.horizontalIntensity.isFinite, isTrue);
     });
 
     test('south pole returns a finite declination', () {
-      final GeomagneticField f =
-          wmm.calculate(latitude: -90.0, longitude: 0.0, decimalYear: 2026.7);
+      final GeomagneticField f = wmm.calculate(
+        latitude: -90.0,
+        longitude: 0.0,
+        decimalYear: 2026.7,
+      );
       expect(f.declination.isFinite, isTrue);
     });
   });
 
   group('decimalYear', () {
     test('start of year is the year itself', () {
-      expect(WorldMagneticModel.decimalYear(DateTime.utc(2026)),
-          closeTo(2026.0, 1e-9));
+      expect(
+        WorldMagneticModel.decimalYear(DateTime.utc(2026)),
+        closeTo(2026.0, 1e-9),
+      );
     });
 
     test('mid-year is about .5', () {
-      expect(WorldMagneticModel.decimalYear(DateTime.utc(2026, 7, 2)),
-          closeTo(2026.5, 0.01));
+      expect(
+        WorldMagneticModel.decimalYear(DateTime.utc(2026, 7, 2)),
+        closeTo(2026.5, 0.01),
+      );
     });
   });
 
@@ -142,6 +164,45 @@ void main() {
           .calculate(latitude: 31.5497, longitude: 74.3436, decimalYear: 2026.7)
           .declination;
       expect(second, equals(first));
+    });
+  });
+
+  group('total intensity', () {
+    double totalAt(double lat, double lon) => wmm
+        .calculate(latitude: lat, longitude: lon, decimalYear: 2026.0)
+        .totalIntensity;
+
+    test('stays within Earth\'s surface range everywhere', () {
+      for (double lat = -85; lat <= 85; lat += 17) {
+        for (double lon = -180; lon < 180; lon += 30) {
+          final field = wmm.calculate(
+            latitude: lat,
+            longitude: lon,
+            decimalYear: 2026.0,
+          );
+          expect(field.totalIntensity, inInclusiveRange(20000, 68000));
+          expect(
+            field.totalIntensity,
+            greaterThanOrEqualTo(field.horizontalIntensity),
+          );
+        }
+      }
+    });
+
+    test('matches known values at named places', () {
+      // London is close to 49,000 nT; the South Atlantic Anomaly over
+      // São Paulo is among the weakest fields on Earth, near 23,000 nT.
+      expect(totalAt(51.5, -0.13), inInclusiveRange(47000, 51000));
+      expect(totalAt(-23.55, -46.63), inInclusiveRange(21000, 25000));
+    });
+
+    test('is nearly vertical near the magnetic poles', () {
+      final field = wmm.calculate(
+        latitude: 85.5,
+        longitude: 140,
+        decimalYear: 2026.0,
+      );
+      expect(field.horizontalIntensity / field.totalIntensity, lessThan(0.1));
     });
   });
 }

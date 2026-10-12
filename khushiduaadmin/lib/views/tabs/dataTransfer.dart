@@ -1,15 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import '../../constants/colors.dart';
-import '../../constants/firebaseRef.dart';
+import '../../constants/theme.dart';
+import '../../controllers/contentController.dart';
 import '../../csv/csvCodec.dart';
 import '../../csv/csvSchema.dart';
 import '../../csv/importPlanner.dart';
 import '../../helpers/webFiles.dart';
 import '../../services/csvTransferService.dart';
+import '../../models/auditEntry.dart';
+import '../../services/auditService.dart';
 import '../../widgets/customSnackbar.dart';
-import '../../widgets/topBar.dart';
+import '../../widgets/ui.dart';
 
 class DataTransferTab extends StatefulWidget {
   const DataTransferTab({super.key});
@@ -56,6 +58,21 @@ class _DataTransferTabState extends State<DataTransferTab> {
 
       setState(() => _busy = schema.dataset);
       final written = await _service.apply(plan);
+      const content = {
+        CsvDataset.duas,
+        CsvDataset.categories,
+        CsvDataset.subCategories,
+      };
+      if (content.contains(schema.dataset)) {
+        Get.find<ContentController>().contentChanged();
+      }
+      await AuditService.record(
+        action: AuditAction.other,
+        collection: schema.label,
+        docId: '',
+        label: '$written ${schema.label.toLowerCase()} from ${picked.name}',
+        undoable: false,
+      );
       CustomSnackbar.show(
         "Success",
         "Imported $written changes. A backup of the previous "
@@ -68,14 +85,12 @@ class _DataTransferTabState extends State<DataTransferTab> {
         await showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: rBg,
-            title: const Text("Import stopped",
-                style: TextStyle(color: rWhite, fontWeight: FontWeight.bold)),
-            content: Text(e.describe(), style: const TextStyle(color: rWhite)),
+            title: const Text("Import stopped"),
+            content: Text(e.describe()),
             actions: [
-              TextButton(
+              AdminButton(
+                label: "OK",
                 onPressed: () => Navigator.pop(context),
-                child: const Text("OK", style: TextStyle(color: rGreen)),
               ),
             ],
           ),
@@ -93,132 +108,20 @@ class _DataTransferTabState extends State<DataTransferTab> {
     final schemas = kCsvSchemas.values.toList();
 
     return Scaffold(
-      backgroundColor: rBlack,
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      body: AdminPage(
+        title: 'Import / Export',
+        subtitle: 'Exports open in Excel with every language intact. To '
+            'import, edit an export and save it as "CSV UTF-8". You review '
+            'every change, and a backup downloads, before anything is saved.',
+        maxWidth: 960,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const TopBar(title: "Import / Export"),
-            const SizedBox(height: 12),
-            const Text(
-              "Exports open in Excel with every language intact. To import, "
-              "edit an export and save it as \"CSV UTF-8\". You'll review "
-              "every change before anything is saved.",
-              style: TextStyle(color: rHint),
-            ),
-            const SizedBox(height: 20),
-            _refreshDevicesCard(),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                itemCount: schemas.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _datasetCard(schemas[index]),
-              ),
-            ),
+            for (final schema in schemas) ...[
+              _datasetCard(schema),
+              const SizedBox(height: Space.md),
+            ],
           ],
         ),
-      ),
-    );
-  }
-
-  bool _refreshing = false;
-
-  /// Makes every device refetch content on its next launch.
-  ///
-  /// Content edits already do this automatically (a Cloud Function bumps the
-  /// version on every write). This is for when that did not happen — the
-  /// functions were not deployed, or data was changed some other way.
-  Future<void> _forceRefreshDevices() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: rBg,
-        title: const Text("Refresh all devices?",
-            style: TextStyle(color: rWhite)),
-        content: const Text(
-          "Every app will download categories, subcategories and duas again "
-          "the next time it opens. Content edits already trigger this "
-          "automatically; use this only if devices are showing stale content.",
-          style: TextStyle(color: rHint),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(color: rHint)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Refresh", style: TextStyle(color: rGreen)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-
-    setState(() => _refreshing = true);
-    try {
-      await sysConfigRef.doc("ContentVersion").set({
-        "version": FieldValue.increment(1),
-        "updatedAt": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      CustomSnackbar.show(
-        "Done",
-        "Devices will refresh their content on next launch.",
-        isSuccess: true,
-      );
-    } catch (e) {
-      CustomSnackbar.show("Failed", "Could not refresh: $e", isSuccess: false);
-    } finally {
-      if (mounted) setState(() => _refreshing = false);
-    }
-  }
-
-  Widget _refreshDevicesCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: rBg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("App content cache",
-                    style: TextStyle(
-                        color: rWhite,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
-                Text(
-                  "Apps keep content on the device and only download it again "
-                  "when it changes. Force a refresh if devices show stale data.",
-                  style: TextStyle(color: rHint, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          if (_refreshing)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: rGreen),
-            )
-          else
-            OutlinedButton.icon(
-              onPressed: _forceRefreshDevices,
-              icon: const Icon(Icons.sync_rounded, color: rGreen),
-              label: const Text("Refresh all devices",
-                  style: TextStyle(color: rWhite)),
-              style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: rGreen)),
-            ),
-        ],
       ),
     );
   }
@@ -227,54 +130,34 @@ class _DataTransferTabState extends State<DataTransferTab> {
     final busy = _busy == schema.dataset;
     final anyBusy = _busy != null;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: rBg,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AdminCard(
+      padding: const EdgeInsets.all(Space.lg + 4),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(schema.label,
-                    style: const TextStyle(
-                        color: rWhite,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(schema.description,
-                    style: const TextStyle(color: rHint, fontSize: 13)),
+                Text(schema.label, style: AdminText.cardTitle),
+                const SizedBox(height: Space.xs),
+                Text(schema.description, style: AdminText.muted),
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          if (busy)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: rGreen),
-            )
-          else ...[
-            OutlinedButton.icon(
-              onPressed: anyBusy ? null : () => _export(schema),
-              icon: const Icon(Icons.download_rounded, color: rGreen),
-              label: const Text("Export", style: TextStyle(color: rWhite)),
-              style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: rGreen)),
+          const SizedBox(width: Space.lg),
+          AdminButton.secondary(
+            label: 'Export',
+            icon: Icons.download_rounded,
+            busy: busy,
+            onPressed: anyBusy ? null : () => _export(schema),
+          ),
+          if (schema.importable) ...[
+            const SizedBox(width: Space.sm),
+            AdminButton.secondary(
+              label: 'Import',
+              icon: Icons.upload_rounded,
+              onPressed: anyBusy ? null : () => _import(schema),
             ),
-            if (schema.importable) ...[
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
-                onPressed: anyBusy ? null : () => _import(schema),
-                icon: const Icon(Icons.upload_rounded, color: rYellow),
-                label: const Text("Import", style: TextStyle(color: rWhite)),
-                style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: rYellow)),
-              ),
-            ],
           ],
         ],
       ),
@@ -313,9 +196,7 @@ class ImportPreviewDialog extends StatelessWidget {
       });
 
     return AlertDialog(
-      backgroundColor: rBg,
-      title: Text("Review import: $fileName",
-          style: const TextStyle(color: rWhite, fontWeight: FontWeight.bold)),
+      title: Text("Review import: $fileName"),
       content: SizedBox(
         width: 900,
         height: 520,
@@ -326,72 +207,62 @@ class ImportPreviewDialog extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _chip("${plan.count(RowStatus.create)} new", rGreen),
-                _chip("${plan.count(RowStatus.update)} changed", rYellow),
-                _chip("${plan.count(RowStatus.unchanged)} unchanged", rHint),
-                _chip("${plan.count(RowStatus.invalid)} with errors", rRed),
+                StatusChip("${plan.count(RowStatus.create)} new", tone: Tone.success),
+                StatusChip("${plan.count(RowStatus.update)} changed", tone: Tone.warning),
+                StatusChip("${plan.count(RowStatus.unchanged)} unchanged"),
+                StatusChip("${plan.count(RowStatus.invalid)} with errors", tone: Tone.danger),
               ],
             ),
             if (plan.schema.dataset == CsvDataset.notifications) ...[
               const SizedBox(height: 12),
               const Text(
                 "Imported notifications appear in the app's notification list. They are not sent to phones.",
-                style: TextStyle(color: rYellow),
+                style: TextStyle(color: Palette.warning),
               ),
             ],
             const SizedBox(height: 16),
             if (plan.fileErrors.isNotEmpty)
               ...plan.fileErrors.map((e) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Text("• $e", style: const TextStyle(color: rRed)),
+                    child: Text("• $e", style: const TextStyle(color: Palette.danger)),
                   ))
             else if (visibleRows.isEmpty)
               const Text("Every row matches the database. Nothing to import.",
-                  style: TextStyle(color: rHint))
+                  style: AdminText.muted)
             else
               Expanded(
                 child: ListView.separated(
                   itemCount: visibleRows.length,
                   separatorBuilder: (_, __) =>
-                      Divider(color: rHint.withOpacity(0.2)),
+                      const Divider(height: 1),
                   itemBuilder: (context, index) => _rowTile(visibleRows[index]),
                 ),
               ),
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(Space.xl, 0, Space.xl, Space.xl),
       actions: [
-        TextButton(
+        AdminButton.ghost(
+          label: "Cancel",
           onPressed: () => Navigator.pop(context, false),
-          child: const Text("Cancel", style: TextStyle(color: rHint)),
         ),
-        ElevatedButton(
-          onPressed: plan.canApply ? () => Navigator.pop(context, true) : null,
-          style: ElevatedButton.styleFrom(
-              backgroundColor: rGreen, foregroundColor: rWhite),
-          child: Text(plan.canApply
+        AdminButton(
+          label: plan.canApply
               ? "Back up & apply ${plan.writeCount} changes"
-              : "Fix the errors to import"),
+              : "Fix the errors to import",
+          onPressed: plan.canApply ? () => Navigator.pop(context, true) : null,
         ),
       ],
     );
   }
 
-  Widget _chip(String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: color),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(label, style: TextStyle(color: color, fontSize: 12)),
-      );
-
   Widget _rowTile(PlannedRow row) {
-    final (label, color) = switch (row.status) {
-      RowStatus.create => ("New", rGreen),
-      RowStatus.update => ("Changed", rYellow),
-      RowStatus.invalid => ("Error", rRed),
-      RowStatus.unchanged => ("Unchanged", rHint),
+    final (label, tone) = switch (row.status) {
+      RowStatus.create => ("New", Tone.success),
+      RowStatus.update => ("Changed", Tone.warning),
+      RowStatus.invalid => ("Error", Tone.danger),
+      RowStatus.unchanged => ("Unchanged", Tone.neutral),
     };
 
     return Column(
@@ -400,29 +271,27 @@ class ImportPreviewDialog extends StatelessWidget {
         Row(
           children: [
             Text("Row ${row.rowNumber}",
-                style: const TextStyle(
-                    color: rWhite, fontWeight: FontWeight.bold)),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(width: 10),
             Expanded(
               child: Text(row.id.isEmpty ? "(new id)" : row.id,
-                  style: const TextStyle(
-                      color: rHint, fontFamily: 'monospace', fontSize: 12),
+                  style: AdminText.mono,
                   overflow: TextOverflow.ellipsis),
             ),
-            _chip(label, color),
+            StatusChip(label, tone: tone),
           ],
         ),
         if (row.status == RowStatus.update)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text("Changes: ${row.changes.keys.join(', ')}",
-                style: const TextStyle(color: rWhite, fontSize: 13)),
+                style: const TextStyle(fontSize: 13)),
           ),
         for (final error in row.errors)
-          Text("• $error", style: const TextStyle(color: rRed, fontSize: 13)),
+          Text("• $error", style: const TextStyle(color: Palette.danger, fontSize: 13)),
         for (final warning in row.warnings)
           Text("• $warning",
-              style: const TextStyle(color: rYellow, fontSize: 13)),
+              style: const TextStyle(color: Palette.warning, fontSize: 13)),
       ],
     );
   }
