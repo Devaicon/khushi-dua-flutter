@@ -29,37 +29,67 @@ abstract final class Radii {
   static BorderRadius get pillAll => BorderRadius.circular(pill);
 }
 
+/// The colour tokens. They read [isDark] directly, as the app's do, so a
+/// widget needs no context to pick a colour; flipping it and rebuilding the
+/// app switches every screen (see AppearanceController).
 abstract final class Palette {
-  /// The app's brand navy.
-  static const Color brand = Color(0xFF1A237E);
-  static const Color brandSoft = Color(0xFFE8EAF6);
+  static bool isDark = false;
 
-  static const Color page = Color(0xffF6F7FB);
-  static const Color card = Colors.white;
+  /// The brand as ink: text, icons and the tints made from them. Navy on
+  /// light pages; a pale indigo on dark ones, where navy would vanish.
+  static Color get brand =>
+      isDark ? const Color(0xFFC5CAE9) : const Color(0xFF1A237E);
+
+  /// The brand as a fill behind white text: buttons, switches. Navy is too
+  /// close to the dark page, so it brightens to indigo there.
+  static Color get brandFill =>
+      isDark ? const Color(0xFF3F51B5) : const Color(0xFF1A237E);
+
+  /// Selected rows and soft highlights.
+  static Color get brandSoft =>
+      isDark ? const Color(0xFF283062) : const Color(0xFFE8EAF6);
+
+  static Color get page =>
+      isDark ? const Color(0xff0E1120) : const Color(0xffF6F7FB);
+  static Color get card => isDark ? const Color(0xff1A1E31) : Colors.white;
 
   /// A step up from [card], for fields and hovered rows.
-  static const Color raised = Color(0xffF2F3F8);
-  static const Color line = Color(0x141A237E);
+  static Color get raised =>
+      isDark ? const Color(0xff252A40) : const Color(0xffF2F3F8);
+  static Color get line =>
+      isDark ? const Color(0x14FFFFFF) : const Color(0x141A237E);
 
-  static const Color text = Color(0xff2D3142);
-  static const Color textMuted = Color(0xff7A7F95);
+  static Color get text =>
+      isDark ? const Color(0xffE6E8F2) : const Color(0xff2D3142);
+  static Color get textMuted =>
+      isDark ? const Color(0xff9EA3BC) : const Color(0xff7A7F95);
 
-  static const Color success = Color(0xff2E7D32);
-  static const Color warning = Color(0xffB26A00);
-  static const Color danger = Color(0xffC62828);
-  static const Color info = Color(0xff1565C0);
+  static Color get success =>
+      isDark ? const Color(0xff81C784) : const Color(0xff2E7D32);
+  static Color get warning =>
+      isDark ? const Color(0xffFFB74D) : const Color(0xffB26A00);
+  static Color get danger =>
+      isDark ? const Color(0xffEF9A9A) : const Color(0xffC62828);
+  static Color get info =>
+      isDark ? const Color(0xff90CAF9) : const Color(0xff1565C0);
 
   /// The age groups, coloured as the app's home screen buttons.
   static const Color littleKids = Color(0xFFF48FB1);
   static const Color olderKids = Color(0xFF90CAF9);
   static const Color grownUps = Color(0xFFA5D6A7);
+
+  /// The sign-in gradient: peach to lavender, or the app's dusk version.
+  static List<Color> get authGradient => isDark
+      ? [const Color(0xff4A3440), const Color(0xff2B3163)]
+      : [const Color(0xffEEB6A3), const Color(0xffC3CCF6)];
 }
 
-/// One shadow, never stacked.
+/// One shadow, never stacked; deeper on the dark page, where a light one
+/// would not show.
 abstract final class Elevation {
   static List<BoxShadow> get card => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.06),
+          color: Colors.black.withValues(alpha: Palette.isDark ? 0.3 : 0.06),
           blurRadius: 12,
           offset: const Offset(0, 4),
         ),
@@ -72,16 +102,24 @@ abstract final class Motion {
   static const Curve curve = Curves.easeOutCubic;
 }
 
-/// A deep shade of [color], for text and icons on a light tint of it.
+/// A shade of [color] for text and icons on a tint of it: deep on light
+/// pages, pale on dark ones, as the app's `ink`.
 Color inkOf(Color color) {
   final hsl = HSLColor.fromColor(color);
+  if (Palette.isDark) {
+    return hsl.withLightness(hsl.lightness.clamp(0.74, 1.0)).toColor();
+  }
   return hsl.withLightness(hsl.lightness.clamp(0.0, 0.36)).toColor();
 }
 
 ThemeData buildAdminTheme() {
-  final scheme = ColorScheme.fromSeed(seedColor: Palette.brand).copyWith(
-    primary: Palette.brand,
-    onPrimary: Colors.white,
+  final dark = Palette.isDark;
+  final scheme = ColorScheme.fromSeed(
+    seedColor: const Color(0xFF1A237E),
+    brightness: dark ? Brightness.dark : Brightness.light,
+  ).copyWith(
+    primary: dark ? const Color(0xFF9FA8DA) : Palette.brandFill,
+    onPrimary: dark ? const Color(0xFF1A237E) : Colors.white,
     surface: Palette.card,
     onSurface: Palette.text,
     error: Palette.danger,
@@ -89,59 +127,67 @@ ThemeData buildAdminTheme() {
 
   final fieldBorder = OutlineInputBorder(
     borderRadius: Radii.smAll,
-    borderSide: const BorderSide(color: Palette.line),
+    borderSide: BorderSide(color: Palette.line),
   );
 
   return ThemeData(
     useMaterial3: true,
+    brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
     scaffoldBackgroundColor: Palette.page,
     canvasColor: Palette.card,
     cardColor: Palette.card,
     dividerColor: Palette.line,
-    dividerTheme: const DividerThemeData(color: Palette.line, space: 1),
-    textTheme: Typography.blackMountainView.apply(
+    dividerTheme: DividerThemeData(color: Palette.line, space: 1),
+    textTheme: (dark ? Typography.whiteMountainView : Typography.blackMountainView).apply(
       bodyColor: Palette.text,
       displayColor: Palette.text,
     ),
-    iconTheme: const IconThemeData(color: Palette.brand),
+    iconTheme: IconThemeData(color: Palette.brand),
     dialogTheme: DialogThemeData(
       backgroundColor: Palette.card,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: Radii.cardAll),
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         color: Palette.brand,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      contentTextStyle: const TextStyle(color: Palette.text, fontSize: 14),
+      contentTextStyle: TextStyle(color: Palette.text, fontSize: 14),
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: Palette.card,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: Radii.smAll),
     ),
+    // Chips and segmented buttons read these; on the dark page Material's
+    // defaults would be light grey.
+    chipTheme: ChipThemeData(
+      backgroundColor: Palette.card,
+      selectedColor: Palette.brandSoft,
+      side: BorderSide(color: Palette.line),
+      labelStyle: TextStyle(color: Palette.text),
+    ),
     // White thumb in both states, as in the app; only the track is coloured.
     switchTheme: SwitchThemeData(
       thumbColor: const WidgetStatePropertyAll(Colors.white),
       trackColor: WidgetStateProperty.resolveWith(
         (s) => s.contains(WidgetState.selected)
-            ? Palette.brand
-            : Colors.grey.shade400,
+            ? Palette.brandFill
+            : (dark ? const Color(0xFF3A3F57) : Colors.grey.shade400),
       ),
       trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
     ),
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.resolveWith(
-        (s) => s.contains(WidgetState.selected) ? Palette.brand : null,
+        (s) => s.contains(WidgetState.selected) ? Palette.brandFill : null,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
-    progressIndicatorTheme:
-        const ProgressIndicatorThemeData(color: Palette.brand),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: Palette.brand),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-        color: Palette.text,
+        color: dark ? const Color(0xff3A3F57) : const Color(0xff2D3142),
         borderRadius: BorderRadius.circular(6),
       ),
       textStyle: const TextStyle(color: Colors.white, fontSize: 12),
@@ -151,9 +197,9 @@ ThemeData buildAdminTheme() {
       filled: true,
       fillColor: Palette.card,
       isDense: true,
-      hintStyle: const TextStyle(color: Palette.textMuted),
-      labelStyle: const TextStyle(color: Palette.textMuted),
-      floatingLabelStyle: const TextStyle(color: Palette.brand),
+      hintStyle: TextStyle(color: Palette.textMuted),
+      labelStyle: TextStyle(color: Palette.textMuted),
+      floatingLabelStyle: TextStyle(color: Palette.brand),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: Space.lg,
         vertical: Space.md + 2,
@@ -162,32 +208,30 @@ ThemeData buildAdminTheme() {
       enabledBorder: fieldBorder,
       focusedBorder: OutlineInputBorder(
         borderRadius: Radii.smAll,
-        borderSide: const BorderSide(color: Palette.brand, width: 1.5),
+        borderSide: BorderSide(color: Palette.brand, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: Radii.smAll,
-        borderSide: const BorderSide(color: Palette.danger),
+        borderSide: BorderSide(color: Palette.danger),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: Radii.smAll,
-        borderSide: const BorderSide(color: Palette.danger, width: 1.5),
+        borderSide: BorderSide(color: Palette.danger, width: 1.5),
       ),
     ),
-    textSelectionTheme: const TextSelectionThemeData(
-      cursorColor: Palette.brand,
-    ),
+    textSelectionTheme: TextSelectionThemeData(cursorColor: Palette.brand),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: Palette.brand,
         shape: RoundedRectangleBorder(borderRadius: Radii.smAll),
       ),
     ),
-    tabBarTheme: const TabBarThemeData(
+    tabBarTheme: TabBarThemeData(
       labelColor: Palette.brand,
       unselectedLabelColor: Palette.textMuted,
       indicatorColor: Palette.brand,
       dividerColor: Palette.line,
-      labelStyle: TextStyle(fontWeight: FontWeight.bold),
+      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
     ),
     scrollbarTheme: ScrollbarThemeData(
       thumbColor: WidgetStatePropertyAll(Palette.brand.withValues(alpha: 0.25)),

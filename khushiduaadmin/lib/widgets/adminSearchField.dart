@@ -55,7 +55,7 @@ class _AdminSearchFieldState extends State<AdminSearchField> {
         },
         decoration: InputDecoration(
           hintText: widget.hint,
-          prefixIcon: const Icon(Icons.search_rounded,
+          prefixIcon: Icon(Icons.search_rounded,
               color: Palette.textMuted, size: 20),
           suffixIcon: hasText
               ? Row(
@@ -67,7 +67,7 @@ class _AdminSearchFieldState extends State<AdminSearchField> {
                     ),
                     IconButton(
                       tooltip: "Clear search (Esc)",
-                      icon: const Icon(Icons.close_rounded,
+                      icon: Icon(Icons.close_rounded,
                           color: Palette.textMuted, size: 18),
                       onPressed: _clear,
                     ),

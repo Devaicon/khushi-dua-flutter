@@ -300,7 +300,7 @@ class _Dropdown<T> extends StatelessWidget {
           hint: Text(hint, style: const TextStyle(fontSize: 13)),
           isDense: true,
           borderRadius: Radii.smAll,
-          style: const TextStyle(color: Palette.text, fontSize: 13),
+          style: TextStyle(color: Palette.text, fontSize: 13),
           items: [
             DropdownMenuItem<T?>(value: null, child: Text(hint)),
             for (final e in items.entries)

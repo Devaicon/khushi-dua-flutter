@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../constants/theme.dart';
+import '../controllers/appearanceController.dart';
 import '../controllers/authController.dart';
 import '../controllers/categoryController.dart';
 import '../controllers/contentController.dart';
@@ -106,7 +107,7 @@ class _Sidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: compact ? 76 : 248,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Palette.card,
         border: Border(right: BorderSide(color: Palette.line)),
       ),
@@ -133,6 +134,10 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
           const _PublishStatus(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.md),
+            child: _AppearanceItem(compact: compact),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.md),
             child: Column(
@@ -168,7 +173,7 @@ class _Sidebar extends StatelessWidget {
           ),
           if (!compact) ...[
             const SizedBox(width: Space.md),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -308,7 +313,7 @@ class _PublishStatus extends StatelessWidget {
                       const SizedBox(width: Space.sm),
                       Expanded(
                         child: Text(label,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: Palette.text, fontSize: 12)),
                       ),
                     ],
@@ -316,6 +321,55 @@ class _PublishStatus extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Light, dark or system, as in the app's Settings.
+class _AppearanceItem extends StatelessWidget {
+  const _AppearanceItem({required this.compact});
+  final bool compact;
+
+  static IconData _icon(String mode) => switch (mode) {
+        'light' => Icons.light_mode_outlined,
+        'dark' => Icons.dark_mode_outlined,
+        _ => Icons.brightness_auto_outlined,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AppearanceController>(
+      builder: (appearance) => PopupMenuButton<String>(
+        tooltip: 'Appearance',
+        position: PopupMenuPosition.under,
+        onSelected: appearance.setMode,
+        itemBuilder: (_) => [
+          for (final MapEntry(key: mode, value: label)
+              in AppearanceController.modes.entries)
+            PopupMenuItem(
+              value: mode,
+              child: Row(
+                children: [
+                  Icon(_icon(mode), size: 20, color: Palette.text),
+                  const SizedBox(width: Space.md),
+                  Expanded(child: Text(label)),
+                  if (mode == appearance.mode)
+                    Icon(Icons.check_rounded, size: 18, color: Palette.brand),
+                ],
+              ),
+            ),
+        ],
+        child: IgnorePointer(
+          child: _NavItem(
+            icon: _icon(appearance.mode),
+            label:
+                'Appearance: ${AppearanceController.modes[appearance.mode]}',
+            compact: compact,
+            selected: false,
+            onTap: () {},
+          ),
+        ),
+      ),
     );
   }
 }

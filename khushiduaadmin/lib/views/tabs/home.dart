@@ -203,10 +203,10 @@ class _HomeTabState extends State<HomeTab> {
     return AdminCard(
       title: 'Needs attention',
       child: items.isEmpty
-          ? const Row(children: [
+          ? Row(children: [
               Icon(Icons.verified_rounded, color: Palette.success),
-              SizedBox(width: Space.sm),
-              Text('Nothing right now.'),
+              const SizedBox(width: Space.sm),
+              const Text('Nothing right now.'),
             ])
           : Column(children: items),
     );
@@ -223,7 +223,7 @@ class _HomeTabState extends State<HomeTab> {
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(hint, style: AdminText.muted),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Palette.textMuted),
+      trailing: Icon(Icons.chevron_right_rounded, color: Palette.textMuted),
     );
   }
 
@@ -240,7 +240,7 @@ class _HomeTabState extends State<HomeTab> {
       title: 'Most listened',
       subtitle: '$readers signed-in readers have listened to at least one dua to the end.',
       child: top.isEmpty
-          ? const Text('No listens recorded yet.', style: AdminText.muted)
+          ? Text('No listens recorded yet.', style: AdminText.muted)
           : Column(
               children: [
                 for (final e in top.take(5))
@@ -271,11 +271,11 @@ class _HomeTabState extends State<HomeTab> {
             onPressed: () => shell.go(PanelTab.history),
           ),
           child: !history.available
-              ? const Text(
+              ? Text(
                   'History will appear once the updated Firestore rules are deployed.',
                   style: AdminText.muted)
               : entries.isEmpty
-                  ? const Text('No changes recorded yet.', style: AdminText.muted)
+                  ? Text('No changes recorded yet.', style: AdminText.muted)
                   : Column(
                       children: [
                         for (final e in entries)

@@ -372,7 +372,7 @@ class _DuaEditorState extends State<DuaEditor> {
         kTranslationLanguages.where((l) => l.field != 'english').toList();
     return ListView(
       children: [
-        const Text(
+        Text(
           'Readers see the translation in the language they chose in the app; '
           'an empty one falls back to English.',
           style: AdminText.muted,
@@ -397,12 +397,12 @@ class _DuaEditorState extends State<DuaEditor> {
                       decoration: InputDecoration(
                         labelText: l.label,
                         suffixIcon: _draft.text(l.field).trim().isEmpty
-                            ? const Tooltip(
+                            ? Tooltip(
                                 message: 'Missing: readers see English',
                                 child: Icon(Icons.error_outline_rounded,
                                     color: Palette.warning, size: 18),
                               )
-                            : const Icon(Icons.check_circle_rounded,
+                            : Icon(Icons.check_circle_rounded,
                                 color: Palette.success, size: 18),
                       ),
                     ),
@@ -435,7 +435,7 @@ class _DuaEditorState extends State<DuaEditor> {
   Widget _audioTab() {
     return ListView(
       children: [
-        const Text(
+        Text(
           'Readers hear the recitation for the age group they picked on the '
           'home screen; the translations play from their own buttons. Files '
           'upload when you save.',
@@ -505,7 +505,7 @@ class _DuaEditorState extends State<DuaEditor> {
             IconButton(
               tooltip: 'Remove this recording',
               onPressed: () => _remove(slot),
-              icon: const Icon(Icons.close_rounded, color: Palette.danger),
+              icon: Icon(Icons.close_rounded, color: Palette.danger),
             ),
         ],
       ),
@@ -522,7 +522,7 @@ class _DuaEditorState extends State<DuaEditor> {
           value: _draft.isEnabled,
           title: const Text('Shown in the app',
               style: TextStyle(fontWeight: FontWeight.w700)),
-          subtitle: const Text('Off hides it everywhere without deleting it.',
+          subtitle: Text('Off hides it everywhere without deleting it.',
               style: AdminText.muted),
           onChanged: (v) {
             setState(() => _draft.isEnabled = v);
@@ -548,8 +548,8 @@ class _DuaEditorState extends State<DuaEditor> {
           ],
         ),
         if (_showErrors && !AgeGroup.values.any(_draft.shownTo))
-          const Padding(
-            padding: EdgeInsets.only(top: Space.sm),
+          Padding(
+            padding: const EdgeInsets.only(top: Space.sm),
             child: Text('Choose at least one age group.',
                 style: TextStyle(color: Palette.danger, fontSize: 12)),
           ),
@@ -560,8 +560,8 @@ class _DuaEditorState extends State<DuaEditor> {
               style: AdminText.muted),
         ),
         if (_showErrors && _draft.subCategoryIds.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(bottom: Space.sm),
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.sm),
             child: Text('Choose at least one section.',
                 style: TextStyle(color: Palette.danger, fontSize: 12)),
           ),
@@ -588,11 +588,11 @@ class _DuaEditorState extends State<DuaEditor> {
       builder: (history) {
         final entries = history.forDoc(_draft.id).take(5).toList();
         if (!history.available) {
-          return const Text('History is not available yet.',
+          return Text('History is not available yet.',
               style: AdminText.muted);
         }
         if (entries.isEmpty) {
-          return const Text('No changes recorded since history began.',
+          return Text('No changes recorded since history began.',
               style: AdminText.muted);
         }
         return Column(
@@ -642,12 +642,12 @@ class _ProblemBanner extends StatelessWidget {
       color: Palette.danger.withValues(alpha: 0.08),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded,
+          Icon(Icons.error_outline_rounded,
               color: Palette.danger, size: 18),
           const SizedBox(width: Space.sm),
           Expanded(
             child: Text(problems.join('  '),
-                style: const TextStyle(color: Palette.danger, fontSize: 13)),
+                style: TextStyle(color: Palette.danger, fontSize: 13)),
           ),
         ],
       ),

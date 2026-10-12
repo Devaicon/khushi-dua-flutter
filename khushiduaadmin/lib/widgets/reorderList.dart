@@ -70,10 +70,10 @@ class ReorderList<T> extends StatelessWidget {
                       if (reorderable)
                         ReorderableDragStartListener(
                           index: index,
-                          child: const MouseRegion(
+                          child: MouseRegion(
                             cursor: SystemMouseCursors.grab,
                             child: Padding(
-                              padding: EdgeInsets.all(Space.sm),
+                              padding: const EdgeInsets.all(Space.sm),
                               child: Icon(Icons.drag_indicator_rounded,
                                   color: Palette.textMuted),
                             ),

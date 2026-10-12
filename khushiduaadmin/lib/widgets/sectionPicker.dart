@@ -101,7 +101,7 @@ class _SectionPickerState extends State<SectionPicker> {
                               title: Text(s.title),
                               subtitle: s.isEnabled
                                   ? null
-                                  : const Text('Hidden section',
+                                  : Text('Hidden section',
                                       style: AdminText.muted),
                               controlAffinity: ListTileControlAffinity.leading,
                             ),

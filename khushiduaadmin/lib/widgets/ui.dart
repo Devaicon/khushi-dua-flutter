@@ -104,7 +104,7 @@ class PageHeader extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Palette.brand,
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
@@ -115,7 +115,7 @@ class PageHeader extends StatelessWidget {
                       padding: const EdgeInsets.only(top: Space.xs),
                       child: Text(
                         subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: Palette.textMuted, fontSize: 14),
                       ),
                     ),
@@ -143,9 +143,9 @@ class BackButtonCircle extends StatelessWidget {
       onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
       style: IconButton.styleFrom(
         backgroundColor: Palette.card,
-        side: const BorderSide(color: Palette.line),
+        side: BorderSide(color: Palette.line),
       ),
-      icon: const Icon(Icons.arrow_back_rounded, color: Palette.brand),
+      icon: Icon(Icons.arrow_back_rounded, color: Palette.brand),
     );
   }
 }
@@ -160,7 +160,7 @@ class AdminCard extends StatelessWidget {
     this.trailing,
     this.padding = const EdgeInsets.all(Space.xl),
     this.onTap,
-    this.color = Palette.card,
+    this.color,
   });
 
   final Widget child;
@@ -169,10 +169,11 @@ class AdminCard extends StatelessWidget {
   final Widget? trailing;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Palette.card;
     final content = Padding(
       padding: padding,
       child: Column(
@@ -223,21 +224,20 @@ class AdminCard extends StatelessWidget {
 }
 
 abstract final class AdminText {
-  static const TextStyle cardTitle = TextStyle(
+  static TextStyle get cardTitle => TextStyle(
     color: Palette.text,
     fontSize: 17,
     fontWeight: FontWeight.w700,
   );
-  static const TextStyle muted =
-      TextStyle(color: Palette.textMuted, fontSize: 13, height: 1.4);
-  static const TextStyle label = TextStyle(
+  static TextStyle get muted => TextStyle(color: Palette.textMuted, fontSize: 13, height: 1.4);
+  static TextStyle get label => TextStyle(
     color: Palette.textMuted,
     fontSize: 11,
     fontWeight: FontWeight.w800,
     letterSpacing: 1.2,
   );
-  static const TextStyle body = TextStyle(color: Palette.text, fontSize: 14);
-  static const TextStyle mono = TextStyle(
+  static TextStyle get body => TextStyle(color: Palette.text, fontSize: 14);
+  static TextStyle get mono => TextStyle(
     color: Palette.textMuted,
     fontFamily: 'monospace',
     fontSize: 12,
@@ -317,7 +317,7 @@ class AdminButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, border) = switch (kind) {
-      ButtonKind.primary => (Palette.brand, Colors.white, Colors.transparent),
+      ButtonKind.primary => (Palette.brandFill, Colors.white, Colors.transparent),
       ButtonKind.secondary => (Palette.card, Palette.brand, Palette.line),
       ButtonKind.danger => (Palette.danger, Colors.white, Colors.transparent),
       ButtonKind.ghost => (Colors.transparent, Palette.brand, Colors.transparent),
@@ -421,7 +421,7 @@ class StatTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.color = Palette.brand,
+    this.color,
     this.caption,
     this.onTap,
   });
@@ -429,12 +429,13 @@ class StatTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final Color color;
+  final Color? color;
   final String? caption;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Palette.brand;
     return AdminCard(
       onTap: onTap,
       padding: const EdgeInsets.all(Space.lg + 4),
@@ -456,7 +457,7 @@ class StatTile extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Palette.text,
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -539,7 +540,7 @@ class EmptyState extends StatelessWidget {
           Container(
             width: 64,
             height: 64,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Palette.brandSoft,
               shape: BoxShape.circle,
             ),
@@ -604,9 +605,9 @@ class AdminTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final header = Container(
       padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Palette.raised,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.card)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(Radii.card)),
       ),
       child: cells(columns, [
         for (final c in columns) Text(c.label.toUpperCase(), style: AdminText.label),
@@ -700,12 +701,13 @@ class AgeDots extends StatelessWidget {
 
 /// A slim bar showing [value] (0–1).
 class ProgressBar extends StatelessWidget {
-  const ProgressBar({super.key, required this.value, this.color = Palette.brand});
+  const ProgressBar({super.key, required this.value, this.color});
   final double value;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Palette.brand;
     return ClipRRect(
       borderRadius: Radii.pillAll,
       child: LinearProgressIndicator(

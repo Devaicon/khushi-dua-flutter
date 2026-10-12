@@ -14,11 +14,11 @@ class LoginScreen extends StatelessWidget {
     return Scaffold(
       body: Container(
         // The app's sign-in gradient.
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xffEEB6A3), Color(0xffC3CCF6)],
+            colors: Palette.authGradient,
           ),
         ),
         child: GetBuilder<AuthController>(
@@ -39,7 +39,7 @@ class LoginScreen extends StatelessWidget {
                               width: 96, height: 96),
                         ),
                         const SizedBox(height: Space.xl),
-                        const Text(
+                        Text(
                           "Khushi Dua Admin",
                           style: TextStyle(
                               color: Palette.brand,
@@ -47,7 +47,7 @@ class LoginScreen extends StatelessWidget {
                               fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: Space.sm),
-                        const Text(
+                        Text(
                           "Sign in with the Google account you were invited with.",
                           textAlign: TextAlign.center,
                           style: AdminText.muted,
@@ -67,7 +67,7 @@ class LoginScreen extends StatelessWidget {
                           Text(
                             auth.error!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Palette.danger),
+                            style: TextStyle(color: Palette.danger),
                           ),
                         ],
                         if (auth.lastDenied != null) ...[

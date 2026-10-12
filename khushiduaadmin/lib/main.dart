@@ -5,6 +5,7 @@ import 'package:khushiduaadmin/controllers/initController.dart';
 import 'package:khushiduaadmin/views/auth/login.dart';
 import 'package:khushiduaadmin/views/dashboard.dart';
 import 'constants/theme.dart';
+import 'controllers/appearanceController.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -33,6 +34,10 @@ void main() async {
   }
   debugPrint("Initial route determined: $initialRoute");
 
+  // Before the first frame, so it is already in the chosen theme.
+  AppearanceController.loadSaved();
+  Get.put(AppearanceController(), permanent: true);
+
   runApp(MyApp(initialRoute: initialRoute));
 }
 
@@ -42,6 +47,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilt with the new theme when the appearance changes.
+    return GetBuilder<AppearanceController>(builder: (_) => _buildApp());
+  }
+
+  Widget _buildApp() {
     return GetMaterialApp(
       title: 'Khushi Dua Admin',
       debugShowCheckedModeBanner: false,

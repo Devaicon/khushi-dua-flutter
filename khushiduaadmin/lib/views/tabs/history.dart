@@ -194,7 +194,7 @@ class _HistoryTabState extends State<HistoryTab> {
               onPressed: () => _undo(e),
             ),
           const SizedBox(width: Space.sm),
-          const Icon(Icons.expand_more_rounded, color: Palette.textMuted),
+          Icon(Icons.expand_more_rounded, color: Palette.textMuted),
         ],
       ),
       childrenPadding:
@@ -217,7 +217,7 @@ class _HistoryTabState extends State<HistoryTab> {
         ? e.fields
         : changedFields(e.before, e.after);
     if (fields.isEmpty) {
-      return const Align(
+      return Align(
         alignment: Alignment.centerLeft,
         child: Text('No field details recorded.', style: AdminText.muted),
       );
@@ -239,7 +239,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
             ),
             _value(e.before?[f], Palette.danger),
-            const Icon(Icons.arrow_forward_rounded, size: 14, color: Palette.textMuted),
+            Icon(Icons.arrow_forward_rounded, size: 14, color: Palette.textMuted),
             _value(e.after?[f], Palette.success),
           ]),
       ],

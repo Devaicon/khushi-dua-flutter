@@ -14,7 +14,7 @@ class CustomSnackbar {
     Get.rawSnackbar(
       titleText: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           color: Palette.text,
           fontWeight: FontWeight.w700,
           fontSize: 14,
@@ -22,7 +22,7 @@ class CustomSnackbar {
       ),
       messageText: Text(
         message,
-        style: const TextStyle(color: Palette.textMuted, fontSize: 13),
+        style: TextStyle(color: Palette.textMuted, fontSize: 13),
       ),
       icon: Icon(
         isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
