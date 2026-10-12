@@ -33,6 +33,11 @@ class MLSettingsController extends GetxController {
     }
   }
 
+  /// Publishes the Practice switch straight away; the app follows it live.
+  Future<void> setPracticeEnabled(bool enabled) async {
+    await MLSettingsService().setPracticeEnabled(enabled);
+  }
+
   deleteMLSettings() async {
     if (_mlSettings != null) {
       await MLSettingsService().deleteMLSettings(_mlSettings!.id);

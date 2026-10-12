@@ -60,7 +60,7 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
             ),
           ),
           content: const Text(
-            "Are you sure you want to delete the ML Settings? This action cannot be undone.",
+            "Are you sure you want to delete the ML Settings? This action cannot be undone, and turns the Practice button back on in the app.",
             style: TextStyle(fontSize: 16, color: rWhite),
             textAlign: TextAlign.center,
           ),
@@ -173,6 +173,8 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                _buildPracticeSwitch(mlSettingsController),
+                                const Divider(color: rHint, height: 40),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -387,6 +389,43 @@ class _MLSettingsTabState extends State<MLSettingsTab> {
           );
         },
       ),
+    );
+  }
+
+  /// The app's Practice button: live, or greyed out with a "coming soon"
+  /// note. Saved as soon as it is flipped.
+  Widget _buildPracticeSwitch(MLSettingsController controller) {
+    final enabled = controller.mlSettings?.practiceEnabled ?? true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Practice Button",
+          style: TextStyle(
+            color: rWhite,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          activeColor: rGreen,
+          value: enabled,
+          title: Text(
+            enabled ? "Active in the app" : "Greyed out in the app",
+            style: const TextStyle(color: rWhite),
+          ),
+          subtitle: const Text(
+            "Off greys out Practice on every dua; tapping it tells readers "
+            "it is coming soon. Applies to every running app within seconds.",
+            style: TextStyle(color: rHint, fontSize: 12),
+          ),
+          onChanged: controller.isLoading
+              ? null
+              : (value) => controller.setPracticeEnabled(value),
+        ),
+      ],
     );
   }
 

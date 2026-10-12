@@ -111,6 +111,29 @@ class MLSettingsService {
     }
   }
 
+  /// Turns the app's Practice button on or off. Merges, so it works before
+  /// a URL has been saved and leaves the URL as it is.
+  Future<void> setPracticeEnabled(bool enabled) async {
+    try {
+      _mlSettingsController.setLoading(true);
+      await sysConfigRef.doc('MemoizationURL').set({
+        "practiceEnabled": enabled,
+        "updatedAt": DateTime.now(),
+      }, SetOptions(merge: true));
+      await getMLSettings();
+      CustomSnackbar.show(
+          "Success",
+          enabled
+              ? "Practice is on in the app"
+              : "Practice is greyed out in the app");
+    } catch (e) {
+      debugPrint("Error saving the Practice switch: $e");
+      _mlSettingsController.setLoading(false);
+      CustomSnackbar.show("Error", "Failed to save the Practice switch",
+          isSuccess: false);
+    }
+  }
+
   Future<void> deleteMLSettings(String id) async {
     try {
       _mlSettingsController.setLoading(true);
