@@ -253,6 +253,9 @@ class _NavItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: danger
                           ? Palette.danger
@@ -362,8 +365,13 @@ class _AppearanceItem extends StatelessWidget {
         child: IgnorePointer(
           child: _NavItem(
             icon: _icon(appearance.mode),
-            label:
-                'Appearance: ${AppearanceController.modes[appearance.mode]}',
+            // Short enough for one line in the sidebar; the menu has the
+            // full names.
+            label: switch (appearance.mode) {
+              'light' => 'Theme: Light',
+              'dark' => 'Theme: Dark',
+              _ => 'Theme: Auto',
+            },
             compact: compact,
             selected: false,
             onTap: () {},

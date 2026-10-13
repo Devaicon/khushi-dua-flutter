@@ -111,8 +111,12 @@ class _HistoryTabState extends State<HistoryTab> {
                       Expanded(
                         child: AdminCard(
                           padding: EdgeInsets.zero,
+                          // The list needs a bounded height to scroll in;
+                          // without it, it draws nothing.
+                          expand: true,
                           child: visible.isEmpty
-                              ? EmptyState(
+                              ? SingleChildScrollView(
+                                  child: EmptyState(
                                   icon: Icons.history_rounded,
                                   title: history.loaded
                                       ? 'No changes recorded yet'
@@ -120,6 +124,7 @@ class _HistoryTabState extends State<HistoryTab> {
                                   message: history.loaded
                                       ? 'Edits made from now on will appear here.'
                                       : null,
+                                ),
                                 )
                               : ListView.separated(
                                   itemCount: visible.length,

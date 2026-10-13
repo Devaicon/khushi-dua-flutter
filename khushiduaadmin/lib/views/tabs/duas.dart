@@ -28,13 +28,17 @@ class DuaFilter {
   AudioSlot? missing;
   bool anyAudio = false;
 
+  /// Only duas in no existing section, which readers cannot reach.
+  bool noSection = false;
+
   bool get active =>
       categoryId != null ||
       sectionId != null ||
       ageGroup != null ||
       live != null ||
       missing != null ||
-      anyAudio;
+      anyAudio ||
+      noSection;
 
   bool matches(DuaModel d, CategoryController c) {
     if (sectionId != null && !d.subCategoryIds.contains(sectionId)) return false;
@@ -47,6 +51,9 @@ class DuaFilter {
     if (live != null && d.isEnabled != live) return false;
     if (missing != null && !d.missingAudio.contains(missing)) return false;
     if (anyAudio && d.missingAudio.isEmpty) return false;
+    if (noSection && d.subCategoryIds.any((id) => c.sectionById(id) != null)) {
+      return false;
+    }
     return true;
   }
 }
@@ -81,6 +88,10 @@ class _DuasTabState extends State<DuasTab> {
 
             return AdminPage(
               scroll: false,
+              // Opened on top of the tab from the overview.
+              leading: Navigator.of(context).canPop()
+                  ? const BackButtonCircle()
+                  : null,
               title: 'Duas',
               subtitle:
                   '${formatCount(all.length)} duas · ${formatCount(live)} live · '
@@ -250,6 +261,11 @@ class _DuasTabState extends State<DuasTab> {
                 AudioSlot.values.firstWhereOrNull((s) => s.name == v);
           }),
         ),
+        if (_filter.noSection)
+          InputChip(
+            label: const Text('In no section'),
+            onDeleted: () => setState(() => _filter.noSection = false),
+          ),
         if (_filter.active)
           AdminButton.ghost(
             label: 'Clear filters',
@@ -262,7 +278,8 @@ class _DuasTabState extends State<DuasTab> {
                 ..ageGroup = null
                 ..live = null
                 ..missing = null
-                ..anyAudio = false;
+                ..anyAudio = false
+                ..noSection = false;
             }),
           ),
       ],

@@ -161,6 +161,7 @@ class AdminCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(Space.xl),
     this.onTap,
     this.color,
+    this.expand = false,
   });
 
   final Widget child;
@@ -171,6 +172,10 @@ class AdminCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? color;
 
+  /// Fills the height it is given and hands it to [child], which may then
+  /// scroll (a long list). Off, the card is as tall as its content.
+  final bool expand;
+
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? Palette.card;
@@ -178,7 +183,7 @@ class AdminCard extends StatelessWidget {
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         children: [
           if (title != null) ...[
             Row(
@@ -202,7 +207,7 @@ class AdminCard extends StatelessWidget {
             ),
             const SizedBox(height: Space.lg),
           ],
-          child,
+          if (expand) Expanded(child: child) else child,
         ],
       ),
     );
@@ -436,47 +441,58 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = this.color ?? Palette.brand;
+    // The icon sits in a tinted band the full height of the card.
     return AdminCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(Space.lg + 4),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: Radii.smAll,
+      padding: EdgeInsets.zero,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Ink(
+              width: 76,
+              color: color.withValues(alpha: 0.14),
+              child: Center(child: Icon(icon, size: 30, color: inkOf(color))),
             ),
-            child: Icon(icon, color: inkOf(color)),
-          ),
-          const SizedBox(width: Space.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: Palette.text,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(label, style: AdminText.muted),
-                if (caption != null)
-                  Text(
-                    caption!,
-                    style: TextStyle(
-                      color: inkOf(color),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Space.lg + 4, vertical: Space.lg + 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Palette.text,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-              ],
+                    Text(label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AdminText.muted),
+                    if (caption != null)
+                      Text(
+                        caption!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: inkOf(color),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
