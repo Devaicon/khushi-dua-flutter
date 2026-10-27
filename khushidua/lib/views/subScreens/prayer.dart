@@ -13,6 +13,7 @@ import '../../constants/prayerNames.dart';
 import '../../constants/theme.dart';
 import '../../controllers/prayerSettingsController.dart';
 import '../../controllers/reminderController.dart';
+import '../../helpers/hijriDate.dart';
 import '../../helpers/nextPrayer.dart';
 import '../../helpers/reminderSchedule.dart';
 import '../../models/namazModel.dart';
@@ -32,7 +33,6 @@ class PrayerScreen extends StatefulWidget {
 }
 
 class _PrayerScreenState extends State<PrayerScreen> {
-  HijriCalendar selectedHijriDate = HijriCalendar.now();
   DateTime selectedEnglishDate = DateTime.now();
 
   Coordinates coordinates = Coordinates(21.1959, 72.7933);
@@ -87,17 +87,28 @@ class _PrayerScreenState extends State<PrayerScreen> {
   }
 
   /// A new calculation or juristic method, chosen on the Prayer Times
-  /// settings screen, recalculates everything shown.
+  /// settings screen, recalculates everything shown. Any other change, such
+  /// as the Islamic date adjustment, only needs a rebuild.
   void _onSettingsChanged() {
+    if (!mounted) return;
+    setState(() {});
     final settings = Get.find<PrayerSettingsController>();
     final key = '${settings.method}/${settings.madhab}';
-    if (key == _appliedSettings || !mounted) return;
+    if (key == _appliedSettings) return;
     _appliedSettings = key;
     _calculatePrayerTimes(selectedEnglishDate);
   }
 
   bool get _browsingToday =>
       DateUtils.isSameDay(selectedEnglishDate, DateTime.now());
+
+  /// The Islamic date for the browsed day. Today's moves on at Maghrib, and
+  /// the once-a-second countdown rebuild picks that up as it happens.
+  HijriCalendar get _hijriDate => hijriDateFor(
+    selectedEnglishDate,
+    offsetDays: Get.find<PrayerSettingsController>().hijriOffset,
+    maghrib: _browsingToday ? _todayTimes?.maghribStartTime : null,
+  );
 
   void _startCountdownTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -192,6 +203,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
       _todayTimes = _timesFor(now);
       _tomorrowTimes = _timesFor(DateTime(now.year, now.month, now.day + 1));
       _yesterdayTimes = _timesFor(DateTime(now.year, now.month, now.day - 1));
+      Get.find<PrayerSettingsController>().todayMaghrib =
+          _todayTimes?.maghribStartTime;
     } catch (e) {
       debugPrint('Error calculating today\'s prayer times: $e');
       return;
@@ -276,6 +289,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
         String country = place.country ?? "";
         String isoCountryCode = place.isoCountryCode ?? "";
+        // Sets the automatic Islamic date adjustment for this country.
+        Get.find<PrayerSettingsController>().setCountryCode(isoCountryCode);
 
         // Determine timezone based on coordinates (simplified approach)
         if (isoCountryCode.isNotEmpty) {
@@ -517,6 +532,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         locationAllowed = true;
         locationName = "Lahore, Pakistan";
         timezoneName = "Asia/Karachi";
+        _assumePakistanIfUnlocated();
 
         // We'll handle this in _calculatePrayerTimes by using coordinates directly
         coordinates = Coordinates(31.5497, 74.3436);
@@ -545,6 +561,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
       locationAllowed = true;
       locationName = "Lahore, Pakistan";
       timezoneName = "Asia/Karachi";
+      _assumePakistanIfUnlocated();
       coordinates = Coordinates(31.5497, 74.3436);
       setState(() {});
       // Try to calculate with default coordinates
@@ -552,9 +569,16 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
   }
 
+  /// Without a location the times are Lahore's, so the Islamic date should
+  /// be Pakistan's too, unless an earlier launch found the real country.
+  void _assumePakistanIfUnlocated() {
+    final settings = Get.find<PrayerSettingsController>();
+    if (settings.countryCode == null) settings.setCountryCode('PK');
+  }
+
   /// Moves the browsed day by [days]. The Hijri date is derived from the
-  /// Gregorian one: stepping it by hand assumed 30-day months, so it drifted
-  /// a day at the end of every 29-day month.
+  /// Gregorian one (see [_hijriDate]): stepping it by hand assumed 30-day
+  /// months, so it drifted a day at the end of every 29-day month.
   void _shiftDate(int days) {
     final d = selectedEnglishDate;
     _showDate(DateTime(d.year, d.month, d.day + days));
@@ -563,7 +587,6 @@ class _PrayerScreenState extends State<PrayerScreen> {
   void _showDate(DateTime date) {
     setState(() {
       selectedEnglishDate = date;
-      selectedHijriDate = HijriCalendar.fromDate(date);
     });
     _calculatePrayerTimes(selectedEnglishDate, refreshToday: false);
   }
@@ -802,7 +825,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             child: Column(
               children: [
                 Text(
-                  selectedHijriDate.toFormat("dd MMMM yyyy"),
+                  _hijriDate.toFormat("dd MMMM yyyy"),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: rbluedark,

@@ -1,9 +1,13 @@
+import 'package:flutter/material.dart' show DateUtils;
 import 'package:get/get.dart';
 import 'package:prayers_times/prayers_times.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/hijriDate.dart';
+
 /// How prayer times are calculated: the calculation method and the juristic
-/// method (madhab) for Asr.
+/// method (madhab) for Asr. Also the adjustment to the Islamic date, which
+/// sits on the same settings screen.
 ///
 /// Changed on the Prayer Times settings screen, which opens from both the
 /// prayer screen and Settings; the prayer screen listens and recalculates.
@@ -11,10 +15,13 @@ class PrayerSettingsController extends GetxController {
   static const _kMethod = 'calculationMethod';
   static const _kMadhab = 'juristicMethod';
   static const _kCardStyle = 'nextPrayerCardStyle';
+  static const _kHijriOffset = 'hijriOffset';
+  static const _kCountryCode = 'lastCountryCode';
 
   static const String defaultMethod = 'karachi';
   static const String defaultMadhab = 'shafi';
   static const String defaultCardStyle = 'progress';
+  static const String autoHijriOffset = 'auto';
 
   /// Stored value → label, in the order the picker lists them. The stored
   /// values are the names the app has always saved, so existing choices
@@ -39,6 +46,17 @@ class PrayerSettingsController extends GetxController {
     'sun': 'Sun path',
   };
 
+  /// Stored value → label for the Islamic date adjustment. "auto" picks it
+  /// from the reader's country; the rest are days added to Umm al-Qura.
+  static const Map<String, String> hijriOffsets = {
+    autoHijriOffset: 'Automatic',
+    '-2': '2 days behind',
+    '-1': '1 day behind',
+    '0': 'Same as Makkah',
+    '1': '1 day ahead',
+    '2': '2 days ahead',
+  };
+
   String _method = defaultMethod;
   String get method => _method;
 
@@ -47,6 +65,31 @@ class PrayerSettingsController extends GetxController {
 
   String _cardStyle = defaultCardStyle;
   String get cardStyle => _cardStyle;
+
+  String _hijriOffsetChoice = autoHijriOffset;
+  String get hijriOffsetChoice => _hijriOffsetChoice;
+
+  /// Where the reader was last located, kept so the automatic adjustment is
+  /// right on the next launch before the location comes back.
+  String? _countryCode;
+  String? get countryCode => _countryCode;
+
+  /// Days added to the Umm al-Qura date.
+  int get hijriOffset => _hijriOffsetChoice == autoHijriOffset
+      ? defaultHijriOffset(_countryCode)
+      : int.parse(_hijriOffsetChoice);
+
+  DateTime? _todayMaghrib;
+
+  /// Today's Maghrib, reported by the prayer screen, so the settings preview
+  /// changes date at the same moment the prayer screen does. Null once the
+  /// day it was reported for has passed.
+  DateTime? get todayMaghrib =>
+      _todayMaghrib != null &&
+          DateUtils.isSameDay(_todayMaghrib, DateTime.now())
+      ? _todayMaghrib
+      : null;
+  set todayMaghrib(DateTime? value) => _todayMaghrib = value;
 
   /// Becomes true once the stored choices are read, so the prayer screen does
   /// not calculate once with the defaults and again with the real values.
@@ -68,6 +111,11 @@ class PrayerSettingsController extends GetxController {
     _cardStyle = cardStyles.containsKey(prefs.getString(_kCardStyle))
         ? prefs.getString(_kCardStyle)!
         : defaultCardStyle;
+    _hijriOffsetChoice =
+        hijriOffsets.containsKey(prefs.getString(_kHijriOffset))
+        ? prefs.getString(_kHijriOffset)!
+        : autoHijriOffset;
+    _countryCode = prefs.getString(_kCountryCode);
     _loaded = true;
     update();
   }
@@ -99,6 +147,24 @@ class PrayerSettingsController extends GetxController {
     update();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kCardStyle, value);
+  }
+
+  Future<void> setHijriOffset(String value) async {
+    if (!hijriOffsets.containsKey(value) || value == _hijriOffsetChoice) return;
+    _hijriOffsetChoice = value;
+    update();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kHijriOffset, value);
+  }
+
+  /// Records the ISO country code of the reader's location.
+  Future<void> setCountryCode(String value) async {
+    final code = value.toUpperCase();
+    if (code.isEmpty || code == _countryCode) return;
+    _countryCode = code;
+    update();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCountryCode, code);
   }
 
   /// Fresh parameters for the current choices. A new object every call: the

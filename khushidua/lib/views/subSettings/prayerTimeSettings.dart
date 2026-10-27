@@ -4,11 +4,12 @@ import 'package:get/get.dart';
 import '../../constants/colors.dart';
 import '../../constants/theme.dart';
 import '../../controllers/prayerSettingsController.dart';
+import '../../helpers/hijriDate.dart';
 import '../../widgets/sunPathView.dart';
 
-/// The calculation method and juristic method for prayer times, as
-/// dropdowns in the style of the language picker. Opens from the prayer
-/// screen and from Settings.
+/// The calculation method and juristic method for prayer times, and the
+/// Islamic date adjustment, as dropdowns in the style of the language
+/// picker. Opens from the prayer screen and from Settings.
 class PrayerTimeSettings extends StatelessWidget {
   const PrayerTimeSettings({super.key});
 
@@ -41,6 +42,47 @@ class PrayerTimeSettings extends StatelessWidget {
                   selected: settings.madhab,
                   options: PrayerSettingsController.madhabs,
                   onChanged: settings.setMadhab,
+                ),
+              ),
+              const SizedBox(height: AppSpace.lg),
+              _SettingCard(
+                icon: Icons.nightlight_round,
+                title: "Islamic Date".tr,
+                subtitle: "Adjust it if your local moon sighting differs".tr,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Dropdown(
+                      selected: settings.hijriOffsetChoice,
+                      options: PrayerSettingsController.hijriOffsets,
+                      onChanged: settings.setHijriOffset,
+                    ),
+                    const SizedBox(height: AppSpace.md),
+                    Text(
+                      "Today: @date".trParams({
+                        'date': hijriDateFor(
+                          DateTime.now(),
+                          offsetDays: settings.hijriOffset,
+                          maghrib: settings.todayMaghrib,
+                        ).toFormat("dd MMMM yyyy"),
+                      }),
+                      style: TextStyle(
+                        color: rbluedark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpace.xs),
+                    Text(
+                      "Automatic follows your country: a day behind Makkah in Pakistan, India and Bangladesh, the same as Makkah elsewhere. The date changes at Maghrib."
+                          .tr,
+                      style: TextStyle(
+                        color: AppText.onPageMuted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpace.lg),
