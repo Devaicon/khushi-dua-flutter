@@ -14,6 +14,7 @@ import '../../models/audioSlot.dart';
 import '../../models/duaModel.dart';
 import '../../services/duaService.dart';
 import '../../services/storageService.dart';
+import '../../widgets/audioDownloadButton.dart';
 import '../../widgets/audioPlayButton.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/sectionPicker.dart';
@@ -44,6 +45,7 @@ class _DuaEditorState extends State<DuaEditor> {
   final Map<AudioSlot, html.File> _files = {};
   bool _dirty = false;
   bool _saving = false;
+  bool _downloading = false;
   String _status = 'Saving…';
   bool _showErrors = false;
 
@@ -432,7 +434,17 @@ class _DuaEditorState extends State<DuaEditor> {
     _touch();
   }
 
+  Future<void> _downloadAll() async {
+    setState(() => _downloading = true);
+    try {
+      await downloadAllRecordings(_draft);
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
   Widget _audioTab() {
+    final saved = AudioSlot.values.where((s) => _draft.audio(s).isNotEmpty);
     return ListView(
       children: [
         Text(
@@ -441,6 +453,23 @@ class _DuaEditorState extends State<DuaEditor> {
           'upload when you save.',
           style: AdminText.muted,
         ),
+        if (saved.isNotEmpty) ...[
+          const SizedBox(height: Space.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AdminButton.secondary(
+              label: saved.length == 1
+                  ? 'Download the recording'
+                  : 'Download all ${saved.length} recordings',
+              icon: Icons.download_rounded,
+              dense: true,
+              busy: _downloading,
+              tooltip: 'Saved as <dua id>_<recording>.mp3, the names bulk '
+                  'upload reads',
+              onPressed: _downloading ? null : _downloadAll,
+            ),
+          ),
+        ],
         const SizedBox(height: Space.lg),
         const FieldLabel('Recitation by age group'),
         for (final slot in AudioSlot.values.where((s) => s.isRecitation))
@@ -495,6 +524,11 @@ class _DuaEditorState extends State<DuaEditor> {
               ],
             ),
           ),
+          if (url.isNotEmpty)
+            DownloadIconButton(
+              tooltip: 'Download the saved ${slot.label}',
+              onDownload: () => downloadRecording(_draft.id, slot, url),
+            ),
           AdminButton.secondary(
             label: missing ? 'Upload' : 'Replace',
             icon: Icons.upload_rounded,

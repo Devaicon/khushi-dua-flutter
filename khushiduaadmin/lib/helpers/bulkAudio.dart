@@ -89,3 +89,18 @@ List<AudioFileMatch> matchAudioFiles(
       }(),
   ];
 }
+
+/// The name a downloaded recording is saved under: the same
+/// `<duaId>_<slot>.<ext>` form bulk upload reads, so a downloaded file can go
+/// back up unchanged. [contentType] picks the extension; Storage objects are
+/// named without one.
+String audioDownloadName(String duaId, AudioSlot slot, String contentType) {
+  final ext = switch (contentType.split(';').first.trim().toLowerCase()) {
+    'audio/mp4' || 'audio/x-m4a' || 'audio/m4a' => 'm4a',
+    'audio/wav' || 'audio/x-wav' || 'audio/wave' => 'wav',
+    'audio/aac' => 'aac',
+    'audio/ogg' => 'ogg',
+    _ => 'mp3',
+  };
+  return '${duaId}_${slot.name}.$ext';
+}

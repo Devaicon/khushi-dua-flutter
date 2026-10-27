@@ -43,7 +43,7 @@ The Practice feature gives automated feedback that may not always be accurate. I
 ## 8. Membership and donations
 
 - The App is free to use and shows no advertising.
-- Membership unlocks all sections. Membership is granted by us at our discretion and is not sold in the App. We may grant, change or withdraw membership at any time.
+- Every section of the App is open to all users. Membership is granted by us at our discretion and is not sold in the App. We may grant, change or withdraw membership at any time.
 - Donations are voluntary, are made to LearningSouls on its own website, and do not buy membership or any feature in the App.
 - We may change which features are free and which need membership.
 

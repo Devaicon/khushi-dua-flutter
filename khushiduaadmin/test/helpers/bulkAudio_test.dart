@@ -33,4 +33,15 @@ void main() {
         ['${id}_english.mp3', '${id}_en.mp3', '${id}_urdu.mp3'], exists);
     expect(matches.map((m) => m.ok), [true, false, true]);
   });
+
+  test('names a download so bulk upload reads it back', () {
+    for (final slot in AudioSlot.values) {
+      final name = audioDownloadName(id, slot, 'audio/mpeg');
+      expect(name, '${id}_${slot.name}.mp3');
+      expect(matchAudioFile(name, exists).slot, slot);
+    }
+    expect(audioDownloadName(id, AudioSlot.urdu, 'audio/x-m4a'),
+        '${id}_urdu.m4a');
+    expect(audioDownloadName(id, AudioSlot.urdu, ''), '${id}_urdu.mp3');
+  });
 }

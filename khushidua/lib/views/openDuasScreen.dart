@@ -281,7 +281,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
       prefsKey: loggedIn ? kListenedTipSeenKey : '$kListenedTipSeenKey.guest',
       color: widget.color,
       message: loggedIn
-          ? "Play a dua's audio all the way to the end to mark it as listened. Listening to duas unlocks more sections."
+          ? "Play a dua's audio all the way to the end to mark it as listened and track your progress."
                 .tr
           : "Log in to keep track of the duas you have listened to.".tr,
     ).paddingSymmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm);
@@ -1950,8 +1950,9 @@ class _DuaTileState extends State<DuaTile> {
     bool hasBenefits = widget.dua.hasBenefits();
 
     // The row is always rendered. With a benefit it is live and expandable;
-    // without one it stays greyed out and inert, so the reader can see at a
-    // glance whether this dua has a benefit recorded.
+    // without one it stays greyed out and inert. Missing benefits are still
+    // being written, so it says "Coming soon" rather than "None", which would
+    // read as the dua having no virtues.
     final Color labelColor = hasBenefits ? rtext : Colors.grey;
     final Color iconColor = hasBenefits ? accentColor : Colors.grey;
 
@@ -1991,7 +1992,7 @@ class _DuaTileState extends State<DuaTile> {
                   )
                 else
                   Text(
-                    "None".tr,
+                    "Coming soon".tr,
                     style: const TextStyle(color: Colors.grey, fontSize: 11),
                   ),
               ],

@@ -4,23 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/colors.dart';
 import '../constants/theme.dart';
-import '../helpers/sectionProgress.dart';
 
-/// Explains what "listened" means and how locked sections open, for readers
-/// who have never seen the rule.
+/// Explains what "listened" means, for readers who have never seen the rule.
 ///
-/// The rule itself lives in `AudioController` (a dua is listened once its
-/// audio plays to the end while logged in) and `helpers/sectionProgress.dart`.
+/// The rule itself lives in `AudioController`: a dua is listened once its
+/// audio plays to the end while logged in. Listening only tracks progress;
+/// every section is open to everyone.
 
-const String kSectionUnlockTipSeenKey = 'tipSeen.sectionUnlock';
 const String kListenedTipSeenKey = 'tipSeen.listened';
 
-String sectionUnlockSummary(SectionProgress progress) =>
-    "Listen to every dua in the first @count sections to unlock the rest."
-        .trParams({'count': '${progress.freeSectionCount}'});
-
-/// Bottom sheet shown from the info button or when a locked section is tapped.
-void showSectionUnlockHelp(SectionProgress progress) {
+/// Bottom sheet shown from the info button on a category.
+void showListenedHelp() {
   Get.bottomSheet(
     SafeArea(
       child: Container(
@@ -35,11 +29,11 @@ void showSectionUnlockHelp(SectionProgress progress) {
           children: [
             Row(
               children: [
-                Icon(Icons.lock_open_rounded, color: rbluedark),
+                Icon(Icons.headphones_rounded, color: rbluedark),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "How to unlock sections".tr,
+                    "How listening works".tr,
                     style: TextStyle(
                       color: rbluedark,
                       fontSize: 18,
@@ -65,31 +59,12 @@ void showSectionUnlockHelp(SectionProgress progress) {
               text: "Listened duas show a Listened mark.".tr,
             ),
             _HelpLine(
-              icon: Icons.lock_rounded,
-              text: sectionUnlockSummary(progress),
+              icon: Icons.lock_open_rounded,
+              text:
+                  "Every dua is open to everyone. Listening only tracks your progress."
+                      .tr,
             ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress.freeSectionCount == 0
-                    ? 1
-                    : progress.completedFreeSections /
-                          progress.freeSectionCount,
-                minHeight: 8,
-                backgroundColor: rhint.withOpacity(0.2),
-                color: rbluedark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "@done of @total sections complete".trParams({
-                'done': '${progress.completedFreeSections}',
-                'total': '${progress.freeSectionCount}',
-              }),
-              style: TextStyle(color: rtext, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(

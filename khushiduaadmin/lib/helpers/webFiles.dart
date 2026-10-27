@@ -5,7 +5,29 @@ import 'dart:typed_data';
 
 /// Saves [content] as a file through the browser's normal download flow.
 void downloadTextFile(String filename, String content) {
-  final blob = html.Blob([utf8.encode(content)], 'text/csv;charset=utf-8');
+  _saveBlob(
+    html.Blob([utf8.encode(content)], 'text/csv;charset=utf-8'),
+    filename,
+  );
+}
+
+/// Saves the file at [url] through the browser's download flow, named by
+/// [nameFor] from its content type.
+///
+/// Browsers ignore the `download` attribute on links to another origin (a
+/// Storage URL just opens in a tab), so the file is fetched first and saved
+/// from a local copy. Throws when the fetch fails, e.g. if the bucket's CORS
+/// policy does not allow this origin.
+Future<void> downloadUrl(
+  String url,
+  String Function(String contentType) nameFor,
+) async {
+  final request = await html.HttpRequest.request(url, responseType: 'blob');
+  final blob = request.response as html.Blob;
+  _saveBlob(blob, nameFor(blob.type));
+}
+
+void _saveBlob(html.Blob blob, String filename) {
   final url = html.Url.createObjectUrlFromBlob(blob);
   final anchor = html.AnchorElement(href: url)
     ..download = filename

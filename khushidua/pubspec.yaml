@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.6.0+23
+version: 1.6.0+24
 
 environment:
   sdk: ^3.8.1
@@ -67,6 +67,11 @@ flutter:
     - assets/legal/
 
   fonts:
+    # Noto Naskh Arabic (SIL OFL, see assets/fonts/OFL.txt). The old
+    # Noor-e-Hidayat font had no ي, ة, ه or Arabic digits, so those letters
+    # fell back to the system font and broke the words around them.
     - family: arabic
       fonts:
-        - asset: assets/fonts/noorehidaya2.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
+          weight: 700

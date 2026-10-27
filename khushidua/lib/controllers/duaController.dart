@@ -99,8 +99,8 @@ class DuaController extends GetxController {
         .where(
           (dua) =>
               dua.subCategoryIds.contains(_lastSubCategoryId) &&
-              // Shared with the section unlock check, so a dua counts towards
-              // unlocking exactly when the reader can see it.
+              // Shared with the section lists, so the counts there match
+              // what the reader can open.
               isDuaShownFor(dua, ageGroup),
         )
         .toList();

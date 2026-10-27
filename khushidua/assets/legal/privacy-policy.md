@@ -24,7 +24,7 @@ You can use most of the App as a guest without giving us any personal informatio
 
 If you are signed in, we store:
 
-- **Listening progress**: which duas you have listened to all the way through. We use it to unlock sections and show your progress.
+- **Listening progress**: which duas you have listened to all the way through. We use it to show your progress.
 - **Points** earned in the App.
 - **Membership status**, and whether an account has been restricted for misuse.
 
@@ -50,7 +50,7 @@ We do **not** sell your personal information.
 We use the information above to:
 
 - create and manage your account, and let you sign in;
-- save your listening progress and points, and unlock sections;
+- save your listening progress and points;
 - calculate prayer times and the Qibla direction;
 - give feedback on your recitation when you use Practice;
 - send the prayer and Azkar reminders you switch on, and announcements if you allow notifications;

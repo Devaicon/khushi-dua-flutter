@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
 import 'package:khushidua/controllers/duaController.dart';
-import 'package:khushidua/controllers/themeController.dart';
 import 'package:khushidua/controllers/userController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../constants/colors.dart';
 import '../../constants/theme.dart';
-import '../../helpers/sectionProgress.dart';
 import '../../models/categoryModel.dart';
 import '../../models/duaModel.dart';
 import '../../models/subCategoryModel.dart';
@@ -48,7 +46,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       backgroundColor: AppSurface.page,
       // Listening to a dua writes readDuas on the user document, which the
       // live snapshot pushes into UserController; rebuilding on it is what
-      // makes newly unlocked sections appear without leaving the screen.
+      // updates the listened counts without leaving the screen.
       body: GetBuilder<UserController>(
         builder: (userController) => GetBuilder<DuaController>(
           builder: (duaController) => GetBuilder<CategoryController>(
@@ -58,18 +56,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               final subCategories = categoryController.filteredSubCategories
                   .where((s) => s.categoryId == widget.categoryModel.id)
                   .toList();
-              final ageGroup = Get.find<ThemeController>().selectedAgeGroup;
               final userModel = userController.userModel;
               final listened = (userModel?.readDuas ?? const <String>[])
                   .toSet();
-              final progress = SectionProgress.compute(
-                sectionIds: [for (final sub in subCategories) sub.id],
-                allDuas: duaController.allDuas,
-                listenedDuaIds: listened,
-                ageGroup: ageGroup,
-                // Guests and members see every section.
-                restricted: userModel != null && !userModel.isMember,
-              );
 
               final stats = [
                 for (final sub in subCategories)
@@ -80,12 +69,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildHeader(userController.selectedLanguage, progress),
+                  _buildHeader(
+                    userController.selectedLanguage,
+                    loggedIn: userModel != null,
+                  ),
                   SliverToBoxAdapter(
                     child: _buildSummary(
                       sectionCount: subCategories.length,
                       duaCount: totalDuas,
-                      progress: progress,
                     ),
                   ),
                   if (subCategories.isEmpty)
@@ -108,9 +99,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                               number: index + 1,
                               stats: stats[index],
                               showListened: userModel != null,
-                              isUnlocked: progress.isUnlocked(index),
-                              onLockedTap: () =>
-                                  showSectionUnlockHelp(progress),
                             ),
                           );
                         }, childCount: subCategories.length),
@@ -127,7 +115,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   /// A tinted header with the category's artwork that collapses into a plain
   /// title bar on scroll.
-  Widget _buildHeader(String language, SectionProgress progress) {
+  Widget _buildHeader(String language, {required bool loggedIn}) {
     final name = widget.categoryModel.getName(language);
     return SliverAppBar(
       pinned: true,
@@ -142,11 +130,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         onPressed: () => Get.back(),
       ),
       actions: [
-        if (progress.restricted)
+        // Listening is only tracked while logged in.
+        if (loggedIn)
           IconButton(
-            tooltip: "How to unlock sections".tr,
+            tooltip: "How listening works".tr,
             icon: Icon(Icons.info_outline_rounded, color: rbluedark),
-            onPressed: () => showSectionUnlockHelp(progress),
+            onPressed: showListenedHelp,
           ),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -218,13 +207,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
-  /// Counts under the header, and while sections are still locked, how far
-  /// the reader is from opening them.
-  Widget _buildSummary({
-    required int sectionCount,
-    required int duaCount,
-    required SectionProgress progress,
-  }) {
+  /// Counts under the header.
+  Widget _buildSummary({required int sectionCount, required int duaCount}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.lg,
@@ -253,10 +237,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               ),
             ],
           ),
-          if (progress.restricted && !progress.allUnlocked) ...[
-            const SizedBox(height: AppSpace.md),
-            _UnlockCard(color: widget.color, progress: progress),
-          ],
         ],
       ),
     );
@@ -341,88 +321,8 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-/// Progress towards unlocking the rest of the category, always visible while
-/// something is locked rather than a tip that disappears once dismissed.
-class _UnlockCard extends StatelessWidget {
-  const _UnlockCard({required this.color, required this.progress});
-
-  final Color color;
-  final SectionProgress progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final fraction = progress.freeSectionCount == 0
-        ? 1.0
-        : progress.completedFreeSections / progress.freeSectionCount;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpace.lg),
-      decoration: plainCardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.lock_open_rounded, size: 18, color: color.ink),
-              const SizedBox(width: AppSpace.sm),
-              Expanded(
-                child: Text(
-                  "Unlock more sections".tr,
-                  style: TextStyle(
-                    color: rtext,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => showSectionUnlockHelp(progress),
-                child: Text(
-                  "How it works".tr,
-                  style: TextStyle(
-                    color: color.ink,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpace.sm),
-          Text(
-            sectionUnlockSummary(progress),
-            style: TextStyle(
-              color: rtext.withValues(alpha: 0.75),
-              fontSize: 13,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: AppSpace.md),
-          ClipRRect(
-            borderRadius: AppRadius.pillAll,
-            child: LinearProgressIndicator(
-              value: fraction,
-              minHeight: 6,
-              backgroundColor: color.withValues(alpha: 0.2),
-              color: color.ink,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            "@done of @total sections complete".trParams({
-              'done': '${progress.completedFreeSections}',
-              'total': '${progress.freeSectionCount}',
-            }),
-            style: TextStyle(color: AppText.onPageMuted, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// One section: its number, name, dua count and listening progress.
-/// Complete sections swap the number for a check; locked ones are muted.
+/// Complete sections swap the number for a check.
 class _SectionTile extends StatelessWidget {
   const _SectionTile({
     required this.color,
@@ -430,8 +330,6 @@ class _SectionTile extends StatelessWidget {
     required this.number,
     required this.stats,
     required this.showListened,
-    required this.isUnlocked,
-    required this.onLockedTap,
   });
 
   final Color color;
@@ -439,8 +337,6 @@ class _SectionTile extends StatelessWidget {
   final int number;
   final _SectionStats stats;
   final bool showListened;
-  final bool isUnlocked;
-  final VoidCallback onLockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -455,21 +351,17 @@ class _SectionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: AppRadius.cardAll,
-          onTap: isUnlocked
-              ? () => Get.to(() => OpenDuasScreen(subCategory, color: color))
-              : onLockedTap,
+          onTap: () => Get.to(() => OpenDuasScreen(subCategory, color: color)),
           child: Ink(
             padding: const EdgeInsets.all(AppSpace.md + 2),
             decoration: BoxDecoration(
-              color: isUnlocked ? AppSurface.card : AppSurface.raised,
+              color: AppSurface.card,
               borderRadius: AppRadius.cardAll,
               border: Border.all(
-                color: isUnlocked
-                    ? color.withValues(alpha: 0.45)
-                    : Colors.transparent,
+                color: color.withValues(alpha: 0.45),
                 width: 1.2,
               ),
-              boxShadow: isUnlocked ? AppElevation.card : null,
+              boxShadow: AppElevation.card,
             ),
             child: Row(
               children: [
@@ -484,7 +376,7 @@ class _SectionTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isUnlocked ? rtext : AppText.onPageMuted,
+                          color: rtext,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           height: 1.25,
@@ -498,7 +390,7 @@ class _SectionTile extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      if (isUnlocked && showListened && stats.total > 0) ...[
+                      if (showListened && stats.total > 0) ...[
                         const SizedBox(height: AppSpace.sm),
                         ClipRRect(
                           borderRadius: AppRadius.pillAll,
@@ -514,11 +406,7 @@ class _SectionTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpace.sm),
-                Icon(
-                  isUnlocked ? Icons.chevron_right_rounded : Icons.lock_rounded,
-                  color: isUnlocked ? ink : AppText.onPageMuted,
-                  size: isUnlocked ? 24 : 18,
-                ),
+                Icon(Icons.chevron_right_rounded, color: ink, size: 24),
               ],
             ),
           ),
@@ -534,17 +422,13 @@ class _SectionTile extends StatelessWidget {
   }
 
   Widget _buildLeading(Color ink) {
-    final done = isUnlocked && stats.isComplete;
+    final done = stats.isComplete;
     return Container(
       width: 40,
       height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: done
-            ? ink
-            : isUnlocked
-            ? color.withValues(alpha: 0.22)
-            : Colors.black.withValues(alpha: 0.05),
+        color: done ? ink : color.withValues(alpha: 0.22),
         shape: BoxShape.circle,
       ),
       child: done
@@ -552,7 +436,7 @@ class _SectionTile extends StatelessWidget {
           : Text(
               '$number',
               style: TextStyle(
-                color: isUnlocked ? ink : AppText.onPageMuted,
+                color: ink,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),

@@ -11,6 +11,7 @@ import '../../models/duaModel.dart';
 import '../../search/adminSearch.dart';
 import '../../widgets/adminSearchField.dart';
 import '../../widgets/audioBadges.dart';
+import '../../widgets/audioDownloadButton.dart';
 import '../../widgets/audioPlayButton.dart';
 import '../../widgets/ui.dart';
 import '../duas/duaEditor.dart';
@@ -130,7 +131,7 @@ class _DuasTabState extends State<DuasTab> {
                         TableCol('Ages', width: 64),
                         TableCol('Recordings', width: 236),
                         TableCol('Status', width: 96),
-                        TableCol('', width: 88),
+                        TableCol('', width: 128),
                       ],
                       rowCount: filtered.length,
                       onRowTap: (i) =>
@@ -203,6 +204,12 @@ class _DuasTabState extends State<DuasTab> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           AudioPlayButton(url: d.grownUpsAudio, tooltip: 'Play Grown-ups'),
+          DownloadIconButton(
+            tooltip: 'Download its recordings',
+            onDownload: AudioSlot.values.any(d.hasAudio)
+                ? () => downloadAllRecordings(d)
+                : null,
+          ),
           IconButton(
             tooltip: 'Edit',
             onPressed: () => pushPage(context, DuaEditor(dua: d)),
