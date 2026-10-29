@@ -38,6 +38,7 @@ dependencies:
   get:
   intl:
   http:
+  flutter_svg:
 
   #firebase
   firebase_core:

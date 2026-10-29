@@ -31,6 +31,11 @@ abstract final class StorageService {
   }
 }
 
+/// Whether [file] is an SVG. Browsers usually report `image/svg+xml`, but
+/// some leave the type empty, so the name is checked too.
+bool isSvgFile(html.File file) =>
+    file.type == 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+
 /// Opens the browser's file picker. Resolves with the files chosen, or an
 /// empty list when cancelled.
 Future<List<html.File>> pickFiles({

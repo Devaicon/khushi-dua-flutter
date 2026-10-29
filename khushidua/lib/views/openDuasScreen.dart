@@ -29,6 +29,7 @@ import '../models/subCategoryModel.dart';
 import '../widgets/listenedHelp.dart';
 import '../widgets/skeleton.dart';
 import 'imageScreen.dart';
+import '../widgets/networkPicture.dart';
 
 /// "1 dua" / "5 duas", translated.
 String duaCountLabel(int count) =>
@@ -235,14 +236,12 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                 // and the expand badge stay behind on the card.
                 Hero(
                   tag: 'section_image_${_section.id}',
-                  child: Image.network(
+                  child: NetworkPicture(
                     _section.image,
                     fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) =>
-                        progress == null
-                        ? child
-                        : Skeleton(child: const SkeletonBox(radius: 0)),
-                    errorBuilder: (context, error, stackTrace) => Icon(
+                    loading: (context) =>
+                        Skeleton(child: const SkeletonBox(radius: 0)),
+                    fallback: (context) => Icon(
                       Icons.image_not_supported_rounded,
                       color: widget.color.ink.withValues(alpha: 0.5),
                       size: 40,

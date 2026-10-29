@@ -10,10 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/colors.dart';
+import '../../constants/firebaseRef.dart';
 import '../../constants/theme.dart';
 import '../../controllers/localization.dart';
 import '../../controllers/reminderController.dart';
 import '../../controllers/userController.dart';
+import '../../models/storeLinks.dart';
 import '../auth/signupScreen.dart';
 import '../legalScreen.dart';
 import 'notifications.dart';
@@ -139,31 +141,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       debugPrint("📤 Settings: Share App button pressed");
 
-      // For iOS, use a placeholder until app is published on App Store
-      String appUrl;
-      String shareMessage;
-
-      if (Platform.isIOS) {
-        // Replace with actual App Store link when published
-        appUrl = 'https://apps.apple.com/app/khushi-dua';
-        shareMessage =
-            'Check out Khushi Dua - Islamic Learning App\n\n'
-            '📿 Read beautiful Islamic Duas\n'
-            '🕋 Find Qibla direction\n'
-            '⏰ Prayer times\n\n'
-            'Coming soon on App Store!\n'
-            '$appUrl';
-      } else {
-        appUrl =
-            'https://play.google.com/store/apps/details?id=com.nauman7888.khushiiduaapp';
-        shareMessage =
-            'Check out Khushi Dua - Islamic Learning App\n\n'
-            '📿 Read beautiful Islamic Duas\n'
-            '🕋 Find Qibla direction\n'
-            '⏰ Prayer times\n\n'
-            'Download now:\n'
-            '$appUrl';
+      // Links come from the admin panel's App Controls tab. The offline
+      // cache answers instantly; a phone that has never seen the document
+      // (or is slow to reach Firestore) shares the built-in links.
+      StoreLinks links = const StoreLinks();
+      try {
+        final snap = await sysConfigRef
+            .doc(StoreLinks.docId)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        links = StoreLinks.fromMap(snap.data());
+      } catch (e) {
+        debugPrint("📤 Store links unavailable, using defaults: $e");
       }
+      final appUrl = Platform.isIOS ? links.appStore : links.playStore;
+      final shareMessage =
+          'Check out Khushi Dua - Islamic Learning App\n\n'
+          '📿 Read beautiful Islamic Duas\n'
+          '🕋 Find Qibla direction\n'
+          '⏰ Prayer times\n\n'
+          'Download now:\n'
+          '$appUrl';
 
       debugPrint("📤 Attempting to share app...");
 

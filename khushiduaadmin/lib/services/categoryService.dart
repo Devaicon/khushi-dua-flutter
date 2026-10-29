@@ -64,8 +64,9 @@ class CategoryService {
     }
     final before = isNew ? null : (await ref.doc(item.id).get()).data();
     if (image != null) {
-      item.imageUrl =
-          await StorageService.upload(image, '${item.id}/$imageName');
+      // SVGs keep a .svg name: the app picks its SVG renderer from the URL.
+      final name = isSvgFile(image) ? '$imageName.svg' : imageName;
+      item.imageUrl = await StorageService.upload(image, '${item.id}/$name');
     }
     item.updatedAt = DateTime.now();
     final after = item.toMap();

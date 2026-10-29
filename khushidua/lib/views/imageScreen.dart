@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/models/subCategoryModel.dart';
+import '../widgets/networkPicture.dart';
 
 /// A section's illustration, full screen. Pinch or double-tap to zoom.
 /// Opened from the image at the top of the dua list.
@@ -66,18 +67,15 @@ class _ImageScreenState extends State<ImageScreen> {
                   child: Hero(
                     tag: 'section_image_${widget.subCategoryModel.id}',
                     child: SizedBox.expand(
-                      child: Image.network(
+                      child: NetworkPicture(
                         widget.subCategoryModel.image,
                         fit: BoxFit.contain,
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                            ? child
-                            : const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              ),
-                        errorBuilder: (context, error, stackTrace) =>
+                        loading: (context) => const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        ),
+                        fallback: (context) =>
                             const Center(
                               child: Icon(
                                 Icons.image_not_supported_rounded,

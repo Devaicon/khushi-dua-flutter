@@ -15,6 +15,7 @@ import '../../services/duaService.dart';
 import '../../services/storageService.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/ui.dart';
+import '../../widgets/networkPicture.dart';
 
 /// Creates or edits a category or a section (subcategory): its name in every
 /// language, image, age groups and visibility.
@@ -92,7 +93,7 @@ class _ItemEditorState extends State<ItemEditor> {
   void _touch() => setState(() => _dirty = true);
 
   Future<void> _pickImage() async {
-    final files = await pickFiles(accept: 'image/*');
+    final files = await pickFiles(accept: 'image/*,.svg');
     if (files.isEmpty) return;
     setState(() {
       _image = files.first;
@@ -291,11 +292,12 @@ class _ItemEditorState extends State<ItemEditor> {
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: _imagePreview != null
-                                    ? Image.network(_imagePreview!, fit: BoxFit.contain)
+                                    ? NetworkPicture(_imagePreview!,
+                                        svg: isSvgFile(_image!))
                                     : (_draft.imageUrl.isEmpty
                                         ? Icon(Icons.image_outlined,
                                             color: Palette.textMuted, size: 48)
-                                        : Image.network(_draft.imageUrl, fit: BoxFit.contain)),
+                                        : NetworkPicture(_draft.imageUrl)),
                               ),
                               const SizedBox(height: Space.md),
                               Row(

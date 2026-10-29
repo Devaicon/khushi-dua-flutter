@@ -5,12 +5,14 @@ import '../../constants/theme.dart';
 import '../../controllers/contentController.dart';
 import '../../controllers/donationController.dart';
 import '../../controllers/mlSettingsController.dart';
+import '../../controllers/storeLinksController.dart';
 import '../../models/donationSettings.dart';
+import '../../models/storeLinks.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/ui.dart';
 
 /// Switches that change the app without a release: content refresh, the
-/// Practice button, and donation prompts. Replaces the separate ML Settings
+/// Practice button, donation prompts and the Share App store links. Replaces the separate ML Settings
 /// and Donations tabs.
 class AppControlsTab extends StatefulWidget {
   const AppControlsTab({super.key});
@@ -29,18 +31,25 @@ class _AppControlsTabState extends State<AppControlsTab> {
     for (final key in DonationSettings.placements.keys) key: true,
   };
 
+  final TextEditingController _playStore = TextEditingController();
+  final TextEditingController _appStore = TextEditingController();
+  bool _linksSeeded = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.find<MLSettingsController>().getMLSettings();
       Get.find<DonationController>().load();
+      Get.find<StoreLinksController>().load();
     });
   }
 
   @override
   void dispose() {
     _url.dispose();
+    _playStore.dispose();
+    _appStore.dispose();
     super.dispose();
   }
 
@@ -59,6 +68,8 @@ class _AppControlsTabState extends State<AppControlsTab> {
             _practiceCard(),
             const SizedBox(height: Space.lg),
             _donationsCard(),
+            const SizedBox(height: Space.lg),
+            _storeLinksCard(),
           ],
         ),
       ),
@@ -178,7 +189,9 @@ class _AppControlsTabState extends State<AppControlsTab> {
                         ? null
                         : () {
                             final uri = Uri.tryParse(_url.text.trim());
-                            if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+                            if (uri == null ||
+                                !uri.hasScheme ||
+                                uri.host.isEmpty) {
                               CustomSnackbar.show('Check the address',
                                   'Enter a full URL, e.g. https://example.com/transcribe/',
                                   isSuccess: false);
@@ -276,9 +289,84 @@ class _AppControlsTabState extends State<AppControlsTab> {
                   child: _Note(
                     icon: Icons.info_outline_rounded,
                     tone: Tone.info,
-                    text: 'Not published yet. Phones change when you press Publish.',
+                    text:
+                        'Not published yet. Phones change when you press Publish.',
                   ),
                 ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---- Store links -----------------------------------------------------------
+
+  Widget _storeLinksCard() {
+    return GetBuilder<StoreLinksController>(
+      builder: (store) {
+        if (store.loaded && !_linksSeeded) {
+          _linksSeeded = true;
+          _playStore.text = store.links.playStore;
+          _appStore.text = store.links.appStore;
+        }
+        final draft = StoreLinks.fromMap({
+          'playStore': _playStore.text,
+          'appStore': _appStore.text,
+        });
+        final dirty = store.loaded &&
+            (draft.playStore != store.links.playStore ||
+                draft.appStore != store.links.appStore);
+
+        return AdminCard(
+          title: 'Share App links',
+          subtitle: 'The store page in the message readers send from '
+              'Settings → Share App. Android phones share the Play Store '
+              'link, iPhones the App Store link.',
+          trailing: AdminButton(
+            label: 'Publish',
+            icon: Icons.check_rounded,
+            busy: store.loading,
+            onPressed: dirty
+                ? () {
+                    for (final link in [draft.playStore, draft.appStore]) {
+                      final uri = Uri.tryParse(link);
+                      if (uri == null ||
+                          uri.scheme != 'https' ||
+                          uri.host.isEmpty) {
+                        CustomSnackbar.show('Check the address',
+                            'Enter a full https link, e.g. $link',
+                            isSuccess: false);
+                        return;
+                      }
+                    }
+                    store.save(draft);
+                  }
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const FieldLabel('Google Play'),
+              TextField(
+                controller: _playStore,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  hintText: StoreLinks.defaultPlayStore,
+                ),
+              ),
+              const SizedBox(height: Space.lg),
+              const FieldLabel('App Store'),
+              TextField(
+                controller: _appStore,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  hintText: StoreLinks.defaultAppStore,
+                ),
+              ),
+              const SizedBox(height: Space.sm),
+              Text('Leave a field empty to use the link shown in it.',
+                  style: AdminText.muted),
             ],
           ),
         );
@@ -307,7 +395,8 @@ class _Note extends StatelessWidget {
           Icon(icon, size: 18, color: tone.color),
           const SizedBox(width: Space.sm),
           Expanded(
-            child: Text(text, style: TextStyle(color: tone.color, fontSize: 13)),
+            child:
+                Text(text, style: TextStyle(color: tone.color, fontSize: 13)),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/theme.dart';
 import 'ui.dart';
+import 'networkPicture.dart';
 
 /// A card of rows that can be dragged into a new order by their handles.
 ///
@@ -120,10 +121,9 @@ class ItemThumb extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: url.isEmpty
           ? Icon(icon, color: Palette.textMuted, size: size * 0.5)
-          : Image.network(
+          : NetworkPicture(
               url,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(Icons.broken_image_outlined,
+              fallback: (_) => Icon(Icons.broken_image_outlined,
                   color: Palette.textMuted, size: size * 0.5),
             ),
     );

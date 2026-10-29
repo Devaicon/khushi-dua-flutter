@@ -11,6 +11,7 @@ import 'contentController.dart';
 import 'historyController.dart';
 import 'panelAudioController.dart';
 import 'shellController.dart';
+import 'storeLinksController.dart';
 
 class InitController extends Bindings {
   @override
@@ -22,6 +23,7 @@ class InitController extends Bindings {
     Get.put(NotificationController(), permanent: true);
     Get.put(MLSettingsController(), permanent: true);
     Get.put(DonationController(), permanent: true);
+    Get.put(StoreLinksController(), permanent: true);
     Get.put(ContentController(), permanent: true);
     Get.put(HistoryController(), permanent: true);
     Get.put(PanelAudioController(), permanent: true);

@@ -11,6 +11,7 @@ import '../../models/duaModel.dart';
 import '../../models/subCategoryModel.dart';
 import '../openDuasScreen.dart';
 import '../../widgets/listenedHelp.dart';
+import '../../widgets/networkPicture.dart';
 
 /// A category's sections, each with how many duas it holds and, for a
 /// logged-in reader, how many of them they have listened to.
@@ -187,11 +188,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         width: 1.5,
                       ),
                     ),
-                    child: Image.network(
+                    child: NetworkPicture(
                       widget.categoryModel.logo,
                       width: 60,
                       height: 60,
-                      errorBuilder: (context, error, stackTrace) => Icon(
+                      fallback: (context) => Icon(
                         Icons.category_rounded,
                         size: 44,
                         color: widget.color.ink,

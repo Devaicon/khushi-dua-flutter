@@ -18,6 +18,7 @@ import '../../widgets/profileAvatar.dart';
 import 'notifications.dart';
 import '../../widgets/salahBanner.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/networkPicture.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -428,11 +429,11 @@ class _CategoryTileState extends State<CategoryTile>
             children: [
               Hero(
                 tag: 'category_logo_${widget.categoryModel.id}',
-                child: Image.network(
+                child: NetworkPicture(
                   widget.categoryModel.logo,
                   width: iconSize,
                   height: iconSize,
-                  errorBuilder: (context, error, stackTrace) => Icon(
+                  fallback: (context) => Icon(
                     Icons.category_rounded,
                     color: CategoryPalette.contentColor(
                       widget.ageGroup,
