@@ -1,18 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../constants/theme.dart';
+import '../../controllers/appVersionController.dart';
 import '../../controllers/contentController.dart';
 import '../../controllers/donationController.dart';
 import '../../controllers/mlSettingsController.dart';
 import '../../controllers/storeLinksController.dart';
+import '../../models/appVersion.dart';
 import '../../models/donationSettings.dart';
 import '../../models/storeLinks.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/ui.dart';
 
 /// Switches that change the app without a release: content refresh, the
-/// Practice button, donation prompts and the Share App store links. Replaces the separate ML Settings
+/// Practice button, donation prompts, the Share App store links and the
+/// update prompt. Replaces the separate ML Settings
 /// and Donations tabs.
 class AppControlsTab extends StatefulWidget {
   const AppControlsTab({super.key});
@@ -35,6 +40,12 @@ class _AppControlsTabState extends State<AppControlsTab> {
   final TextEditingController _appStore = TextEditingController();
   bool _linksSeeded = false;
 
+  final Map<String, TextEditingController> _builds = {
+    for (final key in const AppVersion().toMap().keys)
+      key: TextEditingController(),
+  };
+  bool _buildsSeeded = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +53,7 @@ class _AppControlsTabState extends State<AppControlsTab> {
       Get.find<MLSettingsController>().getMLSettings();
       Get.find<DonationController>().load();
       Get.find<StoreLinksController>().load();
+      Get.find<AppVersionController>().load();
     });
   }
 
@@ -50,6 +62,9 @@ class _AppControlsTabState extends State<AppControlsTab> {
     _url.dispose();
     _playStore.dispose();
     _appStore.dispose();
+    for (final c in _builds.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -70,6 +85,8 @@ class _AppControlsTabState extends State<AppControlsTab> {
             _donationsCard(),
             const SizedBox(height: Space.lg),
             _storeLinksCard(),
+            const SizedBox(height: Space.lg),
+            _updatePromptCard(),
           ],
         ),
       ),
@@ -367,6 +384,93 @@ class _AppControlsTabState extends State<AppControlsTab> {
               const SizedBox(height: Space.sm),
               Text('Leave a field empty to use the link shown in it.',
                   style: AdminText.muted),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ---- Update prompt ---------------------------------------------------------
+
+  Widget _updatePromptCard() {
+    return GetBuilder<AppVersionController>(
+      builder: (versions) {
+        if (versions.loaded && !_buildsSeeded) {
+          _buildsSeeded = true;
+          versions.version.toMap().forEach(
+              (key, value) => _builds[key]!.text = value == 0 ? '' : '$value');
+        }
+        final draft = AppVersion.fromMap({
+          for (final MapEntry(:key, :value) in _builds.entries)
+            key: int.tryParse(value.text.trim()) ?? 0,
+        });
+        final dirty = versions.loaded &&
+            !mapEquals(draft.toMap(), versions.version.toMap());
+
+        Widget field(String key, String label) => Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FieldLabel(label),
+                  TextField(
+                    controller: _builds[key],
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(hintText: 'Off'),
+                  ),
+                ],
+              ),
+            );
+
+        return AdminCard(
+          title: 'Update prompt',
+          subtitle: 'Asks readers on an older build to update when they open '
+              'the app. Use build numbers: the part after + in the version, '
+              'e.g. 26 for 1.6.0+26. Only builds that include the prompt '
+              '(Android 26 and later) can show it.',
+          trailing: AdminButton(
+            label: 'Publish',
+            icon: Icons.check_rounded,
+            busy: versions.loading,
+            onPressed: dirty
+                ? () {
+                    if (draft.androidMin > draft.androidLatest ||
+                        draft.iosMin > draft.iosLatest) {
+                      CustomSnackbar.show('Check the builds',
+                          'The minimum build cannot be above the latest one.',
+                          isSuccess: false);
+                      return;
+                    }
+                    versions.save(draft);
+                  }
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                field('androidLatest', 'Android: latest build'),
+                const SizedBox(width: Space.md),
+                field('androidMin', 'Android: minimum build'),
+              ]),
+              const SizedBox(height: Space.lg),
+              Row(children: [
+                field('iosLatest', 'iPhone: latest build'),
+                const SizedBox(width: Space.md),
+                field('iosMin', 'iPhone: minimum build'),
+              ]),
+              const SizedBox(height: Space.md),
+              const _Note(
+                icon: Icons.info_outline_rounded,
+                tone: Tone.info,
+                text: 'Below the latest build, readers see "Update available" '
+                    'with a Later button, at most once a day. Below the '
+                    'minimum build the prompt cannot be closed. Set a build '
+                    'here only once it is live on the store for everyone, '
+                    'or readers will find no update waiting. Empty means off.',
+              ),
             ],
           ),
         );

@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.6.0+25
+version: 1.6.0+26
 
 environment:
   sdk: ^3.8.1
@@ -29,6 +29,7 @@ dependencies:
   firebase_storage:
   firebase_messaging:
   share_plus:
+  package_info_plus:
   record: ^5.2.1
   # ffmpeg_kit_flutter_full:
   http:

@@ -7,6 +7,7 @@ import 'package:khushiduaadmin/controllers/userController.dart';
 import 'package:khushiduaadmin/controllers/mlSettingsController.dart';
 import 'package:khushiduaadmin/controllers/donationController.dart';
 
+import 'appVersionController.dart';
 import 'contentController.dart';
 import 'historyController.dart';
 import 'panelAudioController.dart';
@@ -24,6 +25,7 @@ class InitController extends Bindings {
     Get.put(MLSettingsController(), permanent: true);
     Get.put(DonationController(), permanent: true);
     Get.put(StoreLinksController(), permanent: true);
+    Get.put(AppVersionController(), permanent: true);
     Get.put(ContentController(), permanent: true);
     Get.put(HistoryController(), permanent: true);
     Get.put(PanelAudioController(), permanent: true);

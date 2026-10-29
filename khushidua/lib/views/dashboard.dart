@@ -17,6 +17,7 @@ import '../controllers/userController.dart';
 import '../services/contentRepository.dart';
 import '../services/pushService.dart';
 import '../services/reminderService.dart';
+import '../services/updatePrompt.dart';
 import '../widgets/donateCard.dart';
 import 'subScreens/categoryDetailScreen.dart';
 
@@ -95,6 +96,7 @@ class _DashboardState extends State<Dashboard>
     ContentRepository.instance.load();
     Get.find<NotificationController>().getAllNotifications();
     _wireNotificationTaps();
+    WidgetsBinding.instance.addPostFrameCallback((_) => UpdatePrompt.check());
   }
 
   /// Routes taps on reminders and pushes. Nothing consumed them before, so a
