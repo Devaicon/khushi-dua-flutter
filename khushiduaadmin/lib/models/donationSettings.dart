@@ -18,13 +18,23 @@ class DonationSettings {
     'reminder': 'Weekly support reminder',
   };
 
-  const DonationSettings({this.enabled = true, this.shown = const {}});
+  const DonationSettings({
+    this.enabled = true,
+    this.shown = const {},
+    this.cardTitle = const {},
+    this.cardMessage = const {},
+  });
 
   /// The master switch.
   final bool enabled;
 
   /// Per-placement switches; a placement not listed here is shown.
   final Map<String, bool> shown;
+
+  /// The donation card's heading and line, by app language ("English",
+  /// "Urdu"…). A language left out keeps the app's built-in wording.
+  final Map<String, String> cardTitle;
+  final Map<String, String> cardMessage;
 
   factory DonationSettings.fromMap(Map<String, dynamic>? map) {
     if (map == null) return const DonationSettings();
@@ -34,12 +44,25 @@ class DonationSettings {
         for (final key in placements.keys)
           if (map[key] is bool) key: map[key] as bool,
       },
+      cardTitle: _texts(map['cardTitle']),
+      cardMessage: _texts(map['cardMessage']),
     );
   }
+
+  /// The non-blank strings of a language → text map; anything else is
+  /// ignored.
+  static Map<String, String> _texts(Object? raw) => {
+    if (raw is Map)
+      for (final MapEntry(:key, :value) in raw.entries)
+        if (key is String && value is String && value.trim().isNotEmpty)
+          key: value.trim(),
+  };
 
   Map<String, dynamic> toMap() => {
     'enabled': enabled,
     for (final key in placements.keys) key: isOn(key),
+    'cardTitle': cardTitle,
+    'cardMessage': cardMessage,
   };
 
   /// The placement's own switch, ignoring the master switch.

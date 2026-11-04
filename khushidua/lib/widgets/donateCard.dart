@@ -4,11 +4,14 @@ import 'package:get/get.dart';
 import '../constants/colors.dart';
 import '../constants/theme.dart';
 import '../controllers/donationController.dart';
+import '../controllers/userController.dart';
 import '../views/donateScreen.dart';
 
 /// The donation colour: warm, and distinct from every category and reminder
 /// card so it never reads as part of the content around it.
 const Color kDonateSeed = Color(0xFFE5737F);
+
+const Set<String> _rtlLanguages = {'Arabic', 'Sindhi', 'Urdu'};
 
 void openDonate() =>
     Get.to(() => const DonateScreen(), transition: Transition.downToUp);
@@ -53,26 +56,42 @@ class DonateCard extends StatelessWidget {
             ),
             const SizedBox(width: AppSpace.md),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Support LearningSouls".tr,
-                    style: const TextStyle(
-                      color: AppText.onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+              child: GetBuilder<DonationController>(
+                builder: (donations) {
+                  final language = Get.find<UserController>().selectedLanguage;
+                  final settings = donations.settings;
+                  // The app's locales are language names, not codes, so
+                  // Flutter never turns right-to-left by itself.
+                  return Directionality(
+                    textDirection: _rtlLanguages.contains(language)
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          settings.cardTitle[language] ??
+                              "Support LearningSouls".tr,
+                          style: const TextStyle(
+                            color: AppText.onSurface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          settings.cardMessage[language] ??
+                              "Your donation will keep this app ads free for everyone"
+                                  .tr,
+                          style: TextStyle(
+                            color: AppText.onSurfaceMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    "Your donation keeps Khushi Dua free for every child".tr,
-                    style: TextStyle(
-                      color: AppText.onSurfaceMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
             const SizedBox(width: AppSpace.sm),

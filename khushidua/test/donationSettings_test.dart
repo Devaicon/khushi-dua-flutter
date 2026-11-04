@@ -27,4 +27,18 @@ void main() {
     expect(s.enabled, isTrue);
     expect(s.prayer, isTrue);
   });
+
+  test('card text keeps filled-in strings and drops the rest', () {
+    final s = DonationSettings.fromMap({
+      'cardMessage': {'Urdu': ' آپ کا عطیہ ', 'English': '  ', 'French': 3},
+      'cardTitle': 'not a map',
+    });
+    expect(s.cardMessage, {'Urdu': 'آپ کا عطیہ'});
+    expect(s.cardTitle, isEmpty);
+  });
+
+  test('card text survives a round trip', () {
+    const s = DonationSettings(cardTitle: {'English': 'Help us'});
+    expect(DonationSettings.fromMap(s.toMap()).cardTitle, {'English': 'Help us'});
+  });
 }

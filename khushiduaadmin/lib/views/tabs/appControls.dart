@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../constants/languages.dart';
 import '../../constants/theme.dart';
 import '../../controllers/appVersionController.dart';
 import '../../controllers/contentController.dart';
@@ -35,6 +36,13 @@ class _AppControlsTabState extends State<AppControlsTab> {
   final Map<String, bool> _shown = {
     for (final key in DonationSettings.placements.keys) key: true,
   };
+  String _cardLanguage = 'English';
+  final Map<String, TextEditingController> _cardTitle = {
+    for (final l in kContentLanguages) l.label: TextEditingController(),
+  };
+  final Map<String, TextEditingController> _cardMessage = {
+    for (final l in kContentLanguages) l.label: TextEditingController(),
+  };
 
   final TextEditingController _playStore = TextEditingController();
   final TextEditingController _appStore = TextEditingController();
@@ -62,7 +70,11 @@ class _AppControlsTabState extends State<AppControlsTab> {
     _url.dispose();
     _playStore.dispose();
     _appStore.dispose();
-    for (final c in _builds.values) {
+    for (final c in [
+      ..._builds.values,
+      ..._cardTitle.values,
+      ..._cardMessage.values,
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -256,13 +268,25 @@ class _AppControlsTabState extends State<AppControlsTab> {
           for (final key in DonationSettings.placements.keys) {
             _shown[key] = donations.settings.isOn(key);
           }
+          for (final language in _cardTitle.keys) {
+            _cardTitle[language]!.text =
+                donations.settings.cardTitle[language] ?? '';
+            _cardMessage[language]!.text =
+                donations.settings.cardMessage[language] ?? '';
+          }
         }
-        final draft =
-            DonationSettings(enabled: _donationsEnabled, shown: Map.of(_shown));
+        final draft = DonationSettings(
+          enabled: _donationsEnabled,
+          shown: Map.of(_shown),
+          cardTitle: _cardTexts(_cardTitle),
+          cardMessage: _cardTexts(_cardMessage),
+        );
         final dirty = donations.loaded &&
             (draft.enabled != donations.settings.enabled ||
                 DonationSettings.placements.keys
-                    .any((k) => draft.isOn(k) != donations.settings.isOn(k)));
+                    .any((k) => draft.isOn(k) != donations.settings.isOn(k)) ||
+                !mapEquals(draft.cardTitle, donations.settings.cardTitle) ||
+                !mapEquals(draft.cardMessage, donations.settings.cardMessage));
 
         return AdminCard(
           title: 'Donation prompts',
@@ -300,6 +324,8 @@ class _AppControlsTabState extends State<AppControlsTab> {
                     onChanged: (v) => setState(() => _shown[key] = v),
                   ),
                 ),
+              const Divider(height: Space.xl),
+              _cardTextEditor(),
               if (dirty)
                 const Padding(
                   padding: EdgeInsets.only(top: Space.sm),
@@ -314,6 +340,82 @@ class _AppControlsTabState extends State<AppControlsTab> {
           ),
         );
       },
+    );
+  }
+
+  /// The filled-in fields of a language → controller map.
+  static Map<String, String> _cardTexts(
+          Map<String, TextEditingController> fields) =>
+      {
+        for (final MapEntry(:key, :value) in fields.entries)
+          if (value.text.trim().isNotEmpty) key: value.text.trim(),
+      };
+
+  Widget _cardTextEditor() {
+    final language =
+        kContentLanguages.firstWhere((l) => l.label == _cardLanguage);
+    final direction = language.rtl ? TextDirection.rtl : TextDirection.ltr;
+    final english = language.label == 'English';
+    bool custom(String label) =>
+        _cardTitle[label]!.text.trim().isNotEmpty ||
+        _cardMessage[label]!.text.trim().isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text('Donation card text',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            DropdownButton<String>(
+              value: _cardLanguage,
+              underline: const SizedBox(),
+              isDense: true,
+              items: [
+                for (final l in kContentLanguages)
+                  DropdownMenuItem(
+                    value: l.label,
+                    child: Text(custom(l.label) ? '${l.label} •' : l.label),
+                  ),
+              ],
+              onChanged: (v) => setState(() => _cardLanguage = v ?? 'English'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'The heading and line on the home, search and prayer cards, in '
+          "the reader's language (• marks languages with text set here). "
+          "Leave a field empty to keep the app's own wording.",
+          style: AdminText.muted,
+        ),
+        const SizedBox(height: Space.md),
+        const FieldLabel('Heading'),
+        TextField(
+          controller: _cardTitle[_cardLanguage],
+          textDirection: direction,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: english ? 'Support LearningSouls' : "App's own wording",
+          ),
+        ),
+        const SizedBox(height: Space.md),
+        const FieldLabel('Message'),
+        TextField(
+          controller: _cardMessage[_cardLanguage],
+          textDirection: direction,
+          minLines: 1,
+          maxLines: 3,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: english
+                ? 'Your donation will keep this app ads free for everyone'
+                : "App's own wording",
+          ),
+        ),
+      ],
     );
   }
 

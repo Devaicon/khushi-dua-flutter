@@ -45,10 +45,13 @@ class DonationController extends GetxController {
     try {
       final ref = sysConfigRef.doc(DonationSettings.docId);
       final before = (await ref.get()).data();
-      await ref.set({
+      final data = {
         ...settings.toMap(),
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+      // mergeFields, not merge: a plain merge would merge the card text maps
+      // key by key, so a language cleared here would keep its old text.
+      await ref.set(data, SetOptions(mergeFields: data.keys.toList()));
       await AuditService.record(
         action: before == null ? AuditAction.create : AuditAction.update,
         collection: 'SystemConfiguration',
