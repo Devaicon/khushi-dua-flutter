@@ -4,3 +4,5 @@
 # Bundled in the app and shown on the Terms & Privacy screen.
 !khushidua/assets/legal/*.md
 app-screenshots
+# Docker build outputs (docker/build.sh)
+dist/
