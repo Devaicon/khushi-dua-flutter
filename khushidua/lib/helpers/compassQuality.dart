@@ -210,6 +210,12 @@ class SustainedFlag {
 
   bool get value => _value;
 
+  /// Back to false, as if the condition had never held.
+  void reset() {
+    _value = false;
+    _since = null;
+  }
+
   /// Records whether the condition holds [now]; returns true when [value]
   /// changes.
   bool update(bool condition, DateTime now) {

@@ -70,7 +70,10 @@ FROM flutter-sdk AS android-sdk
 # Keep these in step with khushidua/android/{build.gradle.kts,app/build.gradle.kts}.
 ARG ANDROID_CMDLINE_TOOLS=13114758
 ARG ANDROID_PLATFORM=36
-ARG ANDROID_BUILD_TOOLS=36.0.0
+# AGP 8.11 uses build-tools 35; CMake is pulled in by a plugin's native build.
+# Anything missing here gets downloaded by Gradle on EVERY build, so keep it complete.
+ARG ANDROID_BUILD_TOOLS=35.0.0
+ARG ANDROID_CMAKE=3.22.1
 ARG ANDROID_NDK=29.0.14206865
 
 ENV ANDROID_HOME=/opt/android-sdk \
@@ -94,6 +97,7 @@ RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" \
       "platform-tools" \
       "platforms;android-${ANDROID_PLATFORM}" \
       "build-tools;${ANDROID_BUILD_TOOLS}" \
+      "cmake;${ANDROID_CMAKE}" \
       "ndk;${ANDROID_NDK}" > /dev/null
 
 RUN flutter config --enable-android --no-enable-web --no-enable-linux-desktop \

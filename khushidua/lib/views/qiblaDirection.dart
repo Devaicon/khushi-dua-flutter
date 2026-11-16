@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,13 @@ const int _kDialEdgeSlices = 12;
 /// The buzz on reaching the Qibla comes at most this often, so a phone held
 /// at the edge of the tolerance does not keep buzzing.
 const Duration _kAlignedCueGap = Duration(seconds: 3);
+
+/// How long a problem must last before its warning shows.
+const Duration _kWarningDwell = Duration(milliseconds: 1500);
+
+/// How long "Try again" watches fresh readings before deciding whether the
+/// compass is now accurate enough.
+const Duration _kRecheckDuration = Duration(milliseconds: 1500);
 
 /// How long the compass takes to fade in when it first appears.
 const Duration _kAppearDuration = Duration(milliseconds: 250);
@@ -99,9 +107,7 @@ class _CompassScreenState extends State<CompassScreen>
   bool _sawTilt = false;
 
   /// Held well off flat for long enough to suggest holding it flatter.
-  final SustainedFlag _tilted = SustainedFlag(
-    dwell: const Duration(seconds: 3),
-  );
+  final SustainedFlag _tilted = SustainedFlag(dwell: _kWarningDwell);
 
   /// Fires if no heading ever arrives — a device with no usable magnetometer
   /// can produce an eternally empty stream rather than an error.
@@ -121,13 +127,26 @@ class _CompassScreenState extends State<CompassScreen>
   /// worth a notice under the compass. Both clear quickly, so the notice goes
   /// as soon as the problem has.
   final SustainedFlag _needsCalibration = SustainedFlag(
-    dwell: const Duration(seconds: 3),
+    dwell: _kWarningDwell,
     clearDwell: const Duration(seconds: 1),
   );
   final SustainedFlag _interference = SustainedFlag(
-    dwell: const Duration(seconds: 3),
+    dwell: _kWarningDwell,
     clearDwell: const Duration(seconds: 1),
   );
+
+  /// A poor heading also brings up a pop-up over the dial, so a compass that
+  /// is off cannot be followed by mistake. It only goes once "Try again"
+  /// finds the readings accurate enough.
+  bool _calibrationPopup = false;
+  bool _rechecking = false;
+  bool _recheckFailed = false;
+  int _recheckAttempts = 0;
+  Timer? _recheckTimer;
+
+  /// Whether the latest reading on its own was below the accuracy threshold,
+  /// which is what a recheck goes by.
+  bool _lastReadingPoor = false;
 
   bool _aligned = false;
   DateTime? _lastAlignedCue;
@@ -294,7 +313,11 @@ class _CompassScreenState extends State<CompassScreen>
       magnetometerStatus: reading.magnetometerStatus,
       wasPoor: _needsCalibration.value,
     );
-    if (poor != null) _needsCalibration.update(poor, now);
+    if (poor != null) _lastReadingPoor = poor;
+    final bool calibrationStarted =
+        poor != null &&
+        _needsCalibration.update(poor, now) &&
+        _needsCalibration.value;
     final double? field = reading.fieldMicroTesla;
     if (field != null && env != null) {
       final double deviation = fieldDeviation(
@@ -317,8 +340,39 @@ class _CompassScreenState extends State<CompassScreen>
       _reading = reading;
       _headingUnusable = false;
       _aligned = aligned;
+      if (calibrationStarted && !_rechecking) {
+        _calibrationPopup = true;
+        _recheckFailed = false;
+      }
     });
     _syncToast();
+  }
+
+  /// "Try again" on the calibration pop-up: watches fresh readings for a
+  /// moment, then lets the compass through if they meet the threshold, or
+  /// puts the pop-up up again if they still do not.
+  void _recheckCalibration() {
+    if (_rechecking) return;
+    _recheckTimer?.cancel();
+    setState(() {
+      _rechecking = true;
+      _recheckFailed = false;
+    });
+    _recheckTimer = Timer(_kRecheckDuration, () {
+      if (!mounted) return;
+      final bool stillPoor = _lastReadingPoor;
+      setState(() {
+        _rechecking = false;
+        if (stillPoor) {
+          _recheckFailed = true;
+          _recheckAttempts++;
+        } else {
+          _calibrationPopup = false;
+          _needsCalibration.reset();
+        }
+      });
+      _syncToast();
+    });
   }
 
   void _onGravity(Gravity gravity) {
@@ -393,6 +447,7 @@ class _CompassScreenState extends State<CompassScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _toastTimer?.cancel();
+    _recheckTimer?.cancel();
     _stopSensors();
     super.dispose();
   }
@@ -448,6 +503,7 @@ class _CompassScreenState extends State<CompassScreen>
                     right: AppSpace.lg,
                     child: _buildToast(),
                   ),
+                  Positioned.fill(child: _buildCalibrationPopup()),
                 ],
               ),
             ),
@@ -872,6 +928,137 @@ class _CompassScreenState extends State<CompassScreen>
                 child: _notice(toast),
               ),
             ),
+    );
+  }
+
+  /// Covers the dial while the compass needs calibrating: how to calibrate,
+  /// and a button to check again.
+  Widget _buildCalibrationPopup() {
+    final bool show = _calibrationPopup && _showingCompass;
+    return AnimatedSwitcher(
+      duration: AppMotion.slow,
+      switchInCurve: AppMotion.curve,
+      switchOutCurve: AppMotion.curve,
+      child: !show
+          ? const SizedBox.shrink(key: ValueKey('no-calibration'))
+          : Stack(
+              key: const ValueKey('calibration'),
+              fit: StackFit.expand,
+              children: [
+                // Blurred as well as dimmed, so the needle cannot be read
+                // through it.
+                ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: ModalBarrier(
+                      dismissible: false,
+                      color: AppSurface.page.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpace.lg),
+                    child: AnimatedSwitcher(
+                      duration: AppMotion.slow,
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: AppMotion.curve,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(
+                            begin: 0.9,
+                            end: 1,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      // A new key after each failed check, so the pop-up
+                      // comes up afresh.
+                      child: KeyedSubtree(
+                        key: ValueKey(_recheckAttempts),
+                        child: _buildCalibrationCard(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildCalibrationCard() {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 360),
+      padding: const EdgeInsets.all(AppSpace.xl),
+      decoration: plainCardDecoration().copyWith(boxShadow: AppElevation.card),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 180,
+            height: 100,
+            child: FigureEightAnimation(color: _kWarnAmber),
+          ),
+          const SizedBox(height: AppSpace.md),
+          Text(
+            "Calibrate your compass".tr,
+            style: TextStyle(
+              color: rtext,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Text(
+            "Your compass is not accurate enough to show the Qibla. Move your phone in a figure-8 a few times, away from metal and magnets."
+                .tr,
+            style: TextStyle(color: rtext, fontSize: 14, height: 1.4),
+            textAlign: TextAlign.center,
+          ),
+          if (_recheckFailed) ...[
+            const SizedBox(height: AppSpace.sm),
+            Text(
+              "Still not accurate. Keep moving your phone in a figure-8, then try again."
+                  .tr,
+              style: const TextStyle(
+                color: _kWarnRed,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: AppSpace.lg),
+          FilledButton(
+            onPressed: _rechecking ? null : _recheckCalibration,
+            style: FilledButton.styleFrom(
+              backgroundColor: brandFill,
+              disabledBackgroundColor: brandFill.withValues(alpha: 0.6),
+              disabledForegroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.pillAll),
+            ),
+            child: _rechecking
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.sm),
+                      Text("Checking…".tr),
+                    ],
+                  )
+                : Text("Try again".tr),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1416,6 +1603,128 @@ class LevelPainter extends CustomPainter {
       old.tilt.roll != tilt.roll ||
       old.tilt.degrees != tilt.degrees ||
       old.glow != glow;
+}
+
+/// A phone tracing a figure-8 over and over, to show how to calibrate.
+class FigureEightAnimation extends StatefulWidget {
+  const FigureEightAnimation({super.key, required this.color});
+
+  final Color color;
+
+  @override
+  State<FigureEightAnimation> createState() => _FigureEightAnimationState();
+}
+
+class _FigureEightAnimationState extends State<FigureEightAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Still, at the top of a loop, when the system asks for less motion.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller
+        ..stop()
+        ..value = 0.125;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => CustomPaint(
+        painter: FigureEightPainter(t: _controller.value, color: widget.color),
+      ),
+    );
+  }
+}
+
+/// The figure-8 path, and a phone [t] (0 to 1) of the way round it.
+class FigureEightPainter extends CustomPainter {
+  FigureEightPainter({required this.t, required this.color});
+
+  final double t;
+  final Color color;
+
+  /// A point on the lemniscate of Bernoulli, [a] radians round it.
+  static Offset _at(double a, Size size) {
+    final double s = math.sin(a), c = math.cos(a);
+    final double d = 1 + s * s;
+    final double w = size.width / 2 - 14, h = size.height - 28;
+    return size.center(Offset.zero) + Offset(w * c / d, h * s * c / d);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const int steps = 120;
+    final Path path = Path();
+    for (int i = 0; i <= steps; i++) {
+      final Offset p = _at(2 * math.pi * i / steps, size);
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..color = color.withValues(alpha: 0.18),
+    );
+
+    // A fading trail behind the phone.
+    final double a = 2 * math.pi * t;
+    const int trail = 24;
+    for (int i = 0; i < trail; i++) {
+      final Offset from = _at(a - 0.06 * (i + 1), size);
+      final Offset to = _at(a - 0.06 * i, size);
+      canvas.drawLine(
+        from,
+        to,
+        Paint()
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round
+          ..color = color.withValues(alpha: 0.8 * (1 - i / trail)),
+      );
+    }
+
+    // The phone, tipping as it goes round, the way the hand moves it.
+    final Offset at = _at(a, size);
+    final RRect body = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset.zero, width: 18, height: 30),
+      const Radius.circular(4),
+    );
+    canvas.save();
+    canvas.translate(at.dx, at.dy);
+    canvas.rotate(0.45 * math.sin(a));
+    canvas.drawShadow(Path()..addRRect(body), Colors.black, 3, false);
+    canvas.drawRRect(body, Paint()..color = rbluedark);
+    canvas.drawRRect(
+      body.deflate(2.2),
+      Paint()..color = AppSurface.card.withValues(alpha: 0.9),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(FigureEightPainter old) =>
+      old.t != t || old.color != color;
 }
 
 /// Something limiting the compass, for the header's notices button.
