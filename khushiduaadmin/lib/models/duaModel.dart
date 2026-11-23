@@ -39,7 +39,14 @@ class DuaModel {
   String grownUpsAudio = "";
   String? englishTranslation = "";
   String? urduTranslation = '';
-  String? benefits; // Benefits data - simple string field
+  /// "Benefits & Virtues" in English. Also what app versions from before
+  /// [benefitsTranslations] show to every reader.
+  String? benefits;
+
+  /// "Benefits & Virtues" in the other languages, by the field names in
+  /// [kBenefitLanguages] (`urdu`, `gujrati`, …). A missing or empty entry
+  /// falls back to [benefits] in the app.
+  Map<String, String> benefitsTranslations = {};
   String? description; // Description field
 
   DuaModel(
@@ -80,7 +87,9 @@ class DuaModel {
       this.englishTranslation,
       this.urduTranslation,
       this.benefits,
-      this.description});
+      Map<String, String>? benefitsTranslations,
+      this.description})
+      : benefitsTranslations = benefitsTranslations ?? {};
 
   /// A blank dua, as the editor starts one.
   factory DuaModel.empty() => DuaModel.fromMap(const {});
@@ -123,11 +132,12 @@ class DuaModel {
       grownUpsAudio: readString(map["grownUpsAudio"]),
       englishTranslation: readString(map["englishTranslation"]),
       urduTranslation: readString(map["urduTranslation"]),
-      benefits: map["benefits"] == null
-          ? null
-          : (map["benefits"] is String
-              ? map["benefits"]
-              : map["benefits"].toString()),
+      benefits: _readBenefits(map["benefits"]),
+      benefitsTranslations: {
+        // Old documents kept translations in a list under `benefits`.
+        ..._legacyBenefitTranslations(map["benefits"]),
+        ..._readTranslations(map["benefitsTranslations"]),
+      },
       description: readString(map["description"]),
     );
   }
@@ -171,13 +181,89 @@ class DuaModel {
       "englishTranslation": englishTranslation,
       "urduTranslation": urduTranslation,
       "benefits": benefits,
+      // Every language, blanks included: the save merges, so a language
+      // left out would keep its old text instead of being cleared.
+      "benefitsTranslations": {
+        for (final l in kBenefitTranslationLanguages)
+          l.field: benefitsTranslations[l.field]?.trim() ?? '',
+      },
       "description": description,
     };
   }
 
+  static String? _readBenefits(dynamic value) {
+    if (value is String) return value;
+    if (value is List) {
+      final english = [
+        for (final item in value)
+          if (item is Map && item['english'] is String) item['english'] as String
+      ].where((t) => t.trim().isNotEmpty).join('\n\n');
+      return english.isEmpty ? null : english;
+    }
+    return null;
+  }
+
+  static Map<String, String> _readTranslations(dynamic value) => value is Map
+      ? {
+          for (final e in value.entries)
+            if (e.value is String && (e.value as String).trim().isNotEmpty)
+              '${e.key}': e.value as String,
+        }
+      : {};
+
+  /// The old list format used its own keys for a few languages.
+  static const _legacyKeys = {
+    'gujarati': 'gujrati',
+    'mandarin': 'mandrain',
+    'telugu': 'telgu',
+    'portuguese': 'portugese',
+  };
+
+  static Map<String, String> _legacyBenefitTranslations(dynamic value) {
+    if (value is! List) return {};
+    final parts = <String, List<String>>{};
+    for (final item in value) {
+      if (item is! Map) continue;
+      for (final e in item.entries) {
+        final key = _legacyKeys['${e.key}'] ?? '${e.key}';
+        if (key == 'english' || e.value is! String) continue;
+        if ((e.value as String).trim().isEmpty) continue;
+        (parts[key] ??= []).add(e.value as String);
+      }
+    }
+    return {
+      for (final l in kBenefitTranslationLanguages)
+        if (parts[l.field] != null) l.field: parts[l.field]!.join('\n\n'),
+    };
+  }
+
+  /// "Benefits & Virtues" in the language stored under [field]
+  /// (see [kBenefitLanguages]).
+  String benefitText(String field) => field == 'english'
+      ? benefits ?? ''
+      : benefitsTranslations[field] ?? '';
+
+  void setBenefitText(String field, String value) {
+    final text = value.trim();
+    if (field == 'english') {
+      benefits = text.isEmpty ? null : text;
+    } else if (text.isEmpty) {
+      benefitsTranslations.remove(field);
+    } else {
+      benefitsTranslations[field] = text;
+    }
+  }
+
+  /// Benefit languages filled in, out of [kBenefitLanguages].
+  int get benefitCount => kBenefitLanguages
+      .where((l) => benefitText(l.field).trim().isNotEmpty)
+      .length;
+
   /// An independent copy, for editing without touching the live list.
   DuaModel copy() =>
-      DuaModel.fromMap(toMap())..subCategoryIds = [...subCategoryIds];
+      DuaModel.fromMap(toMap())
+        ..subCategoryIds = [...subCategoryIds]
+        ..benefitsTranslations = {...benefitsTranslations};
 
   /// The text in the language stored under [field] (see `kContentLanguages`).
   String text(String field) => readString(toMap()[field]);

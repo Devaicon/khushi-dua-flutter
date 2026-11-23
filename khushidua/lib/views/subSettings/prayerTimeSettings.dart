@@ -6,6 +6,7 @@ import '../../constants/theme.dart';
 import '../../controllers/prayerSettingsController.dart';
 import '../../helpers/hijriDate.dart';
 import '../../widgets/sunPathView.dart';
+import '../../constants/fonts.dart';
 
 /// The calculation method and juristic method for prayer times, and the
 /// Islamic date adjustment, as dropdowns in the style of the language
@@ -79,7 +80,7 @@ class PrayerTimeSettings extends StatelessWidget {
                       style: TextStyle(
                         color: AppText.onPageMuted,
                         fontSize: 12,
-                        height: 1.4,
+                        height: AppFonts.height(1.4),
                       ),
                     ),
                   ],

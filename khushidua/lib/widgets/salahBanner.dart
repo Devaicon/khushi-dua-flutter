@@ -8,6 +8,7 @@ import '../constants/colors.dart';
 import '../constants/theme.dart';
 import '../constants/prayerNames.dart';
 import '../controllers/reminderController.dart';
+import '../constants/fonts.dart';
 
 /// In-app banner shown while a prayer time is current.
 ///
@@ -98,7 +99,8 @@ class _SalahBannerState extends State<SalahBanner> {
                           Text(
                             arabic,
                             style: TextStyle(
-                              fontFamily: 'arabic',
+                              fontFamily: AppFonts.arabic,
+                              fontFamilyFallback: AppFonts.fallback,
                               color: Colors.white.withOpacity(0.85),
                               fontSize: 14,
                             ),

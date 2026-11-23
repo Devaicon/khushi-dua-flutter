@@ -15,6 +15,7 @@ import '../../widgets/audioDownloadButton.dart';
 import '../../widgets/audioPlayButton.dart';
 import '../../widgets/ui.dart';
 import '../duas/duaEditor.dart';
+import '../../constants/fonts.dart';
 
 /// Which duas the list shows, beyond the search.
 class DuaFilter {
@@ -174,7 +175,7 @@ class _DuasTabState extends State<DuasTab> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textDirection: TextDirection.rtl,
-              style: AdminText.muted,
+              style: AdminText.muted.merge(AppFonts.styleFor('arabic')),
             ),
           ],
         ),

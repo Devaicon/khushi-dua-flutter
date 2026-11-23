@@ -9,6 +9,7 @@ import '../../controllers/reminderController.dart';
 import '../../helpers/reminderSchedule.dart';
 import '../../services/alertPreview.dart';
 import '../../widgets/customSnackbar.dart';
+import '../../constants/fonts.dart';
 
 /// The one place every Salah reminder setting lives: the master switch, and
 /// each prayer's alert (sound, vibrate or off) and sound. Choosing an alert or
@@ -194,7 +195,8 @@ class _SalahReminderSettingsState extends State<SalahReminderSettings> {
               Text(
                 arabicPrayerName(prayer),
                 style: TextStyle(
-                  fontFamily: 'arabic',
+                  fontFamily: AppFonts.arabic,
+                  fontFamilyFallback: AppFonts.fallback,
                   color: AppText.onPageMuted,
                   fontSize: 15,
                 ),

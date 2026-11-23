@@ -20,6 +20,7 @@ import '../../widgets/customSnackbar.dart';
 import '../../widgets/sectionPicker.dart';
 import '../../widgets/ui.dart';
 import 'duaPreview.dart';
+import '../../constants/fonts.dart';
 
 /// Creates or edits one dua: its text, translations, recordings and where
 /// it appears, with a live preview of the card readers will see.
@@ -68,7 +69,10 @@ class _DuaEditorState extends State<DuaEditor> {
         TextEditingController(text: _draft.transliteration);
     _text['description'] =
         TextEditingController(text: _draft.description ?? '');
-    _text['benefits'] = TextEditingController(text: _draft.benefits ?? '');
+    for (final l in kBenefitLanguages) {
+      _text['benefits.${l.field}'] =
+          TextEditingController(text: _draft.benefitText(l.field));
+    }
     for (final entry in _text.entries) {
       var last = entry.value.text;
       // Listeners also fire when the cursor moves; only a text change counts.
@@ -94,8 +98,8 @@ class _DuaEditorState extends State<DuaEditor> {
         _draft.transliteration = value;
       case 'description':
         _draft.description = value.trim().isEmpty ? null : value;
-      case 'benefits':
-        _draft.benefits = value.trim().isEmpty ? null : value.trim();
+      case final f when f.startsWith('benefits.'):
+        _draft.setBenefitText(f.substring('benefits.'.length), value);
       default:
         _draft.setText(field, value);
     }
@@ -193,6 +197,9 @@ class _DuaEditorState extends State<DuaEditor> {
               'Translations  ${_draft.translationCount}/${kTranslationLanguages.length}'),
       Tab(
           text:
+              'Benefits  ${_draft.benefitCount}/${kBenefitLanguages.length}'),
+      Tab(
+          text:
               'Audio  ${AudioSlot.values.where((s) => _draft.hasAudio(s) || _files.containsKey(s)).length}/5'),
       Tab(text: 'Placement  ${_draft.subCategoryIds.length}'),
       if (!wide) const Tab(text: 'Preview'),
@@ -200,6 +207,7 @@ class _DuaEditorState extends State<DuaEditor> {
     final views = [
       _textTab(),
       _translationsTab(),
+      _benefitsTab(),
       _audioTab(),
       _placementTab(),
       if (!wide) SingleChildScrollView(child: _preview()),
@@ -313,7 +321,8 @@ class _DuaEditorState extends State<DuaEditor> {
           textAlign: TextAlign.right,
           maxLines: null,
           minLines: 3,
-          style: const TextStyle(fontSize: 24, height: 1.9),
+          style: const TextStyle(fontSize: 24)
+              .merge(AppFonts.styleFor('arabic', height: 1.9)),
           decoration: InputDecoration(
             hintText: 'بِسْمِ اللَّهِ',
             errorText:
@@ -340,17 +349,6 @@ class _DuaEditorState extends State<DuaEditor> {
             errorText: _showErrors && _draft.english.trim().isEmpty
                 ? 'Required'
                 : null,
-          ),
-        ),
-        const SizedBox(height: Space.xl),
-        const FieldLabel('Benefits & virtues'),
-        TextField(
-          controller: _text['benefits'],
-          maxLines: null,
-          minLines: 3,
-          decoration: const InputDecoration(
-            hintText:
-                'Shown under "Benefits & Virtues" on the card. Leave empty to grey it out.',
           ),
         ),
         const SizedBox(height: Space.xl),
@@ -394,6 +392,7 @@ class _DuaEditorState extends State<DuaEditor> {
                     child: TextField(
                       controller: _text[l.field],
                       maxLines: null,
+                      style: AppFonts.styleFor(l.field),
                       textDirection:
                           l.rtl ? TextDirection.rtl : TextDirection.ltr,
                       decoration: InputDecoration(
@@ -406,6 +405,74 @@ class _DuaEditorState extends State<DuaEditor> {
                               )
                             : Icon(Icons.check_circle_rounded,
                                 color: Palette.success, size: 18),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ---- Benefits --------------------------------------------------------------
+
+  Widget _benefitsTab() {
+    final hasEnglish = _draft.benefitText('english').trim().isNotEmpty;
+    final others =
+        kBenefitLanguages.where((l) => l.field != 'english').toList();
+    return ListView(
+      children: [
+        Text(
+          'Shown under "Benefits & Virtues" on the card, in the language the '
+          'reader chose in the app. An empty language falls back to English; '
+          'leave English empty to grey the section out.',
+          style: AdminText.muted,
+        ),
+        const SizedBox(height: Space.lg),
+        const FieldLabel('English'),
+        TextField(
+          controller: _text['benefits.english'],
+          maxLines: null,
+          minLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'The benefits and virtues of reciting this dua.',
+          ),
+        ),
+        const SizedBox(height: Space.xl),
+        const FieldLabel('Other languages'),
+        LayoutBuilder(
+          builder: (context, c) {
+            final columns = c.maxWidth > 760 ? 2 : 1;
+            final width = (c.maxWidth - Space.lg * (columns - 1)) / columns;
+            return Wrap(
+              spacing: Space.lg,
+              runSpacing: Space.lg,
+              children: [
+                for (final l in others)
+                  SizedBox(
+                    width: width,
+                    child: TextField(
+                      controller: _text['benefits.${l.field}'],
+                      maxLines: null,
+                      minLines: 2,
+                      style: AppFonts.styleFor(l.field),
+                      textDirection:
+                          l.rtl ? TextDirection.rtl : TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: l.label,
+                        alignLabelWithHint: true,
+                        suffixIcon: !hasEnglish
+                            ? null
+                            : _draft.benefitText(l.field).trim().isEmpty
+                                ? Tooltip(
+                                    message: 'Missing: readers see English',
+                                    child: Icon(Icons.error_outline_rounded,
+                                        color: Palette.warning, size: 18),
+                                  )
+                                : Icon(Icons.check_circle_rounded,
+                                    color: Palette.success, size: 18),
                       ),
                     ),
                   ),

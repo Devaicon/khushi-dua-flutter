@@ -36,7 +36,11 @@ class DuaModel {
   String? englishTranslation = "";
   String? urduTranslation = '';
   List<Map<String, dynamic>>? benefits; // Benefits data (List format)
-  String? benefitsString; // Benefits data (String format)
+  String? benefitsString; // Benefits data (String format), in English
+
+  /// Benefits in the other languages, by dua field name (`urdu`,
+  /// `gujrati`, …), written by the admin panel.
+  Map<String, String> benefitsTranslations = {};
 
   DuaModel({
     required this.id,
@@ -77,7 +81,8 @@ class DuaModel {
     this.urduTranslation,
     this.benefits,
     this.benefitsString,
-  });
+    Map<String, String>? benefitsTranslations,
+  }) : benefitsTranslations = benefitsTranslations ?? {};
 
   /// Safely parses benefits field which might be a List, String, or null
   static List<Map<String, dynamic>>? _parseBenefitsList(dynamic benefits) {
@@ -130,6 +135,48 @@ class DuaModel {
     return null;
   }
 
+  static Map<String, String> _parseTranslations(dynamic value) {
+    if (value is! Map) return {};
+    return {
+      for (final e in value.entries)
+        if (e.value is String && (e.value as String).trim().isNotEmpty)
+          '${e.key}': e.value as String,
+    };
+  }
+
+  /// The app's language names, by the dua field that holds that language.
+  static const Map<String, String> _fieldOfLanguage = {
+    'Arabic': 'arabic',
+    'Bengali': 'bengali',
+    'English': 'english',
+    'French': 'french',
+    'German': 'german',
+    'Gujarati': 'gujrati',
+    'Hindi': 'hindi',
+    'Indonesian': 'indonesian',
+    'Japanese': 'japanese',
+    'Malay': 'malay',
+    'Mandarin': 'mandrain',
+    'Marathi': 'marathi',
+    'Portuguese': 'portugese',
+    'Punjabi': 'punjabi',
+    'Russian': 'russian',
+    'Sindhi': 'sindhi',
+    'Spanish': 'spanish',
+    'Tamil': 'tamil',
+    'Telugu': 'telgu',
+    'Turkish': 'turkish',
+    'Urdu': 'urdu',
+  };
+
+  /// The text-format benefits in [languageCode] (an app language name such
+  /// as 'Urdu'), falling back to English.
+  String? benefitsStringFor(String languageCode) {
+    final translated = benefitsTranslations[_fieldOfLanguage[languageCode]];
+    if (translated != null && translated.trim().isNotEmpty) return translated;
+    return benefitsString;
+  }
+
   factory DuaModel.fromMap(Map<String, dynamic> map) {
     return DuaModel(
       id: map["id"] ?? '',
@@ -172,6 +219,7 @@ class DuaModel {
       urduTranslation: map["urduTranslation"] ?? '',
       benefits: _parseBenefitsList(map["benefits"]),
       benefitsString: _parseBenefitsString(map["benefits"]),
+      benefitsTranslations: _parseTranslations(map["benefitsTranslations"]),
     );
   }
 
@@ -278,6 +326,7 @@ class DuaModel {
       "englishTranslation": englishTranslation,
       "urduTranslation": urduTranslation,
       "benefits": benefits ?? benefitsString,
+      "benefitsTranslations": benefitsTranslations,
     };
   }
 
@@ -287,7 +336,7 @@ class DuaModel {
   String? getBenefitText(int index, String languageCode) {
     // If benefits is a String, return it directly
     if (benefitsString != null && benefitsString!.isNotEmpty) {
-      return benefitsString;
+      return benefitsStringFor(languageCode);
     }
 
     // Otherwise, handle List format

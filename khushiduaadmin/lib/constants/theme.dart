@@ -8,6 +8,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'fonts.dart';
+
 /// Spacing scale, as in the app.
 abstract final class Space {
   static const double xs = 4;
@@ -132,6 +134,9 @@ ThemeData buildAdminTheme() {
 
   return ThemeData(
     useMaterial3: true,
+    // Arabic-script text outside the Arabic and Urdu fields (search, history,
+    // other languages) uses the bundled Naskh, not a font fetched at runtime.
+    fontFamilyFallback: AppFonts.fallback,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
     scaffoldBackgroundColor: Palette.page,

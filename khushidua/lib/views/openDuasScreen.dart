@@ -30,6 +30,7 @@ import '../widgets/listenedHelp.dart';
 import '../widgets/skeleton.dart';
 import 'imageScreen.dart';
 import '../widgets/networkPicture.dart';
+import '../constants/fonts.dart';
 
 /// "1 dua" / "5 duas", translated.
 String duaCountLabel(int count) =>
@@ -963,7 +964,8 @@ class _DuaTileState extends State<DuaTile> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 22,
                                 color: _recordInk,
-                                fontFamily: 'arabic',
+                                fontFamily: AppFonts.arabic,
+                                fontFamilyFallback: AppFonts.fallback,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -1374,8 +1376,9 @@ class _DuaTileState extends State<DuaTile> {
                                         color: Colors.white,
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
-                                        fontFamily: 'arabic',
-                                        height: 1.8,
+                                        fontFamily: AppFonts.arabic,
+                                        fontFamilyFallback: AppFonts.fallback,
+                                        height: AppFonts.arabicMinHeight,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -1558,7 +1561,7 @@ class _DuaTileState extends State<DuaTile> {
 
     if (hasStringBenefits) {
       return _buildBenefitContainer(
-        widget.dua.benefitsString!,
+        widget.dua.benefitsStringFor(userLanguage)!,
         isRtl,
         themeController,
         userLanguage,
@@ -1632,7 +1635,7 @@ class _DuaTileState extends State<DuaTile> {
               style: TextStyle(
                 color: rtext.withOpacity(0.9),
                 fontSize: themeController.textSize * 0.85,
-                height: 1.5,
+                height: AppFonts.height(1.5),
               ),
             ),
           ),
@@ -1708,7 +1711,8 @@ class _DuaTileState extends State<DuaTile> {
                                   ? themeController.textSize
                                   : themeController.textSize * 1.15,
                               height: 2.0,
-                              fontFamily: 'arabic',
+                              fontFamily: AppFonts.arabic,
+                              fontFamilyFallback: AppFonts.fallback,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
@@ -1879,7 +1883,7 @@ class _DuaTileState extends State<DuaTile> {
                 color: rtext,
                 fontSize: themeController.textSize * 0.9,
                 fontWeight: FontWeight.w500,
-                height: 1.4,
+                height: AppFonts.height(1.4),
               ),
             ),
           ],

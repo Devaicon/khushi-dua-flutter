@@ -19,6 +19,7 @@ import 'notifications.dart';
 import '../../widgets/salahBanner.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/networkPicture.dart';
+import '../../constants/fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -456,7 +457,7 @@ class _CategoryTileState extends State<CategoryTile>
                   color: CategoryPalette.contentColor(widget.ageGroup),
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
-                  height: 1.15,
+                  height: AppFonts.height(1.15),
                 ),
               ),
             ],

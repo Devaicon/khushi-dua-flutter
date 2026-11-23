@@ -75,6 +75,22 @@ flutter:
     - assets/images/
   #   - images/a_dot_ham.jpeg
 
+  # Same fonts as the mobile app (see khushidua/pubspec.yaml for how the
+  # Noor-e-Huda file is adjusted). Family names are referenced through
+  # lib/constants/fonts.dart (AppFonts).
+  fonts:
+    - family: arabic
+      fonts:
+        - asset: assets/fonts/NoorHuda-Regular.ttf
+    - family: urdu
+      fonts:
+        - asset: assets/fonts/JameelNooriNastaleeq-Regular.ttf
+    - family: naskh
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
+        - asset: assets/fonts/NotoNaskhArabic-Bold.ttf
+          weight: 700
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
 

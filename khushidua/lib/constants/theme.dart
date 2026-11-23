@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'colors.dart';
+import 'fonts.dart';
 
 /// Spacing scale. Every gap, padding and margin picks one of these.
 abstract final class AppSpace {
@@ -248,8 +249,12 @@ SystemUiOverlayStyle get kAppOverlayStyle => SystemUiOverlayStyle(
 
 /// Material's own surfaces — dialogs, switches, app bars, fields — read from
 /// this, so they stop looking like they belong to a different app.
+///
+/// Built again whenever the language changes (Get.updateLocale rebuilds the
+/// whole app), so an Arabic or Urdu interface gets its own font throughout.
 ThemeData buildAppTheme() {
   final bool dark = AppPalette.isDark;
+  final String? font = AppFonts.current;
   final scheme =
       ColorScheme.fromSeed(
         seedColor: kBrandNavy,
@@ -261,7 +266,7 @@ ThemeData buildAppTheme() {
         onSurface: rtext,
       );
 
-  return ThemeData(
+  final theme = ThemeData(
     useMaterial3: true,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
@@ -270,7 +275,8 @@ ThemeData buildAppTheme() {
     cardColor: AppSurface.card,
     dividerColor: AppSurface.line,
     splashFactory: InkRipple.splashFactory,
-    fontFamily: null,
+    fontFamily: font,
+    fontFamilyFallback: AppFonts.fallback,
     appBarTheme: AppBarTheme(
       systemOverlayStyle: kAppOverlayStyle,
       backgroundColor: AppSurface.page,
@@ -279,6 +285,8 @@ ThemeData buildAppTheme() {
       centerTitle: true,
       iconTheme: IconThemeData(color: rbluedark),
       titleTextStyle: TextStyle(
+        fontFamily: font,
+        fontFamilyFallback: AppFonts.fallback,
         color: rbluedark,
         fontSize: 20,
         fontWeight: FontWeight.bold,
@@ -288,11 +296,18 @@ ThemeData buildAppTheme() {
       backgroundColor: AppSurface.card,
       surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
+        fontFamily: font,
+        fontFamilyFallback: AppFonts.fallback,
         color: rbluedark,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      contentTextStyle: TextStyle(color: rtext, fontSize: 14),
+      contentTextStyle: TextStyle(
+        color: rtext,
+        fontSize: 14,
+        fontFamily: font,
+        fontFamilyFallback: AppFonts.fallback,
+      ),
       shape: RoundedRectangleBorder(borderRadius: AppRadius.cardAll),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -371,5 +386,10 @@ ThemeData buildAppTheme() {
         TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       },
     ),
+  );
+  if (font == null) return theme;
+  return theme.copyWith(
+    textTheme: AppFonts.raiseHeights(theme.textTheme, font),
+    primaryTextTheme: AppFonts.raiseHeights(theme.primaryTextTheme, font),
   );
 }

@@ -14,6 +14,7 @@ import '../../widgets/reorderList.dart';
 import '../../widgets/ui.dart';
 import '../category/categoryPage.dart';
 import '../category/itemEditor.dart';
+import '../../constants/fonts.dart';
 
 /// The home screen's categories, in the app's order. Drag to reorder; open
 /// one for its sections.
@@ -106,9 +107,17 @@ class _CategoriesTabState extends State<CategoriesTab> {
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 15)),
-                                Text(
-                                  '${sections.length} sections · $duaCount duas'
-                                  '${cat.urdu.isEmpty ? '' : ' · ${cat.urdu}'}',
+                                Text.rich(
+                                  TextSpan(
+                                    text: '${sections.length} sections · $duaCount duas',
+                                    children: [
+                                      if (cat.urdu.isNotEmpty)
+                                        TextSpan(
+                                          text: ' · ${cat.urdu}',
+                                          style: AppFonts.styleFor('urdu'),
+                                        ),
+                                    ],
+                                  ),
                                   style: AdminText.muted,
                                 ),
                               ],

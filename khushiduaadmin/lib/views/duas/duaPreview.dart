@@ -7,6 +7,7 @@ import '../../controllers/panelAudioController.dart';
 import '../../models/audioSlot.dart';
 import '../../models/duaModel.dart';
 import '../../widgets/ui.dart';
+import '../../constants/fonts.dart';
 
 /// The dua as the app shows it (khushidua/lib/views/openDuasScreen.dart's
 /// DuaTile), for the age group and language picked above it. Listen and the
@@ -139,8 +140,7 @@ class _DuaPreviewState extends State<DuaPreview> {
                           ? Palette.textMuted
                           : Palette.text,
                       fontSize: 24,
-                      height: 2,
-                    ),
+                    ).merge(AppFonts.styleFor('arabic', height: 2)),
                   ),
                 ),
                 Padding(
@@ -165,7 +165,8 @@ class _DuaPreviewState extends State<DuaPreview> {
                         translation.trim().isEmpty ? 'Translation' : translation,
                         textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w500, height: 1.4),
+                                fontWeight: FontWeight.w500, height: 1.4)
+                            .merge(AppFonts.styleFor(_language)),
                       ),
                     ],
                   ),

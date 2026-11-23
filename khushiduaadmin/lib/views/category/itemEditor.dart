@@ -16,6 +16,7 @@ import '../../services/storageService.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/ui.dart';
 import '../../widgets/networkPicture.dart';
+import '../../constants/fonts.dart';
 
 /// Creates or edits a category or a section (subcategory): its name in every
 /// language, image, age groups and visibility.
@@ -254,6 +255,7 @@ class _ItemEditorState extends State<ItemEditor> {
                                   child: TextField(
                                     controller: _names[l.field],
                                     textDirection: l.rtl ? TextDirection.rtl : TextDirection.ltr,
+                                    style: AppFonts.styleFor(l.field),
                                     decoration: InputDecoration(
                                       labelText: l.field == 'english' ? 'English (required)' : l.label,
                                       errorText: _showErrors &&

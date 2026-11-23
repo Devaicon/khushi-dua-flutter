@@ -7,6 +7,9 @@
 #         KEY_PROPERTIES  path to key.properties  (default: khushidua/android/key.properties)
 #         KEYSTORE        path to the .jks file   (default: storeFile from key.properties,
 #                                                  resolved relative to khushidua/android/app)
+#       --bump           increment the build number in khushidua/pubspec.yaml first
+#                        (1.6.0+28 -> 1.6.0+29); Play rejects a reused build number
+#       --version=X.Y.Z+N  set khushidua/pubspec.yaml to exactly this version first
 #       --apk            also build dist/android/app-release.apk
 #       --debug-signing  allow a debug-signed build when no keystore is set (NOT uploadable)
 #
@@ -31,14 +34,38 @@ usage() { sed -n '2,/^[^#]/{/^#/p}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; 
 cmd="${1:-}"; shift || true
 case "$cmd" in
   android)
-    apk=0; debug=0
+    apk=0; debug=0; bump=0; set_version=""
     for arg in "$@"; do
       case "$arg" in
         --apk) apk=1 ;;
         --debug-signing) debug=1 ;;
+        --bump) bump=1 ;;
+        --version=*) set_version="${arg#--version=}" ;;
         *) echo "Unknown option: $arg" >&2; exit 2 ;;
       esac
     done
+
+    pubspec="$ROOT/khushidua/pubspec.yaml"
+    current="$(sed -n 's/^version:[[:space:]]*//p' "$pubspec" | tr -d '\r')"
+    [[ "$current" =~ ^([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)$ ]] \
+      || { echo "Unexpected version in pubspec.yaml: '$current' (want X.Y.Z+N)" >&2; exit 1; }
+    name="${BASH_REMATCH[1]}"; code="${BASH_REMATCH[2]}"
+
+    if [[ -n "$set_version" ]]; then
+      [[ "$set_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$ ]] \
+        || { echo "--version must look like 1.6.1+29, got '$set_version'" >&2; exit 2; }
+      new="$set_version"
+    elif [[ $bump -eq 1 ]]; then
+      new="$name+$((code + 1))"
+    else
+      new="$current"
+    fi
+    if [[ "$new" != "$current" ]]; then
+      sed -i "s/^version:.*/version: $new/" "$pubspec"
+      echo ">> Version: $current -> $new (remember to commit pubspec.yaml)"
+    else
+      echo ">> Version: $current (unchanged; use --bump if this build number is already on Play)"
+    fi
 
     key_props="${KEY_PROPERTIES:-$ROOT/khushidua/android/key.properties}"
     secrets=()

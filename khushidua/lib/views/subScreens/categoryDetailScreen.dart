@@ -12,6 +12,7 @@ import '../../models/subCategoryModel.dart';
 import '../openDuasScreen.dart';
 import '../../widgets/listenedHelp.dart';
 import '../../widgets/networkPicture.dart';
+import '../../constants/fonts.dart';
 
 /// A category's sections, each with how many duas it holds and, for a
 /// logged-in reader, how many of them they have listened to.
@@ -380,7 +381,7 @@ class _SectionTile extends StatelessWidget {
                           color: rtext,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          height: 1.25,
+                          height: AppFonts.height(1.25),
                         ),
                       ),
                       const SizedBox(height: 4),

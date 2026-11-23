@@ -15,6 +15,7 @@ import '../../models/donationSettings.dart';
 import '../../models/storeLinks.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/ui.dart';
+import '../../constants/fonts.dart';
 
 /// Switches that change the app without a release: content refresh, the
 /// Practice button, donation prompts, the Share App store links and the
@@ -396,6 +397,7 @@ class _AppControlsTabState extends State<AppControlsTab> {
         TextField(
           controller: _cardTitle[_cardLanguage],
           textDirection: direction,
+          style: AppFonts.styleFor(language.field),
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             hintText: english ? 'Support LearningSouls' : "App's own wording",
@@ -406,6 +408,7 @@ class _AppControlsTabState extends State<AppControlsTab> {
         TextField(
           controller: _cardMessage[_cardLanguage],
           textDirection: direction,
+          style: AppFonts.styleFor(language.field),
           minLines: 1,
           maxLines: 3,
           onChanged: (_) => setState(() {}),

@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.6.0+27
+version: 1.6.0+30
 
 environment:
   sdk: ^3.8.1
@@ -67,11 +67,26 @@ flutter:
     - assets/images/
     - assets/legal/
 
+  # Family names are referenced through lib/constants/fonts.dart (AppFonts).
   fonts:
-    # Noto Naskh Arabic (SIL OFL, see assets/fonts/OFL.txt). The old
-    # Noor-e-Hidayat font had no ي, ة, ه or Arabic digits, so those letters
-    # fell back to the system font and broke the words around them.
+    # Noor-e-Huda v1.002 (noorehidayat.org; its licence allows bundling it
+    # with an app), for all Arabic text. Adjusted for the app: the hamza
+    # its لأ glyph is missing is added back (الأذان rendered as الاذان), its
+    # digits are ayah-marker glyphs so they are dropped, its very narrow word
+    # space is widened, it is scaled up to Noto Naskh's size and its
+    # oversized line box is tightened. Rebuild with tool/fonts/patch_huda.py
+    # (usage in its docstring).
     - family: arabic
+      fonts:
+        - asset: assets/fonts/NoorHuda-Regular.ttf
+    # Jameel Noori Nastaleeq, for all Urdu text.
+    - family: urdu
+      fonts:
+        - asset: assets/fonts/JameelNooriNastaleeq-Regular.ttf
+    # Noto Naskh Arabic (SIL OFL, see assets/fonts/OFL.txt): fallback for
+    # the few characters the two fonts above lack (digits, alef wasla,
+    # tatweel in Urdu), so they never come from the device font.
+    - family: naskh
       fonts:
         - asset: assets/fonts/NotoNaskhArabic-Regular.ttf
         - asset: assets/fonts/NotoNaskhArabic-Bold.ttf

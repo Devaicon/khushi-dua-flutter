@@ -17,6 +17,7 @@ import '../helpers/qiblaMath.dart';
 import '../services/compassCues.dart';
 import '../services/declinationService.dart';
 import '../services/headingService.dart';
+import '../constants/fonts.dart';
 
 /// How long to wait for a first compass reading before telling the user their
 /// device does not appear to be delivering one.
@@ -1022,11 +1023,11 @@ class _CompassScreenState extends State<CompassScreen>
             Text(
               "Still not accurate. Keep moving your phone in a figure-8, then try again."
                   .tr,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _kWarnRed,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                height: 1.35,
+                height: AppFonts.height(1.35),
               ),
               textAlign: TextAlign.center,
             ),

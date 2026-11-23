@@ -15,6 +15,7 @@ import '../../widgets/reorderList.dart';
 import '../../widgets/ui.dart';
 import '../duas/duaEditor.dart';
 import 'itemEditor.dart';
+import '../../constants/fonts.dart';
 
 /// One section: its duas in the app's order, with what each is missing.
 class SectionPage extends StatefulWidget {
@@ -147,7 +148,7 @@ class _SectionPageState extends State<SectionPage> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 textDirection: TextDirection.rtl,
-                                style: AdminText.muted,
+                                style: AdminText.muted.merge(AppFonts.styleFor('arabic')),
                               ),
                             ],
                           ),

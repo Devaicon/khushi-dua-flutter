@@ -6,3 +6,5 @@
 app-screenshots
 # Docker build outputs (docker/build.sh)
 dist/
+fonts/
+tool/

@@ -5,6 +5,7 @@ import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
 import '../../constants/theme.dart';
 import '../../services/authService.dart';
+import '../../constants/fonts.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -109,7 +110,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
-                            height: 1.5,
+                            height: AppFonts.height(1.5),
                           ),
                         ),
                       ),

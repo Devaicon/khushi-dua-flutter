@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../constants/theme.dart';
 import '../widgets/customSnackbar.dart';
+import '../constants/fonts.dart';
 
 /// The privacy policy and terms, read from the app's own assets and shown
 /// natively rather than in a browser. The same Markdown files are what gets
@@ -165,7 +166,7 @@ abstract final class _MarkdownBlocks {
             style: TextStyle(
               color: rbluedark,
               fontWeight: FontWeight.bold,
-              height: 1.3,
+              height: AppFonts.height(1.3),
               fontSize: switch (level) {
                 1 => 24,
                 2 => 18,

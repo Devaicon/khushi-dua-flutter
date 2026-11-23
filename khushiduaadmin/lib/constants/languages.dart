@@ -47,6 +47,15 @@ const List<ContentLanguage> kContentLanguages = [
 List<ContentLanguage> get kTranslationLanguages =>
     kContentLanguages.where((l) => l.field != 'arabic').toList();
 
+/// The languages "Benefits & Virtues" can be written in: the same 20 as the
+/// translations. English is stored under `benefits`, the rest under
+/// `benefitsTranslations.<field>`.
+List<ContentLanguage> get kBenefitLanguages => kTranslationLanguages;
+
+/// [kBenefitLanguages] without English.
+List<ContentLanguage> get kBenefitTranslationLanguages =>
+    kBenefitLanguages.where((l) => l.field != 'english').toList();
+
 /// The age groups, in the app's order (0 little kids, 1 older kids,
 /// 2 grown-ups), with the Firestore flag that shows content to each.
 enum AgeGroup {

@@ -5,6 +5,7 @@ import 'package:khushidua/constants/theme.dart';
 import 'package:khushidua/controllers/notificationController.dart';
 import '../../animations/fadeInAnimationBTT.dart';
 import '../../models/notificationModel.dart';
+import '../../constants/fonts.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -255,7 +256,7 @@ class NotificationTile extends StatelessWidget {
                                 style: TextStyle(
                                   color: rtext.withValues(alpha: 0.6),
                                   fontSize: 14,
-                                  height: 1.5,
+                                  height: AppFonts.height(1.5),
                                 ),
                               ),
                             ],

@@ -24,6 +24,7 @@ import '../subSettings/prayerTimeSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/donateCard.dart';
 import '../../widgets/sunPathView.dart';
+import '../../constants/fonts.dart';
 
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
@@ -975,7 +976,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 Text(
                   arabic,
                   style: TextStyle(
-                    fontFamily: 'arabic',
+                    fontFamily: AppFonts.arabic,
+                    fontFamilyFallback: AppFonts.fallback,
                     fontSize: 22,
                     color: AppText.onSurfaceMuted,
                   ),
@@ -1219,7 +1221,8 @@ class _NamazTileState extends State<NamazTile> {
                       Text(
                         namaz.arabicName,
                         style: TextStyle(
-                          fontFamily: 'arabic',
+                          fontFamily: AppFonts.arabic,
+                          fontFamilyFallback: AppFonts.fallback,
                           fontSize: 15,
                           color: AppText.onPageMuted,
                         ),
