@@ -50,9 +50,14 @@ const Duration _kAlignedCueGap = Duration(seconds: 3);
 /// How long a problem must last before its warning shows.
 const Duration _kWarningDwell = Duration(milliseconds: 1500);
 
-/// How long "Try again" watches fresh readings before deciding whether the
-/// compass is now accurate enough.
-const Duration _kRecheckDuration = Duration(milliseconds: 1500);
+/// How long "Try again" watches the restarted sensors before deciding
+/// whether the compass is now accurate enough. Google's fused orientation can
+/// take up to ~2.5s to send its first reading after it is re-registered.
+const Duration _kRecheckDuration = Duration(seconds: 4);
+
+/// A good reading only ends the recheck early once the restarted sensors have
+/// had this long to settle.
+const Duration _kRecheckMinSettle = Duration(milliseconds: 800);
 
 /// How long the compass takes to fade in when it first appears.
 const Duration _kAppearDuration = Duration(milliseconds: 250);
@@ -144,10 +149,11 @@ class _CompassScreenState extends State<CompassScreen>
   bool _recheckFailed = false;
   int _recheckAttempts = 0;
   Timer? _recheckTimer;
+  DateTime? _recheckStartedAt;
 
-  /// Whether the latest reading on its own was below the accuracy threshold,
-  /// which is what a recheck goes by.
-  bool _lastReadingPoor = false;
+  /// How the latest reading since the recheck restarted the sensors was
+  /// judged, with no hysteresis; null until one could be judged.
+  bool? _recheckPoor;
 
   bool _aligned = false;
   DateTime? _lastAlignedCue;
@@ -314,7 +320,23 @@ class _CompassScreenState extends State<CompassScreen>
       magnetometerStatus: reading.magnetometerStatus,
       wasPoor: _needsCalibration.value,
     );
-    if (poor != null) _lastReadingPoor = poor;
+    if (_rechecking) {
+      // Judged afresh, as a newly opened screen would, not against the
+      // stricter recovery line the old session had reached.
+      final bool? fresh = isPoorHeading(
+        errorDegrees: reading.errorDegrees,
+        magnetometerStatus: reading.magnetometerStatus,
+        wasPoor: false,
+      );
+      if (fresh != null) _recheckPoor = fresh;
+      final DateTime? started = _recheckStartedAt;
+      if (fresh == false &&
+          started != null &&
+          now.difference(started) >= _kRecheckMinSettle) {
+        // Let this reading land first, then close the pop-up.
+        scheduleMicrotask(_finishRecheck);
+      }
+    }
     final bool calibrationStarted =
         poor != null &&
         _needsCalibration.update(poor, now) &&
@@ -349,9 +371,16 @@ class _CompassScreenState extends State<CompassScreen>
     _syncToast();
   }
 
-  /// "Try again" on the calibration pop-up: watches fresh readings for a
-  /// moment, then lets the compass through if they meet the threshold, or
-  /// puts the pop-up up again if they still do not.
+  /// "Try again" on the calibration pop-up.
+  ///
+  /// Restarts the heading stream, which re-registers with Google's Fused
+  /// Orientation Provider (or the platform sensors) exactly as leaving the tab
+  /// and coming back does. A registration that has been running while the
+  /// user calibrated can keep reporting its old, large heading error; a fresh
+  /// one picks up the new calibration. The restarted readings are then
+  /// watched for a moment: the compass is let through as soon as one meets
+  /// the threshold, or if none could be judged (no estimate yet, as on a
+  /// freshly opened screen), and the pop-up stays only if they are still poor.
   void _recheckCalibration() {
     if (_rechecking) return;
     _recheckTimer?.cancel();
@@ -359,21 +388,33 @@ class _CompassScreenState extends State<CompassScreen>
       _rechecking = true;
       _recheckFailed = false;
     });
-    _recheckTimer = Timer(_kRecheckDuration, () {
-      if (!mounted) return;
-      final bool stillPoor = _lastReadingPoor;
-      setState(() {
-        _rechecking = false;
-        if (stillPoor) {
-          _recheckFailed = true;
-          _recheckAttempts++;
-        } else {
-          _calibrationPopup = false;
-          _needsCalibration.reset();
-        }
-      });
-      _syncToast();
+    _recheckPoor = null;
+    _recheckStartedAt = DateTime.now();
+    _needsCalibration.reset();
+    _stopSensors();
+    _startSensors();
+    _recheckTimer = Timer(_kRecheckDuration, _finishRecheck);
+  }
+
+  void _finishRecheck() {
+    if (!mounted || !_rechecking) return;
+    _recheckTimer?.cancel();
+    _recheckTimer = null;
+    _recheckStartedAt = null;
+    final bool stillPoor = _recheckPoor ?? false;
+    setState(() {
+      _rechecking = false;
+      if (stillPoor) {
+        _recheckFailed = true;
+        _recheckAttempts++;
+      } else {
+        _calibrationPopup = false;
+        _recheckFailed = false;
+        _recheckAttempts = 0;
+        _needsCalibration.reset();
+      }
     });
+    _syncToast();
   }
 
   void _onGravity(Gravity gravity) {
