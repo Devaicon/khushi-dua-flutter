@@ -99,14 +99,16 @@ class NotificationService {
       });
 
       final data = Map<String, dynamic>.from(result.data as Map);
-      final success = data["successCount"] ?? 0;
       final failed = data["failureCount"] ?? 0;
 
+      // Sent to the app's announcements topic, which reaches every install;
+      // FCM does not say how many devices that is. The failure count is for
+      // the tokens left on old accounts.
       CustomSnackbar.show(
         "Sent".tr,
         failed == 0
-            ? "Delivered to $success device(s)."
-            : "Delivered to $success device(s), $failed failed.",
+            ? "Sent to everyone with the app."
+            : "Sent to everyone with the app. $failed old device(s) failed.",
         isSuccess: true,
       );
     } catch (e) {

@@ -4,7 +4,7 @@ import 'package:khushiduaadmin/csv/csvSchema.dart';
 import 'package:khushiduaadmin/models/duaModel.dart';
 
 void main() {
-  group('benefits in 20 languages', () {
+  group('benefits in 21 languages', () {
     test('English lives in benefits, the rest in benefitsTranslations', () {
       final dua = DuaModel.empty()
         ..setBenefitText('english', ' Protection ')
@@ -13,7 +13,8 @@ void main() {
       expect(map['benefits'], 'Protection');
       expect((map['benefitsTranslations'] as Map)['urdu'], 'حفاظت');
       expect(dua.benefitCount, 2);
-      expect(kBenefitLanguages.length, 20);
+      expect(kBenefitLanguages.length, 21);
+      expect(kBenefitLanguages.map((l) => l.field), contains('arabic'));
     });
 
     test('every language is written, so a cleared one is blanked on merge',
@@ -56,7 +57,8 @@ void main() {
       expect(headers, contains('benefits'));
       expect(headers, contains('benefitsTranslations.urdu'));
       expect(headers.where((h) => h.startsWith('benefitsTranslations.')),
-          hasLength(19));
+          hasLength(20));
+      expect(headers, contains('benefitsTranslations.arabic'));
     });
   });
 }

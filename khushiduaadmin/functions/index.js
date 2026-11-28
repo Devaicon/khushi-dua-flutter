@@ -68,7 +68,19 @@ function requireText(value, field, max) {
 }
 
 /**
- * Send to every user that has an FCM token, then record one Notifications doc.
+ * The FCM topic every install of the app subscribes to. Must match
+ * PushService.announcementsTopic in the app.
+ */
+const ANNOUNCEMENTS_TOPIC = "announcements";
+
+/**
+ * Send to everyone, then record one Notifications doc.
+ *
+ * The app has no accounts any more, so announcements go to the topic every
+ * install subscribes to. Tokens still stored on old Users documents are sent
+ * to as well, for phones running an app version from before the topic; an
+ * updated app blanks its token when it leaves its account, so nobody gets an
+ * announcement twice.
  * Data: { title, message }
  */
 exports.sendGlobalNotification = onCall(async (request) => {
@@ -79,7 +91,13 @@ exports.sendGlobalNotification = onCall(async (request) => {
 
   const notificationId = db.collection("Notifications").doc().id;
 
-  // Collect tokens. Deduplicated, because a reinstall can leave stale copies.
+  await messaging.send({
+    topic: ANNOUNCEMENTS_TOPIC,
+    notification: {title, body: message},
+    data: {notificationId},
+  });
+
+  // Legacy tokens. Deduplicated, because a reinstall can leave stale copies.
   const usersSnap = await db.collection("Users").get();
   const tokens = [
     ...new Set(
@@ -129,6 +147,9 @@ exports.sendGlobalNotification = onCall(async (request) => {
 
   return {
     notificationId,
+    topic: ANNOUNCEMENTS_TOPIC,
+    // Counts cover the legacy tokens only; FCM does not report how many
+    // devices a topic reached.
     recipients: tokens.length,
     successCount,
     failureCount,

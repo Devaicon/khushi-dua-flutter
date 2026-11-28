@@ -8,12 +8,9 @@ import 'package:khushidua/views/qiblaTab.dart';
 import 'package:khushidua/views/subScreens/prayer.dart';
 import 'package:khushidua/views/subScreens/search.dart';
 import 'package:khushidua/views/subScreens/settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/colors.dart';
 import '../constants/theme.dart';
-import '../constants/userData.dart';
-import '../controllers/userController.dart';
 import '../services/contentRepository.dart';
 import '../services/pushService.dart';
 import '../services/reminderService.dart';
@@ -92,7 +89,6 @@ class _DashboardState extends State<Dashboard>
   void initState() {
     super.initState();
     AppTabs._goTo = _goToTab;
-    getSharedPrefs();
     ContentRepository.instance.load();
     Get.find<NotificationController>().getAllNotifications();
     _wireNotificationTaps();
@@ -149,24 +145,6 @@ class _DashboardState extends State<Dashboard>
     );
     if (matches.isEmpty) return;
     Get.to(() => CategoryDetailScreen(matches.first, kBrandNavy));
-  }
-
-  getSharedPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userId = await prefs.getString("userId") ?? "";
-
-    if (userId != "") {
-      Get.find<UserController>().getUserData(userId);
-    } else {
-      isLoggedIn = await prefs.getBool("isLoggedIn") ?? false;
-      points = await prefs.getInt("userPoints") ?? 0;
-      userName = await prefs.getString("userName") ?? "Guest User";
-      avatar = await prefs.getString("userAvatar") ?? "";
-      Get.find<UserController>().setUserName(userName);
-      Get.find<UserController>().setLoggedIn(false);
-      Get.find<UserController>().setPoints(points);
-      Get.find<UserController>().setAvatar(avatar);
-    }
   }
 
   void _onItemTapped(int index) {

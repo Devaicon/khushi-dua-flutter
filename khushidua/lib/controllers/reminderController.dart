@@ -96,6 +96,27 @@ class ReminderController extends GetxController {
     if (_supportEnabled && _supportAllowed) await _scheduleSupport();
   }
 
+  /// Applies reminder settings written by a settings import: schedules what
+  /// is now on and cancels what is now off. Returns false when a reminder is
+  /// on but this phone has not granted notification permission.
+  Future<bool> reload() async {
+    await loadSettings();
+    if (!_azkarEnabled) {
+      await ReminderService.instance.cancel(kAzkarMorningNotificationId);
+      await ReminderService.instance.cancel(kAzkarEveningNotificationId);
+    }
+    if (!_supportEnabled) {
+      await ReminderService.instance.cancel(kSupportNotificationId);
+    }
+    // Cancels every prayer when the master switch is off; otherwise
+    // schedules with the times saved on this phone, if it has any yet.
+    await syncSalahReminders(const {});
+    if (_azkarEnabled || _salahEnabled || _supportEnabled) {
+      return ReminderService.instance.requestPermissions();
+    }
+    return true;
+  }
+
   /// Called when the admin turns the weekly reminder on or off for everyone.
   /// The reader's own choice is kept, ready for when it is allowed again.
   Future<void> setSupportAllowed(bool allowed) async {

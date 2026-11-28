@@ -14,8 +14,8 @@ import '../../widgets/listenedHelp.dart';
 import '../../widgets/networkPicture.dart';
 import '../../constants/fonts.dart';
 
-/// A category's sections, each with how many duas it holds and, for a
-/// logged-in reader, how many of them they have listened to.
+/// A category's sections, each with how many duas it holds and how many of
+/// them the reader has listened to.
 class CategoryDetailScreen extends StatefulWidget {
   final CategoryModel categoryModel;
   final Color color;
@@ -46,9 +46,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppSurface.page,
-      // Listening to a dua writes readDuas on the user document, which the
-      // live snapshot pushes into UserController; rebuilding on it is what
-      // updates the listened counts without leaving the screen.
+      // Listening to a dua to the end updates UserController; rebuilding on it
+      // is what updates the listened counts without leaving the screen.
       body: GetBuilder<UserController>(
         builder: (userController) => GetBuilder<DuaController>(
           builder: (duaController) => GetBuilder<CategoryController>(
@@ -58,9 +57,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               final subCategories = categoryController.filteredSubCategories
                   .where((s) => s.categoryId == widget.categoryModel.id)
                   .toList();
-              final userModel = userController.userModel;
-              final listened = (userModel?.readDuas ?? const <String>[])
-                  .toSet();
+              final listened = userController.listenedDuas;
 
               final stats = [
                 for (final sub in subCategories)
@@ -71,10 +68,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildHeader(
-                    userController.selectedLanguage,
-                    loggedIn: userModel != null,
-                  ),
+                  _buildHeader(userController.selectedLanguage),
                   SliverToBoxAdapter(
                     child: _buildSummary(
                       sectionCount: subCategories.length,
@@ -100,7 +94,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                               subCategory: subCategories[index],
                               number: index + 1,
                               stats: stats[index],
-                              showListened: userModel != null,
                             ),
                           );
                         }, childCount: subCategories.length),
@@ -117,7 +110,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   /// A tinted header with the category's artwork that collapses into a plain
   /// title bar on scroll.
-  Widget _buildHeader(String language, {required bool loggedIn}) {
+  Widget _buildHeader(String language) {
     final name = widget.categoryModel.getName(language);
     return SliverAppBar(
       pinned: true,
@@ -132,13 +125,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         onPressed: () => Get.back(),
       ),
       actions: [
-        // Listening is only tracked while logged in.
-        if (loggedIn)
-          IconButton(
-            tooltip: "How listening works".tr,
-            icon: Icon(Icons.info_outline_rounded, color: rbluedark),
-            onPressed: showListenedHelp,
-          ),
+        IconButton(
+          tooltip: "How listening works".tr,
+          icon: Icon(Icons.info_outline_rounded, color: rbluedark),
+          onPressed: showListenedHelp,
+        ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
@@ -331,14 +322,12 @@ class _SectionTile extends StatelessWidget {
     required this.subCategory,
     required this.number,
     required this.stats,
-    required this.showListened,
   });
 
   final Color color;
   final SubCategoryModel subCategory;
   final int number;
   final _SectionStats stats;
-  final bool showListened;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +381,7 @@ class _SectionTile extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      if (showListened && stats.total > 0) ...[
+                      if (stats.total > 0) ...[
                         const SizedBox(height: AppSpace.sm),
                         ClipRRect(
                           borderRadius: AppRadius.pillAll,
@@ -419,7 +408,7 @@ class _SectionTile extends StatelessWidget {
 
   String _meta() {
     final count = duaCountLabel(stats.total);
-    if (!showListened || stats.total == 0) return count;
+    if (stats.total == 0) return count;
     return "$count  ·  ${"@done of @total listened".trParams({'done': '${stats.listened}', 'total': '${stats.total}'})}";
   }
 

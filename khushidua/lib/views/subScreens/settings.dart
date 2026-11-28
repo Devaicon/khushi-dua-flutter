@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/appearanceController.dart';
@@ -14,17 +18,19 @@ import '../../constants/firebaseRef.dart';
 import '../../constants/theme.dart';
 import '../../controllers/localization.dart';
 import '../../controllers/reminderController.dart';
+import '../../controllers/prayerSettingsController.dart';
+import '../../controllers/themeController.dart';
 import '../../controllers/userController.dart';
 import '../../models/storeLinks.dart';
-import '../auth/signupScreen.dart';
+import '../../services/settingsBackup.dart';
 import '../legalScreen.dart';
 import 'notifications.dart';
-import '../../services/authService.dart';
 import '../subSettings/audioDownloadSettings.dart';
 import '../subSettings/azkarReminderSettings.dart';
 import '../subSettings/prayerTimeSettings.dart';
 import '../subSettings/salahReminderSettings.dart';
 import '../../widgets/profileAvatar.dart';
+import '../../widgets/profileEditor.dart';
 import '../../widgets/customSnackbar.dart';
 import '../../widgets/donateCard.dart';
 
@@ -101,14 +107,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Get.to(() => const LegalScreen());
   }
 
-  /// Asks once more, then deletes the account; the auth service handles the
-  /// identity check and the deletion itself.
-  Future<void> confirmDeleteAccount() async {
+  /// Writes the portable settings to a JSON file and opens the share sheet,
+  /// so the reader can save it to Files or Drive, or send it to themselves.
+  Future<void> exportSettings() async {
+    try {
+      final json = await SettingsBackup.export();
+      final dir = await getTemporaryDirectory();
+      final stamp = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final file = File('${dir.path}/khushi-dua-settings-$stamp.json');
+      await file.writeAsString(json);
+
+      if (!mounted) return;
+      final box = context.findRenderObject() as RenderBox?;
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/json')],
+        subject: 'Khushi Dua settings',
+        // Required on iPad, where the sheet is a popover.
+        sharePositionOrigin: box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : const Rect.fromLTWH(0, 0, 100, 100),
+      );
+    } catch (e) {
+      debugPrint('Settings export failed: $e');
+      CustomSnackbar.show(
+        "Error".tr,
+        "Could not export your settings. Please try again.".tr,
+        isSuccess: false,
+      );
+    }
+  }
+
+  /// Reads a backup file, confirms, then replaces the settings with it and
+  /// applies them straight away: no restart needed.
+  Future<void> importSettings() async {
+    final Map<String, Object> values;
+    try {
+      // Any file type: Android often reports JSON as a generic file, so a
+      // filter on .json would hide the very file the reader saved.
+      final picked = await FilePicker.pickFile();
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      values = SettingsBackup.decode(utf8.decode(bytes, allowMalformed: true));
+    } on BackupFormatException catch (e) {
+      CustomSnackbar.show(
+        "Error".tr,
+        e.newerVersion
+            ? "This backup is from a newer version of the app. Please update the app first."
+                  .tr
+            : "This file is not a Khushi Dua settings backup.".tr,
+        isSuccess: false,
+      );
+      return;
+    } catch (e) {
+      debugPrint('Settings import failed: $e');
+      CustomSnackbar.show(
+        "Error".tr,
+        "Could not read that file.".tr,
+        isSuccess: false,
+      );
+      return;
+    }
+
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: Text("Delete your account?".tr),
+        title: Text("Replace your settings?".tr),
         content: Text(
-          "This permanently deletes your account, points and listening progress. It cannot be undone."
+          "Your settings and listening progress on this phone will be replaced with the ones in the backup."
               .tr,
         ),
         actions: [
@@ -118,15 +182,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE53935),
-            ),
-            child: Text("Delete".tr),
+            child: Text("Import".tr),
           ),
         ],
       ),
     );
-    if (confirmed == true) await AuthService().deleteAccount();
+    if (confirmed != true) return;
+
+    await SettingsBackup.apply(values);
+    await Get.find<UserController>().load();
+    await Get.find<AppearanceController>().reload();
+    await Get.find<ThemeController>().reload();
+    await Get.find<PrayerSettingsController>().reload();
+    final notificationsAllowed = await Get.find<ReminderController>().reload();
+
+    CustomSnackbar.show(
+      "Success".tr,
+      notificationsAllowed
+          ? "Your settings have been imported.".tr
+          : "Settings imported. Allow notifications to get your reminders."
+                .tr,
+      isSuccess: notificationsAllowed,
+    );
   }
 
   void azkarReminderSettings() {
@@ -355,24 +432,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpace.xl),
-                        _buildAccountButton(userController),
-                        if (userController.isLoggedIn) ...[
-                          const SizedBox(height: AppSpace.sm),
-                          Center(
-                            child: TextButton.icon(
-                              onPressed: confirmDeleteAccount,
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFFE53935),
-                              ),
-                              icon: const Icon(
-                                Icons.delete_forever_rounded,
-                                size: 18,
-                              ),
-                              label: Text("Delete account".tr),
+                        // Moving to another phone, now that there are no
+                        // accounts to sign in to.
+                        _SettingsGroup(
+                          title: "BACKUP".tr,
+                          rows: [
+                            _SettingsRow(
+                              icon: Icons.upload_file_rounded,
+                              seed: const Color(0xFF00897B),
+                              title: "Export settings".tr,
+                              subtitle:
+                                  "Save your settings and progress to a file"
+                                      .tr,
+                              onTap: exportSettings,
                             ),
-                          ),
-                        ],
+                            _SettingsRow(
+                              icon: Icons.download_for_offline_rounded,
+                              seed: const Color(0xFF5E35B1),
+                              title: "Import settings".tr,
+                              subtitle: "Restore from a backup file".tr,
+                              onTap: importSettings,
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: AppSpace.xl),
                         Center(
                           child: Text(
@@ -504,107 +586,108 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// A compact identity card: avatar, name and the two stats, instead of the
-  /// old 320px banner that pushed every setting below the fold.
+  /// A compact identity card: avatar, name and the two stats. Tapping it
+  /// edits the optional name and avatar; nothing asks the reader to sign up.
   Widget _buildProfileHeader(UserController userController) {
-    final name = userController.isLoggedIn
-        ? userController.userName
-        : "Guest User".tr;
-    final email = userController.userModel?.email ?? "";
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         AppSpace.lg,
         AppSpace.lg,
         AppSpace.lg,
         AppSpace.sm,
       ),
-      padding: const EdgeInsets.all(AppSpace.xl),
-      decoration: cardDecoration(kBrandNavy, radius: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _showAvatarPopup,
-                child: Stack(
-                  clipBehavior: Clip.none,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: showProfileEditor,
+          borderRadius: BorderRadius.circular(28),
+          child: Ink(
+            padding: const EdgeInsets.all(AppSpace.xl),
+            decoration: cardDecoration(kBrandNavy, radius: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    const ProfileAvatar(size: 72, showBorder: false),
-                    Positioned(
-                      right: -2,
-                      bottom: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppSurface.card,
-                          shape: BoxShape.circle,
-                          boxShadow: AppElevation.card,
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const ProfileAvatar(size: 72, showBorder: false),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppSurface.card,
+                              shape: BoxShape.circle,
+                              boxShadow: AppElevation.card,
+                            ),
+                            child: Icon(
+                              Icons.edit_rounded,
+                              size: 13,
+                              color: rbluedark,
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.edit_rounded,
-                          size: 13,
-                          color: rbluedark,
-                        ),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpace.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userController.hasName
+                                ? userController.userName
+                                : "Add your name".tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppText.onSurface,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Saved on this phone. No account needed.".tr,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppText.onSurfaceMuted,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: AppSpace.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: AppSpace.xl),
+                Row(
                   children: [
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppText.onSurface,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: _statPill(
+                        Icons.emoji_events_rounded,
+                        userController.points.toString(),
+                        "Points".tr,
                       ),
                     ),
-                    if (email.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppText.onSurfaceMuted,
-                          fontSize: 13,
-                        ),
+                    const SizedBox(width: AppSpace.md),
+                    Expanded(
+                      child: _statPill(
+                        Icons.menu_book_rounded,
+                        userController.listenedCount.toString(),
+                        "Duas Read".tr,
                       ),
-                    ],
+                    ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpace.xl),
-          Row(
-            children: [
-              Expanded(
-                child: _statPill(
-                  Icons.emoji_events_rounded,
-                  userController.points.toString(),
-                  "Points".tr,
-                ),
-              ),
-              const SizedBox(width: AppSpace.md),
-              Expanded(
-                child: _statPill(
-                  Icons.menu_book_rounded,
-                  (userController.userModel?.readDuas.length ?? 0).toString(),
-                  "Duas Read".tr,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -645,122 +728,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAccountButton(UserController userController) {
-    final loggedIn = userController.isLoggedIn;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: AppRadius.cardAll,
-        onTap: () async {
-          if (loggedIn) {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            await prefs.clear();
-            await AuthService().signOut();
-            userController.setLoggedIn(false);
-            Get.find<UserController>().setUserName("Guest User");
-            Get.find<UserController>().setPoints(0);
-            CustomSnackbar.show("Success", "Logged out successfully".tr);
-          } else {
-            Get.to(() => const SignupScreen(), transition: Transition.downToUp);
-          }
-        },
-        child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.lg),
-          decoration: cardDecoration(
-            loggedIn ? const Color(0xFFE53935) : const Color(0xFF2E9E5B),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                loggedIn ? Icons.logout_rounded : Icons.login_rounded,
-                color: AppText.onSurface,
-              ),
-              const SizedBox(width: AppSpace.md),
-              Text(
-                loggedIn ? "Logout Account".tr : "Sign In / Sign Up".tr,
-                style: const TextStyle(
-                  color: AppText.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showAvatarPopup() async {
-    String? avatarPath = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Center(
-            child: Text(
-              "Select Your Avatar".tr,
-              style: TextStyle(
-                color: rbluedark,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _avatarOption(context, "assets/images/male.png"),
-                _avatarOption(context, "assets/images/female.png"),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Cancel".tr,
-                style: const TextStyle(color: Colors.grey),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (avatarPath != null) {
-      Get.find<UserController>().setAvatar(avatarPath);
-    }
-  }
-
-  Widget _avatarOption(BuildContext context, String imagePath) {
-    return InkWell(
-      onTap: () => Navigator.pop(context, imagePath),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: plainCardDecoration(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(imagePath, width: 90, height: 90),
-            const SizedBox(height: 8),
-            Text(
-              isGirlAvatar(imagePath) ? "Girl".tr : "Boy".tr,
-              style: TextStyle(
-                color: rbluedark,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

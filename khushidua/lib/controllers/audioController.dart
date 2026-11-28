@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/userController.dart';
 import 'package:khushidua/services/audioDownloadService.dart';
-import 'package:khushidua/constants/firebaseRef.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AudioController extends GetxController {
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -90,18 +88,10 @@ class AudioController extends GetxController {
     update();
   }
 
+  /// Listening progress is kept on the device, for everyone: no sign-in.
   Future<void> _markDuaAsDone(String duaId) async {
     try {
-      final userController = Get.find<UserController>();
-      if (userController.userModel?.isLoggedIn ?? false) {
-        if (!userController.userModel!.readDuas.contains(duaId)) {
-          await userRef.doc(userController.userModel!.id).update({
-            "readDuas": FieldValue.arrayUnion([duaId]),
-            "points": FieldValue.increment(50),
-          });
-          // Note: UserController should refresh userData automatically if using snapshots
-        }
-      }
+      await Get.find<UserController>().markListened(duaId);
     } catch (e) {
       debugPrint("AudioController: Error marking dua as done: $e");
     }

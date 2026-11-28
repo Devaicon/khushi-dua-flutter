@@ -131,18 +131,39 @@ extension ColorShade on Color {
 
   /// Pulls a colour down until white text sits legibly on it.
   ///
-  /// The home palette carries some very light seeds (the yellow and the light
-  /// green); left alone they would render white text unreadable. Darkening at
-  /// the token level keeps every call site free of special cases.
+  /// The home palette carries some very light seeds (amber, orange, cyan,
+  /// light green); left alone they would render white text unreadable.
+  /// Darkening at the token level keeps every call site free of special cases.
+  ///
+  /// Measured by luminance, not HSL lightness: the old rule capped lightness
+  /// at 0.55, but a yellow at 0.55 is still nearly as bright as white (about
+  /// 1.2:1), so tile labels on it could not be read. Now the lightness is
+  /// lowered only as far as it takes white text to reach
+  /// [kMinWhiteTextContrast], so hue and saturation are kept and colours
+  /// that already pass are left alone.
   Color get seedForWhiteText {
+    if (contrastWithWhite >= kMinWhiteTextContrast) return this;
     final hsl = HSLColor.fromColor(this);
-    if (hsl.lightness <= 0.62) return this;
-    return hsl
-        .withLightness(0.55)
-        .withSaturation((hsl.saturation * 1.1).clamp(0.0, 1.0))
-        .toColor();
+    double lo = 0, hi = hsl.lightness;
+    for (var i = 0; i < 16; i++) {
+      final mid = (lo + hi) / 2;
+      if (hsl.withLightness(mid).toColor().contrastWithWhite >=
+          kMinWhiteTextContrast) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return hsl.withLightness(lo).toColor();
   }
+
+  /// WCAG contrast ratio of white text on this colour.
+  double get contrastWithWhite => 1.05 / (computeLuminance() + 0.05);
 }
+
+/// The least contrast white text may have on a coloured card or tile: the
+/// WCAG level for bold and large text, which tile and card labels are.
+const double kMinWhiteTextContrast = 3.0;
 
 /// The card recipe: a solid colour deepening into a darker shade of itself.
 ///
@@ -157,16 +178,6 @@ abstract final class AppGradient {
       end: Alignment.bottomRight,
     );
   }
-
-  /// The peach-to-lavender of the sign-in headers; a dusk version of it in
-  /// dark mode, where the pastel would glare.
-  static LinearGradient get authHeader => LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: AppPalette.isDark
-        ? const [Color(0xff4A3440), Color(0xff2B3163)]
-        : const [Color(0xffEEB6A3), Color(0xffC3CCF6)],
-  );
 
   /// A neutral surface for unselected states — flat, no border.
   static LinearGradient get neutral => LinearGradient(
@@ -187,7 +198,9 @@ abstract final class CategoryPalette {
 
   static BoxDecoration tileDecoration(Color seed, int ageGroup) {
     if (isVivid(ageGroup)) {
-      final base = seed.seedForWhiteText.lightenBy(0.03);
+      // Not lightened afterwards: that would undo the contrast it was
+      // darkened to.
+      final base = seed.seedForWhiteText;
       return BoxDecoration(
         gradient: LinearGradient(
           colors: [base, base.darkenBy(0.09)],

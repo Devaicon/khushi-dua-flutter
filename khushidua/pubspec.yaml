@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: "none"
 
-version: 1.6.0+32
+version: 1.6.0+33
 
 environment:
   sdk: ^3.8.1
@@ -25,10 +25,13 @@ dependencies:
   flutter_compass:
   firebase_core:
   cloud_firestore:
+  # Only for LegacyAccountMigration: reading the old account session once.
   firebase_auth:
   firebase_storage:
   firebase_messaging:
   share_plus:
+  # Picking a settings backup to import.
+  file_picker:
   package_info_plus:
   record: ^5.2.1
   # ffmpeg_kit_flutter_full:
@@ -43,7 +46,6 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
   flutter_timezone: ^4.1.1
-  google_sign_in: ^7.2.0
   url_launcher: ^6.3.2
   webview_flutter: ^4.14.1
   background_downloader: ^9.6.3

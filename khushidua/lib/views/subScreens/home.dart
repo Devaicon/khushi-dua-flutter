@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:khushidua/controllers/categoryController.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../animations/fadeInAnimationTTB.dart';
 import '../../constants/colors.dart';
@@ -15,6 +14,7 @@ import 'categoryDetailScreen.dart';
 import '../../controllers/notificationController.dart';
 import '../../widgets/donateCard.dart';
 import '../../widgets/profileAvatar.dart';
+import '../../widgets/profileEditor.dart';
 import 'notifications.dart';
 import '../../widgets/salahBanner.dart';
 import '../../widgets/skeleton.dart';
@@ -33,7 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
     Color(0xFF64B5F6), // Blue
     Color(0xFFF06292), // Pink
     Color(0xFF4DB6AC), // Teal
-    Color(0xFFFFF176), // Yellow
+    // Amber rather than lemon yellow: a pure yellow has to go olive before
+    // white text reads on it, while amber deepens to gold.
+    Color(0xFFFFCA28), // Amber
     Color(0xFFFFB74D), // Orange
     Color(0xFFE57373), // Red
     Color(0xFFAED581), // Light Green
@@ -43,19 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Color(0xFF7986CB), // Indigo
     Color(0xFFFF8A65), // Deep Orange
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    getSharedPrefs();
-  }
-
-  getSharedPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? selectedLang = await prefs.getString("selectedLanguage");
-
-    Get.find<UserController>().setSelectedLanguage(selectedLang ?? "English");
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,37 +140,61 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(ThemeController themeController) {
     return GetBuilder<UserController>(
       builder: (userController) {
+        // With a name, the greeting sits above it; without one, the greeting
+        // is the headline, rather than calling the reader a "Guest".
+        final greeting = Text(
+          "Assalam o Alaikum".tr,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: userController.hasName
+              ? TextStyle(
+                  color: AppText.onPageMuted,
+                  fontSize: 13,
+                  letterSpacing: 0.5,
+                )
+              : TextStyle(
+                  color: rtext,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+        );
         return Row(
           children: [
-            const ProfileAvatar(size: 52),
-            const SizedBox(width: AppSpace.md),
             // Expanded, so a long name ellipsises instead of pushing the bell
-            // off the screen.
+            // off the screen. Tapping it edits the optional profile.
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Assalam o Alaikum".tr,
-                    style: TextStyle(
-                      color: AppText.onPageMuted,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
-                    ),
+              child: Semantics(
+                button: true,
+                label: "Edit profile".tr,
+                child: InkWell(
+                  onTap: showProfileEditor,
+                  borderRadius: AppRadius.pillAll,
+                  child: Row(
+                    children: [
+                      const ProfileAvatar(size: 52),
+                      const SizedBox(width: AppSpace.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            greeting,
+                            if (userController.hasName)
+                              Text(
+                                userController.userName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: rtext,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    userController.isLoggedIn
-                        ? userController.userName
-                        : "Guest User".tr,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: rtext,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             const SizedBox(width: AppSpace.sm),

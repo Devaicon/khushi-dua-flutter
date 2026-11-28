@@ -131,7 +131,7 @@ final Map<CsvDataset, CsvSchema> kCsvSchemas = {
     dataset: CsvDataset.duas,
     label: 'Duas',
     description:
-        'Every dua with all 21 languages, transliteration, benefits in 20 languages, audience and audio links.',
+        'Every dua with all 21 languages, transliteration, benefits in 21 languages, audience and audio links.',
     collection: 'Dua',
     fileStem: 'duas',
     columns: [
@@ -140,7 +140,7 @@ final Map<CsvDataset, CsvSchema> kCsvSchemas = {
       const CsvColumn('description'),
       const CsvColumn('benefits', aliases: ['benefits.english']),
       for (final (field, display) in kLanguageFields)
-        if (field != 'english' && field != 'arabic')
+        if (field != 'english')
           CsvColumn('benefitsTranslations.$field',
               aliases: ['benefits.$display'], isLanguage: true),
       const CsvColumn('subCategoryIds',

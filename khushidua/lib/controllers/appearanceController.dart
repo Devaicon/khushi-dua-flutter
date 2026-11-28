@@ -65,6 +65,15 @@ class AppearanceController extends GetxController with WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() => _apply();
 
+  /// Picks up a mode written to preferences behind the controller's back,
+  /// by a settings import.
+  Future<void> reload() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(_kMode);
+    _mode = modes.containsKey(stored) ? stored! : 'system';
+    _apply();
+  }
+
   Future<void> setMode(String value) async {
     if (!modes.containsKey(value) || value == _mode) return;
     _mode = value;

@@ -2,10 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 
-import '../constants/firebaseRef.dart';
-import '../controllers/userController.dart';
 import 'reminderService.dart';
 
 /// Firebase Cloud Messaging for admin announcements.
@@ -14,7 +11,14 @@ import 'reminderService.dart';
 /// alone (Android 13+ needs it too, so nothing displayed there), messages
 /// arriving while the app was open were ignored, and a rotated token was never
 /// written back, so push stopped for good once the token changed.
+///
+/// Announcements are addressed to the [announcementsTopic] topic, which every
+/// install subscribes to. They used to go to the tokens saved on user
+/// accounts, so anyone who had not signed in never received a push.
 class PushService {
+  /// Must match the topic the sendGlobalNotification Cloud Function uses.
+  static const String announcementsTopic = 'announcements';
+
   PushService._();
   static final PushService instance = PushService._();
 
@@ -47,7 +51,9 @@ class PushService {
 
     _foreground = FirebaseMessaging.onMessage.listen(_showForeground);
     _opened = FirebaseMessaging.onMessageOpenedApp.listen((_) => _openInbox());
-    _tokenRefresh = _messaging.onTokenRefresh.listen(saveToken);
+    // A refreshed token is re-subscribed by FCM itself; subscribing again is
+    // harmless and covers a reinstall that lost the subscription.
+    _tokenRefresh = _messaging.onTokenRefresh.listen((_) => _subscribe());
 
     try {
       final initial = await _messaging.getInitialMessage();
@@ -56,26 +62,17 @@ class PushService {
       debugPrint('🔔 PushService: reading launch message failed: $e');
     }
 
-    // Also refresh on every launch: the stored token may predate a reinstall.
-    try {
-      final token = await _messaging.getToken();
-      if (token != null) await saveToken(token);
-    } catch (e) {
-      debugPrint('🔔 PushService: reading token failed: $e');
-    }
+    await _subscribe();
   }
 
-  /// Writes [token] to the signed-in user's document. A guest has no document,
-  /// so there is nothing to write; the token is saved again at sign-in.
-  Future<void> saveToken(String token) async {
-    final user = Get.isRegistered<UserController>()
-        ? Get.find<UserController>().userModel
-        : null;
-    if (user == null || user.fcmToken == token) return;
+  /// Every launch: subscribing is idempotent, and a launch made offline
+  /// gets another chance next time.
+  Future<void> _subscribe() async {
     try {
-      await userRef.doc(user.id).update({'fcmToken': token});
+      await _messaging.subscribeToTopic(announcementsTopic);
     } catch (e) {
-      debugPrint('🔔 PushService: saving token failed: $e');
+      // iOS throws until the APNs token exists, e.g. on a simulator.
+      debugPrint('🔔 PushService: topic subscription failed: $e');
     }
   }
 

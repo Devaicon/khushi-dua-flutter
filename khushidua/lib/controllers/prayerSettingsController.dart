@@ -102,6 +102,9 @@ class PrayerSettingsController extends GetxController {
     _load();
   }
 
+  /// Reads the choices again, after a settings import.
+  Future<void> reload() => _load();
+
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     _method = normaliseMethod(prefs.getString(_kMethod));

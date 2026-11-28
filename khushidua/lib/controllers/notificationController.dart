@@ -89,14 +89,8 @@ class NotificationController extends GetxController {
     if (_allNotifications.length != before) update();
   }
 
-  /// Safe to call repeatedly: each listener is opened at most once.
-  void getAllNotifications({String? userId}) {
-    NotificationService.bindGlobal();
-    if (userId != null) NotificationService.bindUser(userId);
-  }
-
-  /// Follows the signed-in user; pass null on sign-out.
-  void bindUser(String? userId) => NotificationService.bindUser(userId);
+  /// Safe to call repeatedly: the listener is opened at most once.
+  void getAllNotifications() => NotificationService.bindGlobal();
 
   /// Called when the inbox is opened.
   Future<void> markAllSeen() async {

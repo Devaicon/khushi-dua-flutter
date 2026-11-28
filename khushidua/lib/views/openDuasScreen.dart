@@ -110,10 +110,9 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
           final duas = duaController.duasFor(_section.id);
           return GetBuilder<UserController>(
             builder: (userController) {
-              final readDuas = userController.userModel?.readDuas;
-              final listened = readDuas == null
-                  ? null
-                  : duas.where((d) => readDuas.contains(d.id)).length;
+              final listened = duas
+                  .where((d) => userController.isListened(d.id))
+                  .length;
 
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -148,7 +147,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                           ),
                         ),
                         Text(
-                          listened == null || duas.isEmpty
+                          duas.isEmpty
                               ? duaCountLabel(duas.length)
                               : "@done of @total listened".trParams({
                                   'done': '$listened',
@@ -173,7 +172,7 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
                   ),
                   if (_showIllustration)
                     SliverToBoxAdapter(child: _buildIllustration()),
-                  SliverToBoxAdapter(child: _buildListenedTip(userController)),
+                  SliverToBoxAdapter(child: _buildListenedTip()),
                   if (duas.isEmpty)
                     SliverToBoxAdapter(child: _buildEmpty())
                   else
@@ -274,16 +273,13 @@ class _OpenDuasScreenState extends State<OpenDuasScreen> {
   }
 
   /// The one-time tip explaining "listened".
-  Widget _buildListenedTip(UserController userController) {
-    final loggedIn = userController.userModel != null;
+  Widget _buildListenedTip() {
     return FirstTimeTip(
-      key: ValueKey(loggedIn),
-      prefsKey: loggedIn ? kListenedTipSeenKey : '$kListenedTipSeenKey.guest',
+      prefsKey: kListenedTipSeenKey,
       color: widget.color,
-      message: loggedIn
-          ? "Play a dua's audio all the way to the end to mark it as listened and track your progress."
-                .tr
-          : "Log in to keep track of the duas you have listened to.".tr,
+      message:
+          "Play a dua's audio all the way to the end to mark it as listened and track your progress."
+              .tr,
     ).paddingSymmetric(horizontal: AppSpace.lg, vertical: AppSpace.sm);
   }
 
@@ -1739,8 +1735,7 @@ class _DuaTileState extends State<DuaTile> {
 
   /// "Dua 2 of 5", and a Listened mark once its audio has played through.
   Widget _buildHeader(UserController userController) {
-    final isListened =
-        userController.userModel?.readDuas.contains(widget.dua.id) ?? false;
+    final isListened = userController.isListened(widget.dua.id);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.lg,

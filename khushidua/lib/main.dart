@@ -10,6 +10,8 @@ import 'constants/theme.dart';
 import 'controllers/appearanceController.dart';
 import 'controllers/initController.dart';
 import 'controllers/themeController.dart';
+import 'controllers/userController.dart';
+import 'services/legacyAccountMigration.dart';
 import 'services/reminderService.dart';
 import 'controllers/localization.dart';
 import 'firebase_options.dart';
@@ -47,6 +49,14 @@ void main() async {
   Get.put(AppearanceController(), permanent: true);
 
   runApp(const MyApp());
+
+  // Readers who had an account keep their name and listening progress.
+  // Not awaited: it can wait on the network, and the app opens regardless.
+  LegacyAccountMigration.run().then((copied) {
+    if (copied && Get.isRegistered<UserController>()) {
+      Get.find<UserController>().load();
+    }
+  });
 }
 
 class MyApp extends StatelessWidget {

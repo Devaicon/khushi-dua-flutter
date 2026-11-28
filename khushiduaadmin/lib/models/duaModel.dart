@@ -213,6 +213,7 @@ class DuaModel {
 
   /// The old list format used its own keys for a few languages.
   static const _legacyKeys = {
+    'arabicText': 'arabic',
     'gujarati': 'gujrati',
     'mandarin': 'mandrain',
     'telugu': 'telgu',

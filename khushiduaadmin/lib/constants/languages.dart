@@ -47,10 +47,11 @@ const List<ContentLanguage> kContentLanguages = [
 List<ContentLanguage> get kTranslationLanguages =>
     kContentLanguages.where((l) => l.field != 'arabic').toList();
 
-/// The languages "Benefits & Virtues" can be written in: the same 20 as the
-/// translations. English is stored under `benefits`, the rest under
-/// `benefitsTranslations.<field>`.
-List<ContentLanguage> get kBenefitLanguages => kTranslationLanguages;
+/// The languages "Benefits & Virtues" can be written in: all 21, Arabic
+/// included. (Unlike a translation, a benefit is prose about the dua, so an
+/// Arabic version is a separate text.) English is stored under `benefits`,
+/// the rest under `benefitsTranslations.<field>`.
+List<ContentLanguage> get kBenefitLanguages => kContentLanguages;
 
 /// [kBenefitLanguages] without English.
 List<ContentLanguage> get kBenefitTranslationLanguages =>

@@ -47,6 +47,12 @@ class ThemeController extends GetxController {
     update();
   }
 
+  /// Picks up the age group from preferences, after a settings import.
+  Future<void> reload() async {
+    final prefs = await SharedPreferences.getInstance();
+    setSelectedAgeGroup((prefs.getInt(_kAgeGroup) ?? 0).clamp(0, 2));
+  }
+
   setSelectedAgeGroup(int value) {
     _selectedAgeGroup = value;
     SharedPreferences.getInstance().then((p) => p.setInt(_kAgeGroup, value));
